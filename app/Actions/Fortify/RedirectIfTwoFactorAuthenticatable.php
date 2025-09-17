@@ -13,7 +13,6 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class RedirectIfTwoFactorAuthenticatable
 {
-
     /**
      * The guard implementation.
      *
@@ -37,6 +36,7 @@ class RedirectIfTwoFactorAuthenticatable
      */
     public function __construct(StatefulGuard $guard, LoginRateLimiter $limiter)
     {
+        // Initialize the class with the authentication guard and login rate limiter
         $this->guard = $guard;
         $this->limiter = $limiter;
     }
@@ -50,18 +50,23 @@ class RedirectIfTwoFactorAuthenticatable
      */
     public function handle($request, $next)
     {
+        // Validate user credentials and retrieve the user
         $user = $this->validateCredentials($request);
 
+        // Check if the user has two-factor authentication enabled and uses the TwoFactorAuthenticatable trait
         if (($user->userAuth->two_fa_verify_via != '') && in_array(TwoFactorAuthenticatable::class, class_uses_recursive($user))) {
+            // If two-factor authentication is via email, generate and send a two-factor code
             if ($user->userAuth->two_fa_verify_via == 'email') {
                 // Send otp to user from here
                 $user->generateTwoFactorCode();
                 event(new TwoFactorCodeEvent($user));
             }
 
+            // Return a response to initiate the two-factor authentication challenge
             return $this->twoFactorChallengeResponse($request, $user);
         }
 
+        // Proceed to the next middleware if two-factor authentication is not required
         return $next($request);
     }
 
@@ -73,23 +78,25 @@ class RedirectIfTwoFactorAuthenticatable
      */
     protected function validateCredentials($request)
     {
+        // Check if a custom authentication callback is defined
         if (Fortify::$authenticateUsingCallback) {
+            // Execute the custom callback and handle invalid credentials
             return tap(call_user_func(Fortify::$authenticateUsingCallback, $request), function ($user) use ($request) {
                 if (!$user) {
                     $this->fireFailedEvent($request);
-
                     $this->throwFailedAuthenticationException($request);
                 }
             });
         }
 
+        // Retrieve the user model from the guard's provider
         /** @phpstan-ignore-next-line */
         $model = $this->guard->getProvider()->getModel();
 
+        // Attempt to find the user by username and validate credentials
         return tap($model::where(Fortify::username(), $request->{Fortify::username()})->first(), function ($user) use ($request) {
             if (!$user || !$this->guard->getProvider()->validateCredentials($user, ['password' => $request->password])) {
                 $this->fireFailedEvent($request, $user);
-
                 $this->throwFailedAuthenticationException($request);
             }
         });
@@ -105,8 +112,10 @@ class RedirectIfTwoFactorAuthenticatable
      */
     protected function throwFailedAuthenticationException($request)
     {
+        // Increment the login rate limiter
         $this->limiter->increment($request);
 
+        // Throw a validation exception with a failure message
         throw ValidationException::withMessages([
             Fortify::username() => [trans('auth.failed')],
         ]);
@@ -121,6 +130,7 @@ class RedirectIfTwoFactorAuthenticatable
      */
     protected function fireFailedEvent($request, $user = null)
     {
+        // Trigger a failed authentication event with request details
         event(new Failed(config('fortify.guard'), $user, [
             Fortify::username() => $request->{Fortify::username()},
             'password' => $request->password,
@@ -136,7 +146,7 @@ class RedirectIfTwoFactorAuthenticatable
      */
     protected function twoFactorChallengeResponse($request, $user)
     {
-        // Check for google reCaptcha validation
+        // Validate Google reCAPTCHA if enabled in global settings
         if (global_setting()->google_recaptcha_status == 'active') {
             $gRecaptchaResponseInput = 'g-recaptcha-response';
             $gRecaptchaResponse = $request->{$gRecaptchaResponseInput};
@@ -154,19 +164,20 @@ class RedirectIfTwoFactorAuthenticatable
             }
         }
 
+        // Determine the two-factor authentication method
         switch ($user->two_fa_verify_via) {
         case 'email':
             $twoFaVerifyVia = 'email';
             break;
 
         case 'both':
+            // If both methods are allowed, prioritize Google Authenticator if confirmed, else fall back to email
             if ($user->two_factor_confirmed) {
                 $twoFaVerifyVia = 'both';
             }
             else {
                 $twoFaVerifyVia = 'email';
             }
-
             break;
 
         default:
@@ -174,23 +185,25 @@ class RedirectIfTwoFactorAuthenticatable
             break;
         }
 
+        // Store user ID, remember preference, and authentication method in session
         $request->session()->put([
             'login.id' => $user->getKey(),
             'login.remember' => $request->filled('remember'),
             'login.authenticate_via' => $twoFaVerifyVia,
         ]);
 
+        // Return JSON response for API requests or redirect to two-factor login page
         return $request->wantsJson() ? response()->json([
             'two_factor' => true,
             'authenticate_via' => $twoFaVerifyVia,
         ]) : redirect()->route('two-factor.login');
     }
 
+    // Throws a validation exception for reCAPTCHA failure
     public function googleRecaptchaMessage()
     {
         throw ValidationException::withMessages([
             'g-recaptcha-response' => [__('auth.recaptchaFailed')],
         ]);
     }
-
 }
