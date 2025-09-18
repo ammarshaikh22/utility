@@ -7,27 +7,32 @@ use App\Models\User;
 use App\Notifications\TaskNoteMention;
 use Illuminate\Support\Facades\Notification;
 
+/**
+ * Listener for handling mentions inside task notes.
+ *
+ * - Sends a notification to users who were mentioned in a task note.
+ */
 class TaskNoteMentionListener
 {
-
     /**
-     * Handle the event.
+     * Handle the event and notify mentioned users.
      *
-     * @param TaskNoteMentionEvent $event
+     * @param TaskNoteMentionEvent $event The event containing mention details.
      * @return void
      */
-
-    public function handle(TaskNoteMentionEvent $event)
+    public function handle(TaskNoteMentionEvent $event): void
     {
-        if (isset($event->mentionuser)) {
+        if (!empty($event->mentionuser)) {
+            // Ensure mentionuser is always an array of IDs
+            $mentionUserIds = is_array($event->mentionuser) 
+                ? $event->mentionuser 
+                : [$event->mentionuser];
 
-            $mentionUserId = $event->mentionuser;
-            $mentionUser = User::whereIn('id', ($mentionUserId))->get();
-            Notification::send($mentionUser, new TaskNoteMention($event->task, $event));
+            // Fetch mentioned users
+            $mentionedUsers = User::whereIn('id', $mentionUserIds)->get();
 
-
+            // Send notification to each mentioned user
+            Notification::send($mentionedUsers, new TaskNoteMention($event->task, $event->comment));
         }
-
     }
-
 }

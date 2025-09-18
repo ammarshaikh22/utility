@@ -8,18 +8,21 @@ use Illuminate\Support\Facades\Notification;
 
 class NewProjectMemberListener
 {
-
     /**
-     * Handle the event.
+     * Handle the event when a new project member is added.
      *
-     * @param NewProjectMemberEvent $event
+     * This listener ensures that the newly added project member
+     * receives a notification about their assignment.
+     *
+     * @param NewProjectMemberEvent $event  Event containing the project member details.
      * @return void
      */
-
     public function handle(NewProjectMemberEvent $event)
     {
-        Notification::send($event->projectMember->user, new NewProjectMember($event->projectMember->project));
-
+        // Notify the user who has just been added to the project.
+        Notification::send(
+            $event->projectMember->user,
+            new NewProjectMember($event->projectMember->project)
+        );
     }
-
 }
