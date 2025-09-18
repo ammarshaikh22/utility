@@ -13,26 +13,24 @@ use Illuminate\Support\Facades\Notification;
 
 class EmployeeShiftChangeListener
 {
-
     /**
-     * Handle the event.
+     * Handle the EmployeeShiftChangeEvent.
+     * This method processes a shift change event by sending a status update notification to the user
+     * associated with the shift schedule if a status change is provided, or sending a shift change request
+     * notification to users with the 'manage_employee_shifts' permission if no status change is provided.
      *
-     * @param EmployeeShiftChangeEvent $event
+     * @param EmployeeShiftChangeEvent $event The event containing the shift change request and optional status change data.
      * @return void
      */
     public function handle(EmployeeShiftChangeEvent $event)
     {
         if (!is_null($event->statusChange)) {
             Notification::send($event->changeRequest->shiftSchedule->user, new ShiftChangeStatus($event->changeRequest));
-
-        }
-        else {
+        } else {
             $permission = Permission::where('name', 'manage_employee_shifts')->first();
             $allTypePermission = PermissionType::ofType('all')->first();
             $users = UserPermission::where('permission_type_id', $allTypePermission->id)->where('permission_id', $permission->id)->get()->pluck('user_id')->toArray();
             Notification::send(User::select('users.*')->whereIn('id', $users)->get(), new ShiftChangeRequest($event->changeRequest));
         }
-
     }
-
 }

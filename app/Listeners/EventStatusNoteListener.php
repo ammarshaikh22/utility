@@ -9,9 +9,14 @@ use App\Notifications\EventStatusNote;
 
 class EventStatusNoteListener
 {
-
     /**
-     * Handle the event.
+     * Handle the EventStatusNoteEvent.
+     * This method filters out the event host from the list of users to notify, sends an event status note
+     * notification to the remaining users, and separately notifies the host if they exist, using the
+     * EventStatusNote notification class.
+     *
+     * @param EventStatusNoteEvent $event The event containing the event data and users to notify.
+     * @return void
      */
     public function handle(EventStatusNoteEvent $event)
     {
@@ -27,5 +32,4 @@ class EventStatusNoteListener
             Notification::send($host, new EventStatusNote($event->event));
         }
     }
-
 }

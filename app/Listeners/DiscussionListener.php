@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Notification;
 
 class DiscussionListener
 {
-
     /**
-     * Handle the event.
+     * Handle the DiscussionEvent.
+     * This method sends a new discussion notification to the project client and specified project members
+     * when a discussion event is triggered, using the NewDiscussion notification class.
      *
-     * @param DiscussionEvent $event
+     * @param DiscussionEvent $event The event containing the discussion and project member data.
      * @return void
      */
-
     public function handle(DiscussionEvent $event)
     {
         $unmentionUser = $event->project_member;
@@ -29,5 +29,4 @@ class DiscussionListener
             Notification::send($unmentionUser, new NewDiscussion($event->discussion));
         }
     }
-
 }

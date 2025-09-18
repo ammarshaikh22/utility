@@ -7,11 +7,12 @@ use Illuminate\Auth\Events\Login;
 
 class LogSuccessfulLogin
 {
-
     /**
-     * Handle the event.
+     * Handle the Login event.
+     * This method updates the last login timestamp for the authenticated user and their company
+     * when a successful login event occurs, unless the session involves impersonation.
      *
-     * @param Login $event
+     * @param Login $event The login event containing the authenticated user.
      * @return void
      */
     public function handle(Login $event)
@@ -30,5 +31,4 @@ class LogSuccessfulLogin
             }
         }
     }
-
 }

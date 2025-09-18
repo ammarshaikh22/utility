@@ -8,17 +8,16 @@ use Illuminate\Support\Facades\Notification;
 
 class AutoTaskReminderListener
 {
-
     /**
-     * Handle the event.
+     * Handle the AutoTaskReminderEvent.
+     * This method sends a task reminder notification to the users assigned to the task
+     * when an auto task reminder event is triggered, using the AutoTaskReminder notification class.
      *
-     * @param AutoTaskReminderEvent $event
+     * @param AutoTaskReminderEvent $event The event containing the task data.
      * @return void
      */
-
     public function handle(AutoTaskReminderEvent $event)
     {
         Notification::send($event->task->users, new AutoTaskReminder($event->task));
     }
-
 }

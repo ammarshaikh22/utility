@@ -9,14 +9,16 @@ use Illuminate\Support\Facades\Notification;
 
 class LeadListener
 {
-
     /**
-     * Handle the event.
+     * Handle the LeadEvent.
+     * This method collects relevant users to notify about a new lead, including company admins,
+     * the user who added the lead, the lead owner, the currently authenticated user, the assigned agent,
+     * and the deal watcher. It removes duplicates and sends a new lead created notification to these users,
+     * but skips the notification if the lead was imported via session flag.
      *
-     * @param LeadEvent $event
+     * @param LeadEvent $event The event containing the lead contact data.
      * @return void
      */
-
     public function handle(LeadEvent $event)
     {
         $admins = collect(User::allAdmins($event->leadContact->company_id));
@@ -45,14 +47,14 @@ class LeadListener
             }
         }
 
-        if(request()->has('agent_id')){
+        if (request()->has('agent_id')) {
             $leadAgent = User::find(request('agent_id'));
             if ($leadAgent && !$admins->pluck('id')->contains($leadAgent->id)) {
                 $admins->push($leadAgent);
             }
         }
 
-        if(request()->has('deal_watcher')){
+        if (request()->has('deal_watcher')) {
             $dealWatcher = User::find(request('deal_watcher'));
             if ($dealWatcher && !$admins->pluck('id')->contains($dealWatcher->id)) {
                 $admins->push($dealWatcher);
@@ -66,5 +68,4 @@ class LeadListener
             Notification::send($admins, new NewLeadCreated($event->leadContact));
         }
     }
-
 }

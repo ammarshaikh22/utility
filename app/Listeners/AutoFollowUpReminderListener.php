@@ -9,17 +9,16 @@ use Illuminate\Support\Facades\Notification;
 
 class AutoFollowUpReminderListener
 {
-
     /**
-     * Handle the event.
+     * Handle the AutoFollowUpReminderEvent.
+     * This method identifies users to notify (admins, lead agent, follow-up creator, and deal watcher)
+     * for a follow-up reminder, removes duplicates, and sends a notification to the unique set of users.
      *
-     * @param AutoFollowUpReminderEvent $event
+     * @param AutoFollowUpReminderEvent $event The event containing follow-up data and subject.
      * @return void
      */
-
     public function handle(AutoFollowUpReminderEvent $event)
     {
-
         $companyId = $event->followup->lead->company_id;
 
         $adminUsers = User::allAdmins($companyId);
@@ -46,9 +45,7 @@ class AutoFollowUpReminderListener
         $usersToNotify = $usersToNotify->unique('id');
 
         if ($usersToNotify->isNotEmpty()) {
-            Notification::send($usersToNotify, new AutoFollowUpReminder($event->followup,$event->subject));
+            Notification::send($usersToNotify, new AutoFollowUpReminder($event->followup, $event->subject));
         }
-
     }
-
 }
