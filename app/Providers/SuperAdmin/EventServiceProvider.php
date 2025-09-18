@@ -26,9 +26,10 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 
 class EventServiceProvider extends ServiceProvider
 {
-
     /**
      * The event listener mappings for the application.
+     * This array defines the events and their corresponding listeners for handling
+     * superadmin-related actions such as email verification, support tickets, and package changes.
      *
      * @var array
      */
@@ -42,10 +43,16 @@ class EventServiceProvider extends ServiceProvider
         NewCompanyCreatedEvent::class => [CompanyRegisteredListener::class],
     ];
 
+    /**
+     * The model observer mappings for the application.
+     * This array defines the models and their corresponding observers for handling
+     * lifecycle events such as creation, update, and deletion for superadmin-related models.
+     *
+     * @var array
+     */
     protected $observers = [
         OfflinePlanChange::class => [OfflinePlanChangeObserver::class],
         Package::class => [PackageObserver::class],
         FooterMenu::class => [FooterMenuObserver::class],
     ];
-
 }

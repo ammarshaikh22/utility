@@ -6,9 +6,9 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 
 class AuthServiceProvider extends ServiceProvider
 {
-
     /**
-     * The policy mappings for the application.
+     * Define the policy mappings for the application.
+     * This array maps Eloquent models to their corresponding policy classes for authorization.
      *
      * @var array
      */
@@ -17,7 +17,8 @@ class AuthServiceProvider extends ServiceProvider
     ];
 
     /**
-     * Register any authentication / authorization services.
+     * Register authentication and authorization services.
+     * This method is used to register the application's policies for authorization.
      *
      * @return void
      */
@@ -25,5 +26,4 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
     }
-
 }

@@ -15,6 +15,14 @@ class SmtpConfigProvider extends ServiceProvider
 {
     use HasMaskImage;
 
+    /**
+     * Register SMTP and related application services.
+     * This method configures mail settings, application name, logo, and push notification settings
+     * based on database values, registers mail and queue service providers, and skips certain
+     * configurations in demo or development environments. Exceptions are caught and ignored.
+     *
+     * @return void
+     */
     public function register()
     {
         try {
@@ -23,9 +31,7 @@ class SmtpConfigProvider extends ServiceProvider
             $settings = DB::table('global_settings')->first();
 
             if ($smtpSetting && $settings) {
-
                 if (!in_array(config('app.env'), ['demo', 'development'])) {
-
                     $driver = ($smtpSetting->mail_driver != 'mail') ? $smtpSetting->mail_driver : 'sendmail';
 
                     $password = Crypt::decryptString($smtpSetting->mail_password);
@@ -49,8 +55,7 @@ class SmtpConfigProvider extends ServiceProvider
 
                 if (is_null($settings->light_logo)) {
                     Config::set('app.logo', asset('img/worksuite-logo.png'));
-                }
-                else {
+                } else {
                     Config::set('app.logo', $this->generateMaskedImageAppUrl('app-logo/' . $settings->light_logo));
                 }
 
@@ -72,11 +77,12 @@ class SmtpConfigProvider extends ServiceProvider
         $app->register(MailServiceProvider::class);
 
         $app = App::getInstance();
-        $app->register( QueueServiceProvider::class);
+        $app->register(QueueServiceProvider::class);
     }
 
     /**
-     * Bootstrap services.
+     * Bootstrap any application services.
+     * This method is currently empty but can be used for additional setup if needed.
      *
      * @return void
      */
@@ -84,5 +90,4 @@ class SmtpConfigProvider extends ServiceProvider
     {
         //
     }
-
 }

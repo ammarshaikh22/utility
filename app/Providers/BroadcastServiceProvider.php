@@ -9,16 +9,21 @@ use Illuminate\Support\ServiceProvider;
 
 class BroadcastServiceProvider extends ServiceProvider
 {
-
+    /**
+     * Register broadcasting services.
+     * This method retrieves Pusher settings from the database and configures the broadcasting
+     * driver and Pusher connection settings dynamically, except in demo or development environments.
+     * Exceptions are caught and ignored to prevent issues during registration.
+     *
+     * @return void
+     */
     public function register()
     {
         try {
             $pusherSetting = DB::table('pusher_settings')->first();
 
             if ($pusherSetting) {
-
                 if (!in_array(config('app.env'), ['demo', 'development'])) {
-
                     $driver = ($pusherSetting->status == 1) ? 'pusher' : 'null';
 
                     Config::set('broadcasting.default', $driver);
@@ -35,7 +40,9 @@ class BroadcastServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap any application services.
+     * Bootstrap broadcasting services.
+     * This method sets up broadcasting routes and includes the channels.php file
+     * to define channel authorization logic.
      *
      * @return void
      */
@@ -45,5 +52,4 @@ class BroadcastServiceProvider extends ServiceProvider
 
         require base_path('routes/channels.php');
     }
-
 }
