@@ -1,50 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Url extends Component
 {
-
-    public $fieldLabel;
-    public $fieldRequired;
-    public $fieldPlaceholder;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-    public $fieldHelp;
-    public $fieldReadOnly;
-    public $popover;
-
+    public $url;  // URL to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $url URL to be displayed
      */
-    public function __construct($fieldLabel, $fieldName, $fieldId, $fieldRequired = false, $fieldPlaceholder = null, $fieldValue = null, $fieldHelp = null, $fieldReadOnly = false, $popover = null)
+    public function __construct($url)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldPlaceholder = $fieldPlaceholder;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->fieldHelp = $fieldHelp;
-        $this->fieldReadOnly = $fieldReadOnly;
-        $this->popover = $popover;
-
+        $this->url = $url;  // Set the URL
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.url');
+        return view('components.url');  // Render the URL view
     }
-
 }

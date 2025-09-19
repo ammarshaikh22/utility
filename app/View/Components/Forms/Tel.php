@@ -1,43 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Tel extends Component
 {
-
-    public $fieldLabel;
-    public $fieldRequired;
-    public $fieldPlaceholder;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-
+    public $tel;  // Telephone number to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $tel Telephone number to be displayed
      */
-    public function __construct($fieldLabel, $fieldPlaceholder, $fieldName, $fieldId, $fieldRequired = false, $fieldValue = null)
+    public function __construct($tel)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldPlaceholder = $fieldPlaceholder;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
+        $this->tel = $tel;  // Set the telephone number
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.tel');
+        return view('components.tel');  // Render the telephone number view
     }
-
 }
