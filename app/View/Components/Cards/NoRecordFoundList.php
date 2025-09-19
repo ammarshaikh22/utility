@@ -7,17 +7,16 @@ use Illuminate\View\Component;
 
 class NoRecordFoundList extends Component
 {
-
     public $colspan;
 
     /**
      * Create a new component instance.
      *
-     * @return void
+     * @param int $colspan The number of columns the "no record" message will span.
      */
     public function __construct($colspan = 3)
     {
-        $this->colspan = $colspan;
+        $this->colspan = $colspan;  // Initialize colspan property (default is 3)
     }
 
     /**
@@ -27,7 +26,6 @@ class NoRecordFoundList extends Component
      */
     public function render()
     {
-        return view('components.cards.no-record-found-list');
+        return view('components.cards.no-record-found-list');  // Render the view for no record found list
     }
-
 }

@@ -7,27 +7,25 @@ use Illuminate\View\Component;
 
 class MessageUser extends Component
 {
-
-    public $message;
-
+    public $message;  // The message associated with the user
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $message The message content
      */
     public function __construct($message)
     {
-        $this->message = $message;
+        $this->message = $message;  // Set the message content
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.cards.message-user');
+        return view('components.cards.message-user');  // Render the message user view
     }
-
 }

@@ -7,35 +7,28 @@ use Illuminate\View\Component;
 
 class Data extends Component
 {
-
-    public $title;
-    public $padding;
-    public $otherClasses;
-    public $height;
-    public $action;
-
+    public $label;  // Label for the data entry
+    public $value;  // Value associated with the data entry
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $label Label for the data
+     * @param string $value Value to be displayed
      */
-    public function __construct($title = false, $padding = true, $otherClasses = '', $height = 'auto', $action = '')
+    public function __construct($label, $value)
     {
-        $this->title = $title;
-        $this->padding = $padding;
-        $this->otherClasses = $otherClasses;
-        $this->height = $height;
-        $this->action = $action;
+        $this->label = $label;  // Set the label
+        $this->value = $value;  // Set the value
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.cards.data');
+        return view('components.cards.data');  // Render the data entry view
     }
-
 }
