@@ -1,32 +1,31 @@
 <?php
 
-namespace App\View\Components\Cards\SuperAdmin;
+namespace App\View\Components\Sidebar;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class SettingSidebar extends Component
 {
-
-    public $activeMenu;
-
+    public $settings;  // Array of settings to display in the sidebar
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param array $settings Array containing the settings to be displayed in the sidebar
      */
-    public function __construct($activeMenu)
+    public function __construct($settings)
     {
-        $this->activeMenu = $activeMenu;
+        $this->settings = $settings;  // Initialize settings array
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
-     * @return \Illuminate\Contracts\View\View|string
+     * 
+     * @return View|string
      */
     public function render()
     {
-        return view('components.super-admin.setting-sidebar');
+        return view('components.sidebar.setting-sidebar');  // Render the setting sidebar view
     }
-
 }
