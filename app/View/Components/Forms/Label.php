@@ -1,44 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Label extends Component
 {
-
-    public $fieldId;
-    public $fieldLabel;
-    public $popover;
-    public $fieldRequired;
-
+    public $text;  // Label text to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $text The label text
      */
-    public function __construct(
-        $fieldId,
-        $fieldRequired = false,
-        $fieldLabel = null,
-        $popover = null
-    )
+    public function __construct($text)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldId = $fieldId;
-        $this->popover = $popover;
-        $this->fieldRequired = $fieldRequired;
+        $this->text = $text;  // Set the label text
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.label');
+        return view('components.label');  // Render the label view
     }
-
 }

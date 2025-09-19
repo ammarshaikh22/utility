@@ -1,35 +1,34 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class LinkPrimary extends Component
 {
-
-    public $icon;
-    public $link;
-
+    public $url;  // URL for the link
+    public $text;  // Text for the link
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $url URL for the link
+     * @param string $text Text to display for the link
      */
-    public function __construct($link, $icon = '')
+    public function __construct($url, $text)
     {
-        $this->icon = $icon;
-        $this->link = $link;
+        $this->url = $url;  // Set the link URL
+        $this->text = $text;  // Set the link text
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.link-primary');
+        return view('components.link-primary');  // Render the primary link view
     }
-
 }

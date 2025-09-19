@@ -1,53 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Number extends Component
 {
-
-    public $fieldLabel;
-    public $fieldRequired;
-    public $fieldPlaceholder;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-    public $fieldHelp;
-    public $minValue;
-    public $maxValue;
-    public $popover;
-    public $fieldReadOnly;
-
+    public $value;  // The number value to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param int $value The number value
      */
-    public function __construct($fieldLabel, $fieldName, $fieldId, $fieldRequired = false, $fieldValue = null, $fieldHelp = null, $minValue = 0, $maxValue = '', $popover = null, $fieldPlaceholder = null, $fieldReadOnly = false)
+    public function __construct($value)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->fieldHelp = $fieldHelp;
-        $this->minValue = $minValue;
-        $this->maxValue = $maxValue;
-        $this->popover = $popover;
-        $this->fieldPlaceholder = $fieldPlaceholder;
-        $this->fieldReadOnly = $fieldReadOnly;
+        $this->value = $value;  // Set the number value
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.number');
+        return view('components.number');  // Render the number view
     }
-
 }
