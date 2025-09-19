@@ -1,3 +1,4 @@
+```php
 <?php
 
 namespace App\DataTables;
@@ -10,14 +11,18 @@ use App\Helper\Common;
 
 class ArchiveProjectsDataTable extends BaseDataTable
 {
-
+    // Define private properties for user permissions related to project actions
     private $viewProjectPermission;
     private $editProjectPermission;
     private $deleteProjectPermission;
 
+    /**
+     * Constructor to initialize user permissions for viewing, editing, and deleting projects
+     */
     public function __construct()
     {
         parent::__construct();
+        // Assign user permissions using the user() helper function
         $this->viewProjectPermission = user()->permission('view_projects');
         $this->editProjectPermission = user()->permission('edit_projects');
         $this->deleteProjectPermission = user()->permission('delete_projects');
@@ -33,10 +38,12 @@ class ArchiveProjectsDataTable extends BaseDataTable
     {
         return datatables()
             ->eloquent($query)
+            // Add an 'action' column for restore and delete buttons based on user permissions
             ->addColumn('action', function ($row) {
                 $memberIds = $row->members->pluck('user_id')->toArray();
                 $action = '';
 
+                // Check if the user has permission to edit/restore the project
                 if (
                     $this->editProjectPermission == 'all'
                     || ($this->editProjectPermission == 'added' && user()->id == $row->added_by)
@@ -50,6 +57,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
                     data-toggle="tooltip" data-user-id="' . $row->id . '" data-original-title="' . __('app.unarchive') . '"><i class="fa fa-undo" aria-hidden="true"></i></a>';
                 }
 
+                // Check if the user has permission to delete the project
                 if (
                     $this->deleteProjectPermission == 'all'
                     || ($this->deleteProjectPermission == 'added' && user()->id == $row->added_by)
@@ -65,13 +73,13 @@ class ArchiveProjectsDataTable extends BaseDataTable
 
                 return $action;
             })
+            // Add a 'members' column to display project member images with tooltips
             ->addColumn('members', function ($row) {
                 $members = '';
 
                 if (count($row->members) > 0) {
                     foreach ($row->members as $member) {
                         $img = '<img data-toggle="tooltip" data-original-title="' . $member->user->name . '" src="' . $member->user->image_url . '">';
-
                         $members .= '<div class="taskEmployeeImg rounded-circle"><a href="' . route('employees.show', $member->user->id) . '">' . $img . '</a></div> ';
                     }
                 } else {
@@ -80,6 +88,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
 
                 return $members;
             })
+            // Add a 'name' column to display comma-separated member names
             ->addColumn('name', function ($row) {
                 $members = [];
 
@@ -93,29 +102,32 @@ class ArchiveProjectsDataTable extends BaseDataTable
 
                 return '--';
             })
+            // Edit the 'project_name' column to display a clickable project name
             ->editColumn('project_name', function ($row) {
-
                 return '<div class="media align-items-center">
                         <div class="media-body">
                     <h5 class="mb-0 f-13 text-darkest-grey"><a href="' . route('projects.show', [$row->id]) . '">' . $row->project_name . '</a></h5>
                     </div>
                 </div>';
             })
+            // Format the 'start_date' column using the company date format
             ->editColumn('start_date', fn($row) => $row->start_date ? $row->start_date->translatedFormat($this->company->date_format) : '')
+            // Format the 'deadline' column using the company date format or display '-'
             ->editColumn('deadline', fn($row) => $row->deadline ? $row->deadline->translatedFormat($this->company->date_format) : '-')
+            // Render the 'client_id' column using a client view component
             ->editColumn('client_id', fn($row) => is_null($row->client_id) ? '' : view('components.client', ['user' => $row->client]))
+            // Format the 'status' column with a colored circle and status name
             ->editColumn('status', function ($row) {
-
                 $projectStatus = ProjectStatusSetting::all();
 
                 foreach ($projectStatus as $status) {
                     if ($row->status == $status->status_name) {
                         $color = $status->color;
-
                         return ' <i class="fa fa-circle mr-1 f-10" style="color:' . $color . '"></i>' . $status->status_name;
                     }
                 }
             })
+            // Display the 'completion_percent' column as a progress bar with dynamic color
             ->editColumn('completion_percent', function ($row) {
                 if ($row->completion_percent < 50) {
                     $statusColor = 'danger';
@@ -129,10 +141,15 @@ class ArchiveProjectsDataTable extends BaseDataTable
                 <div class="progress-bar f-12 bg-' . $statusColor . '" role="progressbar" style="width: ' . $row->completion_percent . '%;" aria-valuenow="' . $row->completion_percent . '" aria-valuemin="0" aria-valuemax="100">' . $row->completion_percent . '%</div>
               </div>';
             })
+            // Add a 'completion_export' column for exporting completion percentage
             ->addColumn('completion_export', fn($row) => $row->completion_percent . '% ' . __('app.complete'))
+            // Add an index column for row numbering
             ->addIndexColumn()
+            // Set a unique row ID for each project
             ->setRowId(fn($row) => 'row-' . $row->id)
+            // Specify columns that should be rendered as raw HTML
             ->rawColumns(['project_name', 'action', 'completion_percent', 'members', 'status', 'client_id', 'check'])
+            // Remove unused columns from the DataTable output
             ->removeColumn('project_summary')
             ->removeColumn('notes')
             ->removeColumn('category_id')
@@ -141,6 +158,8 @@ class ArchiveProjectsDataTable extends BaseDataTable
     }
 
     /**
+     * Define the query for fetching archived projects.
+     *
      * @param Project $model
      * @return \Illuminate\Database\Eloquent\Builder
      */
@@ -148,6 +167,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
     {
         $request = $this->request();
 
+        // Build the query with necessary relationships and joins
         $model = $model
             ->with('members', 'members.user', 'client', 'client.clientDetails', 'currency', 'client.session')
             ->leftJoin('project_members', 'project_members.project_id', 'projects.id')
@@ -158,6 +178,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
               projects.status, users.name, client.name as client_name,
            ( select count("id") from pinned where pinned.project_id = projects.id and pinned.user_id = ' . user()->id . ') as pinned_project');
 
+        // Filter by status if specified
         if (!is_null($request->status) && $request->status != 'all') {
             if ($request->status == 'not finished') {
                 $model->where('projects.completion_percent', '!=', 100);
@@ -166,6 +187,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
             }
         }
 
+        // Filter by completion percentage range if specified
         if ($request->progress) {
             $model->where(function ($q) use ($request) {
                 foreach ($request->progress as $progress) {
@@ -175,30 +197,37 @@ class ArchiveProjectsDataTable extends BaseDataTable
             });
         }
 
+        // Filter by client ID if specified
         if (!is_null($request->client_id) && $request->client_id != 'all') {
             $model->where('client_id', $request->client_id);
         }
 
+        // Filter by team ID if specified
         if (!is_null($request->team_id) && $request->team_id != 'all') {
             $model->where('team_id', $request->team_id);
         }
 
+        // Filter by category ID if specified
         if (!is_null($request->category_id) && $request->category_id != 'all') {
             $model->where('category_id', $request->category_id);
         }
 
+        // Filter by employee ID if specified
         if (!is_null($request->employee_id) && $request->employee_id != 'all') {
             $model->where('project_members.user_id', $request->employee_id);
         }
 
+        // Restrict projects based on view permission: 'added' limits to projects added by the user
         if ($this->viewProjectPermission == 'added') {
             $model->where('projects.added_by', user()->id);
         }
 
+        // Restrict projects based on view permission: 'owned' limits to projects where the user is a member
         if ($this->viewProjectPermission == 'owned' && in_array('employee', user_roles())) {
             $model->where('project_members.user_id', user()->id);
         }
 
+        // Restrict projects based on view permission: 'both' limits to projects added by or including the user
         if ($this->viewProjectPermission == 'both' && in_array('employee', user_roles())) {
             $model->where(function ($query) {
                 return $query->where('projects.added_by', user()->id)
@@ -206,6 +235,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
             });
         }
 
+        // Apply search filter on project name or member name
         if ($request->searchText != '') {
             $model->where(function ($query) {
                 $safeTerm = Common::safeString(request('searchText'));
@@ -214,6 +244,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
             });
         }
 
+        // Only include soft-deleted (archived) projects and group by project ID
         $model->onlyTrashed()->groupBy('projects.id');
 
         return $model;
@@ -226,12 +257,15 @@ class ArchiveProjectsDataTable extends BaseDataTable
      */
     public function html()
     {
+        // Initialize DataTable builder with table ID
         $dataTable = $this->setBuilder('projects-table')
             ->parameters([
+                // Append DataTable buttons to a specific container
                 'initComplete' => 'function () {
                     window.LaravelDataTables["projects-table"].buttons().container()
                      .appendTo( "#table-actions")
                  }',
+                // Enable tooltips on draw callback
                 'fnDrawCallback' => 'function( oSettings ) {
                     $("body").tooltip({
                         selector: \'[data-toggle="tooltip"]\'
@@ -239,6 +273,7 @@ class ArchiveProjectsDataTable extends BaseDataTable
                 }',
             ]);
 
+        // Add export button if export functionality is enabled
         if (canDataTableExport()) {
             $dataTable->buttons(Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));
         }
@@ -253,8 +288,8 @@ class ArchiveProjectsDataTable extends BaseDataTable
      */
     protected function getColumns()
     {
+        // Define DataTable columns with their properties
         return [
-
             '#' => ['data' => 'DT_RowIndex', 'orderable' => false, 'searchable' => false, 'visible' => false, 'title' => '#'],
             __('modules.projects.projectName') => ['data' => 'project_name', 'name' => 'project_name', 'title' => __('modules.projects.projectName')],
             __('modules.projects.members') => ['data' => 'members', 'name' => 'members', 'exportable' => false, 'width' => '25%', 'title' => __('modules.projects.members')],
@@ -274,3 +309,4 @@ class ArchiveProjectsDataTable extends BaseDataTable
         ];
     }
 }
+```
