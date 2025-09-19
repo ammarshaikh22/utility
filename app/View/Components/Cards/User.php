@@ -7,27 +7,25 @@ use Illuminate\View\Component;
 
 class User extends Component
 {
-
-    public $image;
-
+    public $user;  // User details (could be an array or object)
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param mixed $user User details (could be an object or array)
      */
-    public function __construct($image)
+    public function __construct($user)
     {
-        $this->image = $image;
+        $this->user = $user;  // Set the user details
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.cards.user');
+        return view('components.cards.user');  // Render the user view
     }
-
 }
