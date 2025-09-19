@@ -1,45 +1,34 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Checkbox extends Component
 {
-
-    public $fieldLabel;
-    public $fieldName;
-    public $fieldId;
-    public $checked;
-    public $fieldValue;
-    public $popover;
-    public $fieldPermission;
-
+    public $label;  // Label for the checkbox
+    public $value;  // Value of the checkbox
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $label The label for the checkbox
+     * @param string $value The value of the checkbox
      */
-    public function __construct($fieldLabel, $fieldName, $fieldId, $checked = false, $fieldValue = null, $popover = null, $fieldPermission = false)
+    public function __construct($label, $value)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->checked = $checked;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->popover = $popover;
-        $this->fieldPermission = $fieldPermission;
+        $this->label = $label;  // Set the checkbox label
+        $this->value = $value;  // Set the checkbox value
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.checkbox');
+        return view('components.checkbox');  // Render the checkbox view
     }
-
 }

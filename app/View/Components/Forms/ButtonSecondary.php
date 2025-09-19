@@ -1,35 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class ButtonSecondary extends Component
 {
-
-    public $icon;
-    public $disabled;
-
+    public $label;  // The label for the secondary button
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $label The label for the secondary button
      */
-    public function __construct($icon = null, $disabled = false)
+    public function __construct($label)
     {
-        $this->icon = $icon;
-        $this->disabled = $disabled;
+        $this->label = $label;  // Set the button label
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.button-secondary');
+        return view('components.button-secondary');  // Render the secondary button view
     }
-
 }
