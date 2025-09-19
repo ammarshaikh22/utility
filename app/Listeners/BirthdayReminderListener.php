@@ -9,11 +9,12 @@ use Notification;
 
 class BirthdayReminderListener
 {
-
     /**
-     * Handle the event.
+     * Handle the BirthdayReminderEvent.
+     * This method retrieves all employees for a specific company and sends a birthday
+     * reminder notification to them when a birthday reminder event is triggered.
      *
-     * @param BirthdayReminderEvent $event
+     * @param BirthdayReminderEvent $event The event containing the company and birthday data.
      * @return void
      */
     public function handle(BirthdayReminderEvent $event)
@@ -22,5 +23,4 @@ class BirthdayReminderListener
 
         Notification::send($users, new BirthdayReminder($event));
     }
-
 }

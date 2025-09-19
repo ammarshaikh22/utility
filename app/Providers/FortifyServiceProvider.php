@@ -34,23 +34,28 @@ use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
 use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\LogoutResponse;
 
-
 class FortifyServiceProvider extends ServiceProvider
 {
-
     use AppBoot;
 
     /**
-     * Register any application services.
+     * Register application services for Fortify authentication.
+     * This method customizes the Fortify login, two-factor authentication login, and logout responses,
+     * handling redirects based on user roles, multi-tenancy, and session management.
      *
      * @return void
      */
-    // WORKSUITESAAS
     public function register()
     {
-
         $this->app->instance(LoginResponse::class, new class implements LoginResponse {
-
+            /**
+             * Handle the response after a successful login.
+             * This method stores the authenticated user in the session, checks for multi-tenancy,
+             * and redirects superadmins or users with multiple companies to appropriate routes.
+             *
+             * @param \Illuminate\Http\Request $request The current HTTP request.
+             * @return \Illuminate\Http\RedirectResponse
+             */
             public function toResponse($request)
             {
                 session(['user' => User::find(user()->id)]);
@@ -65,22 +70,25 @@ class FortifyServiceProvider extends ServiceProvider
                 if ($emailCountInCompanies > 1) {
                     if (module_enabled('Subdomain')) {
                         UserAuth::multipleUserLoginSubdomain();
-                    }
-                    else {
+                    } else {
                         session(['user_company_count' => $emailCountInCompanies]);
-
                         return redirect(route('superadmin.superadmin.workspaces'));
                     }
-
                 }
 
                 return redirect(session()->has('url.intended') ? session()->get('url.intended') : RouteServiceProvider::HOME);
             }
-
         });
 
         $this->app->instance(TwoFactorLoginResponse::class, new class implements TwoFactorLoginResponse {
-
+            /**
+             * Handle the response after a successful two-factor authentication login.
+             * This method stores the authenticated user in the session, checks for multi-tenancy,
+             * and redirects superadmins or users with multiple companies to appropriate routes.
+             *
+             * @param \Illuminate\Http\Request $request The current HTTP request.
+             * @return \Illuminate\Http\RedirectResponse
+             */
             public function toResponse($request)
             {
                 session(['user' => User::find(user()->id)]);
@@ -98,34 +106,38 @@ class FortifyServiceProvider extends ServiceProvider
 
                 return redirect(session()->has('url.intended') ? session()->get('url.intended') : RouteServiceProvider::HOME);
             }
-
         });
 
         $this->app->instance(LogoutResponse::class, new class implements LogoutResponse {
-
+            /**
+             * Handle the response after a user logs out.
+             * This method clears the session and redirects to the login page.
+             *
+             * @param \Illuminate\Http\Request $request The current HTTP request.
+             * @return \Illuminate\Http\RedirectResponse
+             */
             public function toResponse($request)
             {
                 session()->flush();
                 return redirect()->route('login');
             }
-
         });
-
     }
 
     /**
-     * Bootstrap any application services.
+     * Bootstrap application services for Fortify.
+     * This method configures Fortify's authentication pipeline, customizes views for login,
+     * registration, password reset, and two-factor authentication, and handles locale settings.
      *
      * @return void
      */
     public function boot()
     {
-        if (request()->has('locale')){
+        if (request()->has('locale')) {
             App::setLocale(request()->locale);
         }
 
         Fortify::authenticateThrough(function (Request $request) {
-
             return array_filter([
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 Features::enabled(Features::twoFactorAuthentication()) ? RedirectIfTwoFactorConfirmed::class : null,
@@ -133,12 +145,19 @@ class FortifyServiceProvider extends ServiceProvider
                 PrepareAuthenticatedSession::class,
             ]);
         });
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
-        // Fortify::authenticateThrough();
+        /**
+         * Customize the authentication logic for Fortify.
+         * This method validates the login request, checks credentials, and stores location data in the session.
+         *
+         * @param \Illuminate\Http\Request $request The current HTTP request.
+         * @return \App\Models\UserAuth|null The authenticated user or null if authentication fails.
+         */
         Fortify::authenticateUsing(function (Request $request) {
             $rules = [
                 'email' => 'required|email:rfc,strict'
@@ -149,8 +168,6 @@ class FortifyServiceProvider extends ServiceProvider
             $userAuth = UserAuth::where('email', $request->email)->first();
 
             if ($userAuth && Hash::check($request->password, $userAuth->password)) {
-
-                // Added for validation of account login in company
                 UserAuth::validateLoginActiveDisabled($userAuth);
 
                 session()->forget('locale');
@@ -162,7 +179,12 @@ class FortifyServiceProvider extends ServiceProvider
             }
         });
 
-
+        /**
+         * Define the view for the password reset link request page.
+         * This method sets the locale and returns the password reset request view with global settings and widgets.
+         *
+         * @return \Illuminate\Contracts\View\View
+         */
         Fortify::requestPasswordResetLinkView(function () {
             $globalSetting = GlobalSetting::first();
             App::setLocale($globalSetting->locale);
@@ -176,23 +198,24 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
+        /**
+         * Define the view for the login page.
+         * This method handles license verification, locale settings, and conditionally renders
+         * different login views based on configuration and user count.
+         *
+         * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+         */
         Fortify::loginView(function () {
-
             $this->showInstall();
-
             $this->checkMigrateStatus();
             $globalSetting = global_setting();
-            // Is worksuite
             $company = Company::withCount('users')->first();
 
             if (!$this->isLegal()) {
-
-                if (!module_enabled('Subdomain')){
+                if (!module_enabled('Subdomain')) {
                     return redirect('verify-purchase');
                 }
 
-                // We will only show verify page for super-admin-login
-                // We will check it's opened on main or not
                 if (Str::contains(request()->url(), 'super-admin-login')) {
                     return redirect('verify-purchase');
                 }
@@ -206,8 +229,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             if ($userTotal == 0) {
                 $accountSetupBlade = 'auth.account_setup';
-                // WORKSUITESAAS
-                if (isWorksuiteSaas()){
+                if (isWorksuiteSaas()) {
                     $accountSetupBlade = 'super-admin.account_setup';
                 }
 
@@ -223,14 +245,13 @@ class FortifyServiceProvider extends ServiceProvider
 
                 if (session()->has('language')) {
                     $locale = session('language');
-                }
-                else {
+                } else {
                     $locale = $frontDetail->locale;
                 }
 
-                App::setLocale( $locale);
-                Carbon::setLocale( $locale);
-                setlocale(LC_TIME, $locale . '_' . mb_strtoupper( $locale));
+                App::setLocale($locale);
+                Carbon::setLocale($locale);
+                setlocale(LC_TIME, $locale . '_' . mb_strtoupper($locale));
 
                 $localeLanguage = LanguageSetting::where('language_code', App::getLocale())->first();
 
@@ -239,20 +260,18 @@ class FortifyServiceProvider extends ServiceProvider
                 $footerMenuCount = FooterMenu::select('id', 'language_setting_id')->where('language_setting_id', $localeLanguage?->id)->count();
                 $footerSettings = FooterMenu::whereNotNull('slug')->where('language_setting_id', $footerMenuCount > 0 ? ($localeLanguage?->id) : null)->get();
 
-                return view('super-admin.saas.login',
-                    [
-                        'setting' => $globalSetting,
-                        'socialAuthSettings' => $socialAuthSettings,
-                        'company' => $company,
-                        'global' => $globalSetting,
-                        'frontMenu' => $frontMenu,
-                        'footerSettings' => $footerSettings,
-                        'locale' => $locale,
-                        'frontDetail' => $frontDetail,
-                        'languages' => $languages,
-                        'frontWidgets' => $frontWidgets,
-                    ]
-                );
+                return view('super-admin.saas.login', [
+                    'setting' => $globalSetting,
+                    'socialAuthSettings' => $socialAuthSettings,
+                    'company' => $company,
+                    'global' => $globalSetting,
+                    'frontMenu' => $frontMenu,
+                    'footerSettings' => $footerSettings,
+                    'locale' => $locale,
+                    'frontDetail' => $frontDetail,
+                    'languages' => $languages,
+                    'frontWidgets' => $frontWidgets,
+                ]);
             }
 
             return view('auth.login', [
@@ -262,9 +281,15 @@ class FortifyServiceProvider extends ServiceProvider
                 'languages' => $languages,
                 'frontWidgets' => $frontWidgets,
             ]);
-
         });
 
+        /**
+         * Define the view for the password reset page.
+         * This method sets the locale and returns the password reset view with global settings and widgets.
+         *
+         * @param \Illuminate\Http\Request $request The current HTTP request.
+         * @return \Illuminate\Contracts\View\View
+         */
         Fortify::resetPasswordView(function ($request) {
             $globalSetting = GlobalSetting::first();
             App::setLocale($globalSetting->locale);
@@ -278,6 +303,13 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
+        /**
+         * Define the view for the password confirmation page.
+         * This method sets the locale and returns the password confirmation view with global settings.
+         *
+         * @param \Illuminate\Http\Request $request The current HTTP request.
+         * @return \Illuminate\Contracts\View\View
+         */
         Fortify::confirmPasswordView(function ($request) {
             $globalSetting = GlobalSetting::first();
             App::setLocale($globalSetting->locale);
@@ -287,6 +319,12 @@ class FortifyServiceProvider extends ServiceProvider
             return view('auth.password-confirm', ['request' => $request, 'globalSetting' => $globalSetting]);
         });
 
+        /**
+         * Define the view for the two-factor authentication challenge page.
+         * This method sets the locale and returns the two-factor challenge view with global settings and widgets.
+         *
+         * @return \Illuminate\Contracts\View\View
+         */
         Fortify::twoFactorChallengeView(function () {
             $globalSetting = GlobalSetting::first();
             App::setLocale($globalSetting->locale);
@@ -300,9 +338,13 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
+        /**
+         * Define the view for the registration page.
+         * This method checks if client signup is allowed, sets the locale, and returns the registration view.
+         *
+         * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+         */
         Fortify::registerView(function () {
-
-            // ISWORKSUITE
             $company = Company::first();
             $globalSetting = GlobalSetting::first();
 
@@ -319,9 +361,15 @@ class FortifyServiceProvider extends ServiceProvider
                 'globalSetting' => $globalSetting,
                 'frontWidgets' => $frontWidgets,
             ]);
-
         });
 
+        /**
+         * Define the view for the email verification page.
+         * This method checks email verification settings, resends verification if needed,
+         * and returns the email verification view with widgets.
+         *
+         * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+         */
         Fortify::verifyEmailView(function () {
             $userAuth = UserAuth::find(user()->user_auth_id);
             $isClient = User::isClient(user()->id);
@@ -344,7 +392,6 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             if (\App\Models\GlobalSetting::value('email_verification') == 0) {
-
                 return redirect()->route('login');
             }
 
@@ -358,13 +405,16 @@ class FortifyServiceProvider extends ServiceProvider
                 'frontWidgets' => $frontWidgets,
             ]);
         });
-
-
     }
 
+    /**
+     * Check the migration status of the application.
+     * This method delegates to a helper function to verify the database migration status.
+     *
+     * @return mixed The result of the migration status check.
+     */
     public function checkMigrateStatus()
     {
         return check_migrate_status();
     }
-
 }

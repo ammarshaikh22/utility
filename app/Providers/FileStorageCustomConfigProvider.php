@@ -8,7 +8,14 @@ use Illuminate\Support\ServiceProvider;
 
 class FileStorageCustomConfigProvider extends ServiceProvider
 {
-
+    /**
+     * Register file storage configurations.
+     * This method retrieves file storage settings from the database and configures
+     * the filesystem based on the enabled storage provider (AWS S3, DigitalOcean, Wasabi, MinIO, or local).
+     * It skips configuration in the demo environment and handles exceptions silently.
+     *
+     * @return void|bool Returns true in demo environment to skip configuration, otherwise void.
+     */
     public function register()
     {
         if (in_array(app()->environment(), ['demo'])) {
@@ -19,7 +26,6 @@ class FileStorageCustomConfigProvider extends ServiceProvider
             $setting = DB::table('file_storage_settings')->where('status', 'enabled')->first();
 
             switch ($setting->filesystem) {
-
                 case 'aws_s3':
                     $authKeys = json_decode(Crypt::decryptString($setting->auth_keys));
                     $driver = $authKeys->driver;
@@ -34,7 +40,6 @@ class FileStorageCustomConfigProvider extends ServiceProvider
                     config(['filesystems.disks.s3.region' => $region]);
                     config(['filesystems.disks.s3.bucket' => $bucket]);
                     break;
-
 
                 case 'digitalocean':
                     $authKeys = json_decode(Crypt::decryptString($setting->auth_keys));
@@ -67,6 +72,7 @@ class FileStorageCustomConfigProvider extends ServiceProvider
                     config(['filesystems.disks.wasabi.bucket' => $bucket]);
                     config(['filesystems.disks.wasabi.endpoint' => 'https://s3.' . $region . '.wasabisys.com']);
                     break;
+
                 case 'minio':
                     $authKeys = json_decode(Crypt::decryptString($setting->auth_keys));
                     $driver = $authKeys->driver;
@@ -96,13 +102,13 @@ class FileStorageCustomConfigProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap services.
+     * Bootstrap any application services.
+     * This method is currently empty but can be used for additional setup if needed.
      *
      * @return void
      */
     public function boot()
     {
         //
-
     }
 }

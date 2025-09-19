@@ -3,29 +3,27 @@
 namespace App\Listeners;
 
 use App\Events\WeeklyTimesheetApprovedEvent;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use App\Notifications\WeeklyTimesheetApproved;
+
+/**
+ * Listener for handling weekly timesheet approval events.
+ *
+ * Notifies the user who submitted the timesheet when it gets approved.
+ */
 class WeeklyTimesheetApprovedListener
 {
     /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
-
-    /**
      * Handle the event.
+     *
+     * @param WeeklyTimesheetApprovedEvent $event
+     * @return void
      */
     public function handle(WeeklyTimesheetApprovedEvent $event): void
     {
-        $submitBy = $event->weeklyTimesheet->user;
+        $submitter = $event->weeklyTimesheet->user;
 
-        if ($submitBy) {
-            $submitBy->notify(new WeeklyTimesheetApproved($event->weeklyTimesheet));
+        if ($submitter) {
+            $submitter->notify(new WeeklyTimesheetApproved($event->weeklyTimesheet));
         }
-
     }
 }

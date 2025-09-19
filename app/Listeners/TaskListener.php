@@ -3,7 +3,6 @@
 namespace App\Listeners;
 
 use App\Events\TaskEvent;
-use App\Models\User;
 use App\Notifications\NewTask;
 use App\Notifications\TaskUpdated;
 use App\Notifications\NewClientTask;
@@ -15,47 +14,62 @@ use App\Notifications\TaskCompletedClient;
 use App\Notifications\TaskMention;
 use Illuminate\Support\Facades\Notification;
 
+/**
+ * Listener for handling task-related events.
+ *
+ * - Sends different types of notifications depending on the event type.
+ */
 class TaskListener
 {
-
     /**
-     * Handle the event.
+     * Handle the event and send appropriate notifications.
      *
-     * @param TaskEvent $event
+     * @param TaskEvent $event  The event carrying the task and notification details.
      * @return void
      */
-
-    public function handle(TaskEvent $event)
+    public function handle(TaskEvent $event): void
     {
-        if ($event->notificationName) {
-            if ($event->notificationName == 'NewClientTask') {
+        // Only proceed if a notification type is specified
+        if (!$event->notificationName) {
+            return;
+        }
+
+        switch ($event->notificationName) {
+            case 'NewClientTask':
                 Notification::send($event->notifyUser, new NewClientTask($event->task));
-            }
-            elseif ($event->notificationName == 'NewTask') {
+                break;
+
+            case 'NewTask':
                 Notification::send($event->notifyUser, new NewTask($event->task));
-            }
-            elseif ($event->notificationName == 'TaskUpdated') {
+                break;
+
+            case 'TaskUpdated':
                 Notification::send($event->notifyUser, new TaskUpdated($event->task));
-            }
-            elseif ($event->notificationName == 'TaskStatusUpdated') {
+                break;
+
+            case 'TaskStatusUpdated':
                 Notification::send($event->notifyUser, new TaskStatusUpdated($event->task, user()));
-            }
-            elseif ($event->notificationName == 'TaskApproval') {
+                break;
+
+            case 'TaskApproval':
                 Notification::send($event->notifyUser, new TaskApproval($event->task, user()));
-            }
-            elseif ($event->notificationName == 'TaskCompleted') {
+                break;
+
+            case 'TaskCompleted':
                 Notification::send($event->notifyUser, new TaskCompleted($event->task, user()));
-            }
-            elseif ($event->notificationName == 'TaskCompletedClient') {
+                break;
+
+            case 'TaskCompletedClient':
                 Notification::send($event->notifyUser, new TaskCompletedClient($event->task));
-            }
-            elseif ($event->notificationName == 'TaskUpdatedClient') {
+                break;
+
+            case 'TaskUpdatedClient':
                 Notification::send($event->notifyUser, new TaskUpdatedClient($event->task));
-            }
-            elseif ($event->notificationName == 'TaskMention') {
+                break;
+
+            case 'TaskMention':
                 Notification::send($event->notifyUser, new TaskMention($event->task));
-            }
+                break;
         }
     }
-
 }

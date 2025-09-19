@@ -4,6 +4,7 @@ namespace App\View\Components;
 
 use Illuminate\View\Component;
 
+// Class for search dropdown
 class ClientSelectionDropdown extends Component
 {
 

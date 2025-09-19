@@ -9,18 +9,17 @@ use Illuminate\Support\Facades\Notification;
 class DailyScheduleListener
 {
     /**
-     * Create the event listener.
-     */
-
-    /**
-     * Handle the event.
+     * Handle the DailyScheduleEvent.
+     * This method iterates through the user data provided in the event and sends a daily schedule
+     * notification to each user, using the DailyScheduleNotification class with the respective user data.
+     *
+     * @param DailyScheduleEvent $event The event containing the user data for notifications.
+     * @return void
      */
     public function handle(DailyScheduleEvent $event)
     {
-        foreach($event->userData as $key => $notifiable)
-        {
+        foreach ($event->userData as $key => $notifiable) {
             Notification::send($notifiable['user'], new DailyScheduleNotification($event->userData[$key]));
         }
     }
-
 }

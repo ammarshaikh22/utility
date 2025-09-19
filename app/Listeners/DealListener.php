@@ -11,14 +11,15 @@ use Illuminate\Support\Facades\Notification;
 
 class DealListener
 {
-
     /**
-     * Handle the event.
+     * Handle the DealEvent.
+     * This method processes a deal-related event by identifying users to notify (admins, deal watcher,
+     * lead owner, lead agent, and the event creator), removing duplicates, and sending appropriate
+     * notifications based on the event type (LeadAgentAssigned or StageUpdated).
      *
-     * @param DealEvent $event
+     * @param DealEvent $event The event containing the deal and notification type.
      * @return void
      */
-
     public function handle(DealEvent $event)
     {
         $lead = Deal::with('leadAgent', 'leadAgent.user', 'contact')->findOrFail($event->deal->id);
@@ -71,5 +72,4 @@ class DealListener
             }
         }
     }
-
 }
