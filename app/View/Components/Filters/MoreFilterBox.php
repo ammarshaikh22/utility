@@ -1,33 +1,31 @@
 <?php
 
-namespace App\View\Components\Filters;
+namespace App\View\Components\Cards;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class MoreFilterBox extends Component
 {
-
-    public $extraSlot;
-
+    public $filters;  // Array of additional filter options
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param array $filters Array containing additional filter options
      */
-    public function __construct($extraSlot = false)
+    public function __construct($filters)
     {
-        $this->extraSlot = $extraSlot;
+        $this->filters = $filters;  // Set the additional filter options
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.filters.more-filter-box');
+        return view('components.cards.more-filter-box');  // Render the more filter box view
     }
-
 }
