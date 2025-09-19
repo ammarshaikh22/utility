@@ -55,23 +55,44 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class BankAccount extends BaseModel
 {
+    // Constant defining the file storage path for bank logos
     const FILE_PATH = 'bank-logo';
 
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Eager load currency relationship
     protected $with = ['currency'];
+
+    // Append file_url attribute to model
     protected $appends = ['file_url'];
 
+    /**
+     * Define relationship with the Currency model
+     *
+     * @return BelongsTo
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Define relationship with BankTransaction records
+     * Represents all transactions associated with this bank account
+     *
+     * @return HasMany
+     */
     public function transaction(): HasMany
     {
         return $this->hasMany(BankTransaction::class, 'bank_account_id');
     }
 
+    /**
+     * Accessor for file_url attribute - returns logo URL or icon based on account type
+     *
+     * @return string
+     */
     public function getFileUrlAttribute()
     {
         if ($this->bank_logo != '') {
@@ -85,6 +106,12 @@ class BankAccount extends BaseModel
         }
     }
 
+    /**
+     * Define relationship with Expense records
+     * Represents expenses paid from this bank account
+     *
+     * @return HasMany
+     */
     public function expenses()
     {
         return $this->hasMany(Expense::class);

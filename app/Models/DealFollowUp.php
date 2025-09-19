@@ -45,18 +45,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DealFollowUp extends BaseModel
 {
 
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'lead_follow_up';
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'next_follow_up_date' => 'datetime',
         'created_at' => 'datetime',
     ];
 
+    /**
+     * Relationship: DealFollowUp belongs to one Deal
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Deal::class, 'deal_id');
     }
 
+    /**
+     * Relationship: DealFollowUp belongs to one User (who added the follow-up)
+     */
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by');

@@ -44,6 +44,9 @@ class EmergencyContact extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Relationship: EmergencyContact belongs to one User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

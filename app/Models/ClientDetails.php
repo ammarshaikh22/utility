@@ -77,30 +77,50 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClientDetails extends BaseModel
 {
-
+    // Traits for custom fields support and company-related functionality
     use CustomFieldsTrait, HasCompany;
 
+    // Fields that can be mass assigned
     protected $fillable = ['company_name', 'user_id', 'address', 'postal_code', 'state', 'city', 'office', 'cell', 'website', 'note', 'skype', 'facebook', 'twitter', 'linkedin', 'tax_name', 'gst_number', 'shipping_address', 'category_id', 'sub_category_id', 'company_logo', 'electronic_address', 'electronic_address_scheme'];
 
+    // Default fields to include in responses (appears unused in current code)
     protected $default = ['id', 'company_name', 'address', 'website', 'note', 'skype', 'facebook', 'twitter', 'linkedin', 'tax_name', 'gst_number', 'name', 'email', 'company_logo'];
 
+    // Specify the custom table name for this model
     protected $table = 'client_details';
 
+    // Append image_url attribute to model
     protected $appends = ['image_url'];
 
-
+    // Constant for custom field model reference
     const CUSTOM_FIELD_MODEL = 'App\Models\ClientDetails';
 
+    /**
+     * Define relationship with the User model (client)
+     * Bypasses ActiveScope to include all users
+     *
+     * @return BelongsTo
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Define relationship with the User who added this record
+     *
+     * @return BelongsTo
+     */
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by', 'id');
     }
 
+    /**
+     * Accessor for image_url attribute - returns company logo URL or fallback to company logo
+     *
+     * @return string
+     */
     public function getImageUrlAttribute()
     {
         try {

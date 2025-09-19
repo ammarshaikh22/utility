@@ -48,25 +48,45 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CreditNoteItem extends BaseModel
 {
 
+    /**
+     * The attributes that are mass assignable (except ID)
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Eager loading relationships for this model
+     */
     protected $with = ['creditNoteItemImage'];
 
+    /**
+     * Static method: Get Tax model by ID (including soft deleted)
+     * @param int $id
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public static function taxbyid($id)
     {
         return Tax::where('id', $id)->withTrashed();
     }
 
+    /**
+     * Relationship: CreditNoteItem has one CreditNoteItemImage
+     */
     public function creditNoteItemImage(): HasOne
     {
         return $this->hasOne(CreditNoteItemImage::class, 'credit_note_item_id');
     }
 
+    /**
+     * Relationship: CreditNoteItem belongs to one UnitType
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
 
+    /**
+     * Accessor: Get formatted tax list as string
+     */
     public function getTaxListAttribute()
     {
         $creditNoteItem = CreditNoteItem::findOrFail($this->id);

@@ -29,11 +29,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClientSubCategory extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Specify the custom table name for this model
     protected $table = 'client_sub_categories';
 
+    /**
+     * Define relationship with the parent ClientCategory
+     * Links this subcategory to its parent category
+     *
+     * @return BelongsTo
+     */
     public function clientCategory(): BelongsTo
     {
         return $this->belongsTo(ClientCategory::class, 'category_id');

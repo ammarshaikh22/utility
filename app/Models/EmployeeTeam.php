@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+/**
+ * Imports necessary classes and traits for the EmployeeTeam model.
+ */
 use App\Scopes\ActiveScope;
 use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,10 +35,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EmployeeTeam extends BaseModel
 {
 
+    // Applies company-related functionality to the model
     use HasCompany;
 
+    /**
+     * Defines the relationship between EmployeeTeam and User models.
+     * 
+     * @return BelongsTo Relationship to the User model
+     */
     public function user(): BelongsTo
     {
+        // Establishes a belongs-to relationship with the User model via user_id foreign key
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 

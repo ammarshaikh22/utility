@@ -40,11 +40,17 @@ class ContractDiscussion extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Relationship: ContractDiscussion belongs to one User (sender)
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'from', 'id');
     }
 
+    /**
+     * Relationship: ContractDiscussion belongs to one Contract
+     */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class, 'contract_id');

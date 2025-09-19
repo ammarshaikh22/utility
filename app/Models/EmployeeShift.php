@@ -49,8 +49,14 @@ class EmployeeShift extends BaseModel
 
     use HasFactory, HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: EmployeeShift has many EmployeeShiftSchedule
+     */
     public function employeeShiftSchedules(): HasMany
     {
         return $this->hasMany(EmployeeShiftSchedule::class, 'employee_shift_id', 'id');

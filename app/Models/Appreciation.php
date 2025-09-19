@@ -41,31 +41,59 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Appreciation extends BaseModel
 {
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Define attribute casting rules for date fields
     protected $casts = [
         'award_date' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    // Append image_url attribute to model
     protected $appends = ['image_url'];
+
+    // Eager load relationships (currently empty)
     protected $with = [];
 
+    /**
+     * Accessor for image_url attribute - generates full URL to appreciation image
+     *
+     * @return string
+     */
     public function getImageUrlAttribute()
     {
         return $this->image ? asset_url_local_s3('appreciation/' . $this->image) : '';
     }
 
+    /**
+     * Define relationship with the user who received the award
+     * Bypasses ActiveScope to include all users
+     *
+     * @return BelongsTo
+     */
     public function awardTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'award_to')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Define relationship with the user who added the appreciation
+     * Bypasses ActiveScope to include all users
+     *
+     * @return BelongsTo
+     */
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Define relationship with the Award model
+     *
+     * @return BelongsTo
+     */
     public function award(): BelongsTo
     {
         return $this->belongsTo(Award::class);

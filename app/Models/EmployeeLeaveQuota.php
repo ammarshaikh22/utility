@@ -32,17 +32,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EmployeeLeaveQuota extends BaseModel
 {
 
+    /**
+     * Attribute casting definitions
+     */
     protected $casts = [
         'carry_forward_status' => 'array',
     ];
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: EmployeeLeaveQuota belongs to one User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Relationship: EmployeeLeaveQuota belongs to one LeaveType (including soft deleted)
+     */
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class, 'leave_type_id')->withTrashed();

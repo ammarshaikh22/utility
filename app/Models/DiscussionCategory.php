@@ -32,6 +32,9 @@ class DiscussionCategory extends BaseModel
 
     use HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
 }

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+/**
+ * Imports necessary relationship classes for EstimateTemplate model.
+ */
 use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -62,28 +65,49 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder|EstimateTemplate whereUpdatedAt($value)
  * @mixin \Eloquent
  */
-
 class EstimateTemplate extends BaseModel
 {
+    // Applies company-related functionality to the model
     use HasCompany;
 
+    // Specifies the database table name for this model
     protected $table = 'estimate_templates';
 
+    /**
+     * Defines the one-to-many relationship with EstimateTemplateItem model.
+     * 
+     * @return HasMany Relationship to EstimateTemplateItem model
+     */
     public function items(): HasMany
     {
         return $this->hasMany(EstimateTemplateItem::class, 'estimate_template_id');
     }
 
+    /**
+     * Defines the belongs-to relationship with Currency model.
+     * 
+     * @return BelongsTo Relationship to Currency model
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Defines the belongs-to relationship with ClientDetails model.
+     * 
+     * @return BelongsTo Relationship to ClientDetails model
+     */
     public function clients(): BelongsTo
     {
         return $this->belongsTo(ClientDetails::class);
     }
 
+    /**
+     * Defines the belongs-to relationship with UnitType model.
+     * 
+     * @return BelongsTo Relationship to UnitType model
+     */
     public function units(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');

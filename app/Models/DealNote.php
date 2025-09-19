@@ -48,11 +48,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DealNote extends BaseModel
 {
 
+    /**
+     * Relationship: DealNote belongs to one Deal
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deal_id');
     }
 
+    /**
+     * Relationship: DealNote has many LeadUserNote (members)
+     */
     public function members(): HasMany
     {
         return $this->hasMany(LeadUserNote::class, 'lead_note_id');

@@ -34,13 +34,22 @@ class EmployeeSkill extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'employee_skills';
 
+    /**
+     * Relationship: EmployeeSkill belongs to one Skill
+     */
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);
     }
 
+    /**
+     * Relationship: EmployeeSkill belongs to one User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

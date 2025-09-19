@@ -30,6 +30,9 @@ class CustomFieldGroup extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Constant: Array of all available custom field models with their display names
+     */
     const ALL_FIELDS = [
         ['name' => 'Client', 'model' => ClientDetails::CUSTOM_FIELD_MODEL],
         ['name' => 'Employee', 'model' => EmployeeDetails::CUSTOM_FIELD_MODEL],
@@ -48,13 +51,24 @@ class CustomFieldGroup extends BaseModel
         ['name' => 'Contract', 'model' => Contract::CUSTOM_FIELD_MODEL]
     ];
 
+    /**
+     * This model does not use timestamps
+     */
     public $timestamps = false;
 
+    /**
+     * Relationship: CustomFieldGroup has many CustomField
+     */
     public function customField(): HasMany
     {
         return $this->HasMany(CustomField::class);
     }
 
+    /**
+     * Static method: Merge custom fields data for datatables configuration
+     * @param string $model
+     * @return array
+     */
     public static function customFieldsDataMerge($model)
     {
         $customFields = CustomField::exportCustomFields($model);
@@ -81,7 +95,7 @@ class CustomFieldGroup extends BaseModel
     }
 
     /**
-     * Get the custom field group's name.
+     * Attribute: Get custom fields with select/radio values decoded to arrays
      */
     protected function fields(): Attribute
     {

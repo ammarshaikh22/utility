@@ -40,11 +40,18 @@ class Designation extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Relationship: Designation has many EmployeeDetails
+     */
     public function members(): HasMany
     {
         return $this->hasMany(EmployeeDetails::class, 'designation_id');
     }
 
+    /**
+     * Static method: Get all designations based on user permissions
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public static function allDesignations()
     {
         if (user()->permission('view_designation') == 'all' || user()->permission('view_designation') == 'none') {
@@ -54,6 +61,9 @@ class Designation extends BaseModel
         return Designation::where('added_by', user()->id)->get();
     }
 
+    /**
+     * Relationship: Designation has many child Designations (recursive)
+     */
     public function childs(): HasMany
     {
         return $this->hasMany(Designation::class, 'parent_id')->with('childs');

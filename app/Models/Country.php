@@ -28,9 +28,19 @@ namespace App\Models;
 class Country extends BaseModel
 {
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['nationality'];
+    
+    /**
+     * This model does not use timestamps
+     */
     public $timestamps = false;
 
+    /**
+     * Constant: Array mapping country ISO codes to nationality names
+     */
     const NATIONALITY = array(
         'AF' => 'Afghan',
         'AL' => 'Albanian',
@@ -278,11 +288,18 @@ class Country extends BaseModel
         'MF' => 'Saint Martin Islander'
     );
 
+    /**
+     * Accessor: Get the nationality name based on ISO code
+     */
     public function getNationalityAttribute()
     {
         return Country::NATIONALITY[$this->iso] ?? 'unknown';
     }
 
+    /**
+     * Method: Generate HTML for country flag icon with phone code
+     * @return string
+     */
     public function flagSpanCountryCode()
     {
         return '<span class="flag-icon  flag-icon-squared flag-icon-' . strtolower($this->iso) . '"></span> +' . $this->phonecode;

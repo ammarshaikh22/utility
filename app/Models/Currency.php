@@ -48,7 +48,14 @@ class Currency extends BaseModel
 {
     use HasCompany;
 
-    protected $guarded =['id'];
+    /**
+     * The attributes that are mass assignable (except ID)
+     */
+    protected $guarded = ['id'];
+
+    /**
+     * Relationship: Currency has many Invoice
+     */
     public function invoices()
     {
         return $this->hasMany(Invoice::class);

@@ -52,28 +52,46 @@ class DiscussionReply extends BaseModel
 
     use SoftDeletes, HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: DiscussionReply belongs to one User (author)
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Relationship: DiscussionReply belongs to one Discussion
+     */
     public function discussion(): BelongsTo
     {
         return $this->belongsTo(Discussion::class);
     }
 
+    /**
+     * Relationship: DiscussionReply has many DiscussionFile
+     */
     public function files(): HasMany
     {
         return $this->hasMany(DiscussionFile::class, 'discussion_reply_id');
     }
 
+    /**
+     * Relationship: DiscussionReply belongs to many User (mentions) through MentionUser pivot table
+     */
     public function mentionUser(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
     }
 
+    /**
+     * Relationship: DiscussionReply has many MentionUser
+     */
     public function mentionDiscussionReply(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'discussion_reply_id');

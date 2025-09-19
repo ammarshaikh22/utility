@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+/**
+ * Imports necessary trait for EstimateTemplateItemImage model.
+ */
 use App\Traits\IconTrait;
 
 /**
@@ -35,13 +38,24 @@ use App\Traits\IconTrait;
  */
 class EstimateTemplateItemImage extends BaseModel
 {
+    // Applies icon generation functionality to the model
     use IconTrait;
 
+    // Defines the storage path for estimate template files
     const FILE_PATH = 'estimate-files';
 
+    // Appends computed attributes for file URL, icon, and file path
     protected $appends = ['file_url', 'icon', 'file'];
+    
+    // Defines mass assignable fields for the model
     protected $fillable = ['estimate_template_item_id', 'filename', 'hashname', 'size', 'external_link'];
 
+    /**
+     * Accessor to generate the full URL for the estimate template item image file.
+     * Handles both external links and local S3 storage paths.
+     * 
+     * @return string Complete file URL
+     */
     public function getFileUrlAttribute()
     {
         if($this->external_link){
@@ -51,6 +65,11 @@ class EstimateTemplateItemImage extends BaseModel
         return asset_url_local_s3(EstimateTemplateItemImage::FILE_PATH . '/' . $this->estimate_template_item_id . '/' . $this->hashname);
     }
 
+    /**
+     * Accessor to get the file path, preferring external link if available.
+     * 
+     * @return string File path or external link
+     */
     public function getFileAttribute()
     {
         return $this->external_link ?: (EstimateTemplateItemImage::FILE_PATH . '/' . $this->estimate_template_item_id . '/' . $this->hashname);

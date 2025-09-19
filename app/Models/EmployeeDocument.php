@@ -46,19 +46,42 @@ class EmployeeDocument extends BaseModel
 
     use IconTrait, HasCompany;
 
+    /**
+     * Constant: Base file path for employee documents
+     */
     const FILE_PATH = 'employee-docs';
-    // Don't forget to fill this array
+    
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [];
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
+    
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'employee_docs';
+    
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['doc_url', 'icon'];
 
+    /**
+     * Relationship: EmployeeDocument belongs to one User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Accessor: Get the document URL
+     */
     public function getDocUrlAttribute()
     {
         return asset_url_local_s3(EmployeeDocument::FILE_PATH . '/' . $this->user_id . '/' . $this->hashname);

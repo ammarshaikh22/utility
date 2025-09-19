@@ -16,4 +16,10 @@ class CustomModulePermission extends BaseModel
 {
 
     use HasFactory;
+
+    /**
+     * This model does not use timestamps
+     */
+    public $timestamps = false;
+
 }

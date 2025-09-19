@@ -74,10 +74,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AttendanceSetting extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
+
+    // Fields that can be mass assigned
     protected $fillable = ['qr_enable', 'default_employee_shift'];
 
+    /**
+     * Define relationship with the default EmployeeShift
+     *
+     * @return BelongsTo
+     */
     public function shift(): BelongsTo
     {
         return $this->belongsTo(EmployeeShift::class, 'default_employee_shift');

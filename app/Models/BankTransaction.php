@@ -55,11 +55,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class BankTransaction extends BaseModel
 {
+    // Trait providing company-related functionality
     use HasCompany;
+
+    // Define attribute casting rules for datetime fields
     protected $casts = [
         'transaction_date' => 'datetime',
     ];
 
+    /**
+     * Define relationship with the BankAccount model
+     * Links this transaction to its parent bank account
+     *
+     * @return BelongsTo
+     */
     public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(BankAccount::class, 'bank_account_id');

@@ -38,13 +38,22 @@ class EmployeeShiftChangeRequest extends BaseModel
 
     use HasFactory, HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: EmployeeShiftChangeRequest belongs to one EmployeeShiftSchedule
+     */
     public function shiftSchedule(): BelongsTo
     {
         return $this->belongsTo(EmployeeShiftSchedule::class, 'shift_schedule_id');
     }
 
+    /**
+     * Relationship: EmployeeShiftChangeRequest belongs to one EmployeeShift
+     */
     public function shift(): BelongsTo
     {
         return $this->belongsTo(EmployeeShift::class, 'employee_shift_id');

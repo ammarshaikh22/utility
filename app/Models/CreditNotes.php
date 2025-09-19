@@ -100,58 +100,101 @@ class CreditNotes extends BaseModel
 
     use Notifiable, HasCompany;
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'issue_date' => 'datetime',
         'due_date' => 'datetime',
     ];
+    
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['total_amount', 'issue_on'];
+    
+    /**
+     * Eager loading relationships for this model
+     */
     protected $with = ['currency'];
 
+    /**
+     * Relationship: CreditNote belongs to one Project
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    /**
+     * Relationship: CreditNote belongs to one Client User (bypassing active scope)
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: CreditNote belongs to one ClientDetails (via client_id)
+     */
     public function clientdetails(): BelongsTo
     {
         return $this->belongsTo(ClientDetails::class, 'client_id', 'user_id');
     }
 
+    /**
+     * Relationship: CreditNote belongs to one Invoice
+     */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id', 'id');
     }
 
+    /**
+     * Relationship: CreditNote belongs to one UnitType
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
 
+    /**
+     * Relationship: CreditNote has many Invoice (recurring invoices generated from this credit note)
+     */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Relationship: CreditNote has many CreditNoteItem
+     */
     public function items(): HasMany
     {
         return $this->hasMany(CreditNoteItem::class, 'credit_note_id');
     }
 
+    /**
+     * Relationship: CreditNote has many Payment (ordered by paid date descending)
+     */
     public function payment(): HasMany
     {
         return $this->hasMany(Payment::class, 'invoice_id', 'invoice_id')->orderByDesc('paid_on');
     }
 
+    /**
+     * Relationship: CreditNote belongs to one Currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Static method: Get all credit notes for a specific client by joining with projects
+     * @param int $clientId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public static function clientInvoices($clientId)
     {
         return CreditNotes::join('projects', 'projects.id', '=', 'credit_notes.project_id')
@@ -160,11 +203,19 @@ class CreditNotes extends BaseModel
             ->get();
     }
 
+    /**
+     * Method: Calculate total amount paid towards this credit note
+     * @return float
+     */
     public function getPaidAmount()
     {
         return $this->payment->sum('amount');
     }
 
+    /**
+     * Method: Calculate amount of credit used from this credit note
+     * @return float
+     */
     public function creditAmountUsed()
     {
         $payment = Payment::where('credit_notes_id', $this->id)->get();
@@ -173,16 +224,26 @@ class CreditNotes extends BaseModel
     }
 
     /* This is overall amount, cannot be used for particular credit note */
+    /**
+     * Method: Calculate remaining credit amount (total minus used amount)
+     * @return float
+     */
     public function creditAmountRemaining()
     {
         return ($this->total) - $this->creditAmountUsed();
     }
 
+    /**
+     * Accessor: Get total amount including adjustment
+     */
     public function getTotalAmountAttribute()
     {
         return $this->total + $this->adjustment_amount;
     }
 
+    /**
+     * Accessor: Get formatted issue date (e.g., "12 January, 2024")
+     */
     public function getIssueOnAttribute()
     {
         if (!is_null($this->issue_date)) {
@@ -192,6 +253,9 @@ class CreditNotes extends BaseModel
         return '';
     }
 
+    /**
+     * Mutator: Set issue date attribute (converts to UTC)
+     */
     public function setIssueDateAttribute($issue_date)
     {
         $issue_date = Carbon::createFromFormat(company()->date_format, $issue_date, company()->timezone)->format('Y-m-d');
@@ -200,6 +264,9 @@ class CreditNotes extends BaseModel
         $this->attributes['issue_date'] = $issue_date;
     }
 
+    /**
+     * Mutator: Set due date attribute (converts to UTC)
+     */
     public function setDueDateAttribute($due_date)
     {
         if (!is_null($due_date)) {
@@ -212,12 +279,20 @@ class CreditNotes extends BaseModel
         }
     }
 
+    /**
+     * Method: Format credit note number according to company invoice settings
+     * @return string
+     */
     public function formatCreditNoteNumber()
     {
         $invoiceSettings = company() ? company()->invoiceSetting : $this->company->invoiceSetting;
         return \App\Helper\NumberFormat::creditNote($this->cn_number, $invoiceSettings);
     }
 
+    /**
+     * Static method: Get the last credit note number
+     * @return int
+     */
     public static function lastEstimateNumber()
     {
         return (int)CreditNotes::latest()->first()?->original_credit_note_number ?? 0;

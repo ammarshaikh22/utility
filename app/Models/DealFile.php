@@ -48,19 +48,37 @@ class DealFile extends BaseModel
 
     use IconTrait;
 
+    /**
+     * Constant: Base file path for deal files
+     */
     const FILE_PATH = 'lead-files';
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [];
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['file_url', 'icon'];
 
+    /**
+     * Accessor: Get the file URL for the deal file
+     */
     public function getFileUrlAttribute()
     {
         return asset_url_local_s3(DealFile::FILE_PATH . '/' . $this->deal_id . '/' . $this->hashname);
     }
 
+    /**
+     * Relationship: DealFile belongs to one Deal
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Deal::class, 'deal_id');

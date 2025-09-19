@@ -45,13 +45,23 @@ class CompanyAddress extends BaseModel
 
     use HasFactory, HasCompany;
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = ['country_id', 'address', 'is_default', 'location', 'tax_number', 'tax_name', 'longitude', 'latitude'];
 
+    /**
+     * Static method: Retrieve the default company address (where is_default = 1)
+     * @return CompanyAddress|null
+     */
     public static function defaultAddress()
     {
         return CompanyAddress::where('is_default', 1)->first();
     }
 
+    /**
+     * Relationship: CompanyAddress belongs to one Country
+     */
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);

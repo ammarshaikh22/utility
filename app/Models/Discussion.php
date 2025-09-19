@@ -70,46 +70,77 @@ class Discussion extends BaseModel
 
     use HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
+    
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'last_reply_at' => 'datetime',
     ];
 
+    /**
+     * Relationship: Discussion belongs to one User (creator)
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Relationship: Discussion belongs to one User (last reply author)
+     */
     public function lastReplyBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'last_reply_by_id');
     }
 
+    /**
+     * Relationship: Discussion has many DiscussionReply
+     */
     public function replies(): HasMany
     {
         return $this->hasMany(DiscussionReply::class, 'discussion_id');
     }
 
+    /**
+     * Relationship: Discussion belongs to one DiscussionCategory
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(DiscussionCategory::class, 'discussion_category_id');
     }
 
+    /**
+     * Relationship: Discussion belongs to one Project
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    /**
+     * Relationship: Discussion has many DiscussionFile
+     */
     public function files(): HasMany
     {
         return $this->hasMany(DiscussionFile::class, 'discussion_id');
     }
 
+    /**
+     * Relationship: Discussion belongs to many User (mentions) through MentionUser pivot table
+     */
     public function mentionUser(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
     }
 
+    /**
+     * Relationship: Discussion has many MentionUser
+     */
     public function mentionDiscussion(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'discussion_id');

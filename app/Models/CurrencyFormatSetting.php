@@ -33,8 +33,14 @@ class CurrencyFormatSetting extends BaseModel
 
     use HasCompany;
 
+    /**
+     * This model does not use timestamps
+     */
     public $timestamps = false;
 
+    /**
+     * Relationship: CurrencyFormatSetting belongs to one Currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');

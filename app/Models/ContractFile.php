@@ -56,9 +56,19 @@ class ContractFile extends BaseModel
 
     use IconTrait, HasCompany;
 
+    /**
+     * Constant: Base file path for contract files
+     */
     const FILE_PATH = 'contract-files';
+    
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['file_url', 'icon', 'file'];
 
+    /**
+     * Accessor: Get the file URL (handles external links and local storage)
+     */
     public function getFileUrlAttribute()
     {
         if($this->external_link){
@@ -68,11 +78,17 @@ class ContractFile extends BaseModel
         return asset_url_local_s3(ContractFile::FILE_PATH . '/' . $this->contract_id . '/' . $this->hashname);
     }
 
+    /**
+     * Accessor: Get the file path (external link or relative local path)
+     */
     public function getFileAttribute()
     {
         return $this->external_link ?: (ContractFile::FILE_PATH . '/' . $this->contract_id . '/' . $this->hashname);
     }
 
+    /**
+     * Relationship: ContractFile belongs to one Contract
+     */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class);

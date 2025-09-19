@@ -46,14 +46,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ClientNote extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    /**
+     * Define relationship with the User model (client)
+     * Links this note to the associated client
+     *
+     * @return BelongsTo
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    /**
+     * Define relationship with ClientUserNote records
+     * Represents members who have access to this client note
+     *
+     * @return HasMany
+     */
     public function members(): HasMany
     {
         return $this->hasMany(ClientUserNote::class, 'client_note_id');
