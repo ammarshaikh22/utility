@@ -2,35 +2,30 @@
 
 namespace App\Events;
 
-use App\Models\UserChat;
+// Import necessary classes
+use App\Models\Chat;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewMentionChatEvent implements ShouldBroadcast
+class NewMentionChatEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $userChat;
-    public $notifyUser;
+    public $chat;         // The chat instance where the mention occurred
+    public $mentionedUser; // The user mentioned in the chat
 
-    public function __construct(UserChat $userChat, $notifyUser)
+    /**
+     * Create a new event instance.
+     *
+     * @param Chat $chat
+     * @param mixed $mentionedUser
+     */
+    public function __construct(Chat $chat, $mentionedUser)
     {
-        $this->userChat = $userChat;
-        $this->notifyUser = $notifyUser;
-
+        // Initialize the properties with the provided values
+        $this->chat = $chat;
+        $this->mentionedUser = $mentionedUser;
     }
-
-    public function broadcastOn()
-    {
-        return ['messages-channel'];
-    }
-
-    public function broadcastAs()
-    {
-        return 'messages.received';
-    }
-
 }

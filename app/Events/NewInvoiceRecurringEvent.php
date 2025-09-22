@@ -2,23 +2,27 @@
 
 namespace App\Events;
 
-use App\Models\RecurringInvoice;
+// Import necessary classes
+use App\Models\InvoiceRecurring;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class NewInvoiceRecurringEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $invoice;
-    public $status;
+    public $invoiceRecurring;  // The new recurring invoice instance
 
-    public function __construct(RecurringInvoice $invoice, $status)
+    /**
+     * Create a new event instance.
+     *
+     * @param InvoiceRecurring $invoiceRecurring
+     */
+    public function __construct(InvoiceRecurring $invoiceRecurring)
     {
-        $this->invoice = $invoice;
-        $this->status = $status;
+        // Initialize the invoiceRecurring property with the provided value
+        $this->invoiceRecurring = $invoiceRecurring;
     }
-
 }

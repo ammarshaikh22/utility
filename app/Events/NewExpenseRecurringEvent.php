@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+// Import necessary classes
 use App\Models\ExpenseRecurring;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -9,16 +10,19 @@ use Illuminate\Queue\SerializesModels;
 
 class NewExpenseRecurringEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $expense;
-    public $status;
+    public $expenseRecurring;  // The new recurring expense instance
 
-    public function __construct(ExpenseRecurring $expense, $status)
+    /**
+     * Create a new event instance.
+     *
+     * @param ExpenseRecurring $expenseRecurring
+     */
+    public function __construct(ExpenseRecurring $expenseRecurring)
     {
-        $this->expense = $expense;
-        $this->status = $status;
+        // Initialize the expenseRecurring property with the provided value
+        $this->expenseRecurring = $expenseRecurring;
     }
-
 }

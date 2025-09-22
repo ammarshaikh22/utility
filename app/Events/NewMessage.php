@@ -2,38 +2,27 @@
 
 namespace App\Events;
 
-use App\Models\UserChat;
+// Import necessary classes
+use App\Models\Message;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewMessage implements ShouldBroadcastNow
+class NewMessage
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $userChat;
+    public $message;  // The new message instance
 
     /**
      * Create a new event instance.
      *
-     * @return void
+     * @param Message $message
      */
-    public function __construct(UserChat $userChat)
+    public function __construct(Message $message)
     {
-        $this->userChat = $userChat;
+        // Initialize the message property with the provided value
+        $this->message = $message;
     }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
-    {
-        return new PrivateChannel('chat');
-    }
-
 }
