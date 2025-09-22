@@ -40,19 +40,35 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Award extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    /**
+     * Define one-to-one relationship with Appreciation (single appreciation instance)
+     *
+     * @return HasOne
+     */
     public function appreciation(): HasOne
     {
         return $this->hasOne(Appreciation::class);
     }
 
+    /**
+     * Define one-to-many relationship with Appreciation records
+     * Represents all appreciations given using this award type
+     *
+     * @return HasMany
+     */
     public function appreciations(): HasMany
     {
         return $this->hasMany(Appreciation::class);
     }
 
+    /**
+     * Define relationship with the AwardIcon for this award
+     *
+     * @return BelongsTo
+     */
     public function awardIcon(): BelongsTo
     {
         return $this->belongsTo(AwardIcon::class);

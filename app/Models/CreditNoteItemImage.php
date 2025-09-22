@@ -36,11 +36,24 @@ class CreditNoteItemImage extends BaseModel
 
     use IconTrait;
 
+    /**
+     * Constant: Base file path for credit note item images
+     */
     const FILE_PATH = 'credit-note-files';
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['file_url', 'icon', 'file'];
+    
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = ['credit_note_item_id', 'filename', 'hashname', 'size', 'external_link'];
 
+    /**
+     * Accessor: Get the file URL (handles external links and local storage)
+     */
     public function getFileUrlAttribute()
     {
         if($this->external_link){
@@ -50,6 +63,9 @@ class CreditNoteItemImage extends BaseModel
         return asset_url_local_s3(CreditNoteItemImage::FILE_PATH . '/' . $this->credit_note_item_id . '/' . $this->hashname);
     }
 
+    /**
+     * Accessor: Get the file path (external link or relative local path)
+     */
     public function getFileAttribute()
     {
         return $this->external_link ?: (CreditNoteItemImage::FILE_PATH . '/' . $this->credit_note_item_id . '/' . $this->hashname);

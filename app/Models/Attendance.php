@@ -76,9 +76,10 @@ use Illuminate\Support\Facades\DB;
  */
 class Attendance extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Define attribute casting rules for datetime fields
     protected $casts = [
         'clock_in_time' => 'datetime',
         'clock_out_time' => 'datetime',
@@ -86,30 +87,63 @@ class Attendance extends BaseModel
         'shift_start_time' => 'datetime',
         'date' => 'datetime',
     ];
+
+    // Append clock_in_date attribute to model
     protected $appends = ['clock_in_date'];
+
+    // Prevent mass assignment of ID
     protected $guarded = ['id'];
+
+    // Eager load company relationship with minimal fields
     protected $with = ['company:id'];
 
+    /**
+     * Define relationship with the User model (bypassing ActiveScope)
+     *
+     * @return BelongsTo
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Define relationship with the CompanyAddress model (location)
+     *
+     * @return BelongsTo
+     */
     public function location(): BelongsTo
     {
         return $this->belongsTo(CompanyAddress::class, 'location_id');
     }
 
+    /**
+     * Define relationship with the EmployeeShift model
+     *
+     * @return BelongsTo
+     */
     public function shift(): BelongsTo
     {
         return $this->belongsTo(EmployeeShift::class, 'employee_shift_id');
     }
 
+    /**
+     * Accessor for clock_in_date attribute - returns date in company timezone
+     *
+     * @return string|null
+     */
     public function getClockInDateAttribute()
     {
         return $this->clock_in_time?->timezone($this->company?->timezone)->toDateString();
     }
 
+    /**
+     * Get attendance records for all users on a specific date
+     * Used for attendance reports and dashboards
+     *
+     * @param string $date
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public static function attendanceByDate($date)
     {
         DB::statement('SET @attendance_date = ' . $date);
@@ -148,6 +182,13 @@ class Attendance extends BaseModel
             ->orderBy('users.name', 'asc');
     }
 
+    /**
+     * Get attendance record for a specific user on a specific date
+     *
+     * @param int $userid
+     * @param string $date
+     * @return \App\Models\User|null
+     */
     public static function attendanceByUserDate($userid, $date)
     {
         DB::statement('SET @attendance_date = ' . $date);
@@ -184,6 +225,12 @@ class Attendance extends BaseModel
             ->where('users.id', $userid)->first();
     }
 
+    /**
+     * Get users with their attendance for a specific date (using eager loading)
+     *
+     * @param string $date
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public static function attendanceDate($date)
     {
         return User::with(['attendance' => function ($q) use ($date) {
@@ -205,6 +252,12 @@ class Attendance extends BaseModel
             ->orderBy('users.name', 'asc');
     }
 
+    /**
+     * Get attendance combined with holidays for a specific date
+     *
+     * @param string $date
+     * @return \Illuminate\Support\Collection
+     */
     public static function attendanceHolidayByDate($date)
     {
         $holidays = Holiday::all();
@@ -242,6 +295,15 @@ class Attendance extends BaseModel
         return $user;
     }
 
+    /**
+     * Get detailed attendance records for a user between date range
+     * Includes location information and handles timezone filtering
+     *
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param int $userId
+     * @return \Illuminate\Support\Collection
+     */
     public static function userAttendanceByDate($startDate, $endDate, $userId)
     {
         $attendance = Attendance::without('company')
@@ -270,6 +332,14 @@ class Attendance extends BaseModel
         return $attendance;
     }
 
+    /**
+     * Count total present days for a user in date range
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @param int $userId
+     * @return int
+     */
     public static function countDaysPresentByUser($startDate, $endDate, $userId)
     {
         $totalPresent = DB::select('SELECT count(DISTINCT DATE(attendances.clock_in_time) ) as presentCount from attendances where DATE(attendances.clock_in_time) >= "' . $startDate . '" and DATE(attendances.clock_in_time) <= "' . $endDate . '" and user_id="' . $userId . '" ');
@@ -277,6 +347,14 @@ class Attendance extends BaseModel
         return $totalPresent[0]->presentCount;
     }
 
+    /**
+     * Count late days for a user in date range
+     *
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param int $userId
+     * @return int
+     */
     public static function countDaysLateByUser($startDate, $endDate, $userId)
     {
         $totalLate = Attendance::whereBetween(DB::raw('DATE(attendances.`clock_in_time`)'), [$startDate->toDateString(), $endDate->toDateString()])
@@ -288,6 +366,14 @@ class Attendance extends BaseModel
         return $totalLate->lateCount;
     }
 
+    /**
+     * Count half days for a user in date range (attendance + approved leaves)
+     *
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param int $userId
+     * @return int
+     */
     public static function countHalfDaysByUser($startDate, $endDate, $userId)
     {
         $halfDay1 = Attendance::whereBetween(DB::raw('DATE(attendances.`clock_in_time`)'), [$startDate, $endDate])
@@ -306,6 +392,13 @@ class Attendance extends BaseModel
         return $halfDay1 + $halfDay2;
     }
 
+    /**
+     * Get total clock-in count for user on specific date
+     *
+     * @param string $date
+     * @param int $userId
+     * @return int
+     */
     // Get User Clock-ins by date
     public static function getTotalUserClockIn($date, $userId)
     {
@@ -314,6 +407,14 @@ class Attendance extends BaseModel
             ->count();
     }
 
+    /**
+     * Get clock-in count for user within specific time range
+     *
+     * @param Carbon $startTime
+     * @param Carbon $endTime
+     * @param int $userId
+     * @return int
+     */
     public static function getTotalUserClockInWithTime($startTime, $endTime, $userId)
     {
         return Attendance::whereBetween('clock_in_time', [$startTime->copy()->timezone(config('app.timezone')), $endTime->copy()->timezone(config('app.timezone'))])
@@ -321,6 +422,13 @@ class Attendance extends BaseModel
             ->count();
     }
 
+    /**
+     * Get all attendance records for user on specific date
+     *
+     * @param string $date
+     * @param int $userId
+     * @return \Illuminate\Support\Collection
+     */
     // Attendance by User and date
     public static function attendanceByUserAndDate($date, $userId)
     {
@@ -329,6 +437,16 @@ class Attendance extends BaseModel
             ->get();
     }
 
+    /**
+     * Calculate total working time for user in date range
+     * Handles multiple clock-ins/outs and shift times
+     *
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param int $userId
+     * @param string|null $format
+     * @return string|int
+     */
     public function totalTime($startDate, $endDate, $userId, $format = null)
     {
         $attendanceActivity = Attendance::userAttendanceByDate($startDate, $endDate, $userId);

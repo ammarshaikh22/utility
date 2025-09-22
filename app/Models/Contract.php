@@ -110,79 +110,132 @@ class Contract extends BaseModel
 
     use CustomFieldsTrait, HasFactory, HasCompany;
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'sign_date' => 'datetime',
     ];
 
+    /**
+     * Eager loading relationships for this model
+     */
     protected $with = [];
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['image_url', 'company_signature'];
 
+    /**
+     * Custom field model identifier
+     */
     const CUSTOM_FIELD_MODEL = 'App\Models\Contract';
 
+    /**
+     * Relationship: Contract belongs to signer User
+     */
     public function signer()
     {
         return $this->belongsTo(User::class, 'sign_by');
     }
 
+    /**
+     * Accessor: Get contract logo URL, fallback to company logo
+     */
     public function getImageUrlAttribute()
     {
         return ($this->company_logo) ? asset_url_local_s3('contract-logo/' . $this->company_logo) : $this->company->logo_url;
     }
 
+    /**
+     * Relationship: Contract belongs to one Project (including soft deleted)
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id')->withTrashed();
     }
 
+    /**
+     * Relationship: Contract belongs to one Client User (bypassing active scope)
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: Contract belongs to one ContractType
+     */
     public function contractType(): BelongsTo
     {
         return $this->belongsTo(ContractType::class, 'contract_type_id');
     }
 
+    /**
+     * Relationship: Contract belongs to one Currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Relationship: Contract has one ContractSign (signature)
+     */
     public function signature(): HasOne
     {
         return $this->hasOne(ContractSign::class, 'contract_id');
     }
 
+    /**
+     * Relationship: Contract has many ContractDiscussion (ordered by newest first)
+     */
     public function discussion(): HasMany
     {
         return $this->hasMany(ContractDiscussion::class)->orderByDesc('id');
     }
 
+    /**
+     * Relationship: Contract has many ContractRenew (renewal history, ordered by newest first)
+     */
     public function renewHistory(): HasMany
     {
         return $this->hasMany(ContractRenew::class, 'contract_id')->orderByDesc('id');
     }
 
+    /**
+     * Relationship: Contract has many ContractFile (ordered by newest first)
+     */
     public function files(): HasMany
     {
         return $this->hasMany(ContractFile::class, 'contract_id')->orderByDesc('id');
     }
 
+    /**
+     * Static method: Get the last contract number from existing contracts
+     * @return int
+     */
     public static function lastContractNumber()
     {
         return (int)Contract::orderBy('id', 'desc')->first()?->original_contract_number ?? 0;
     }
 
+    /**
+     * Method: Format the contract number according to company invoice settings
+     * @return string
+     */
     public function formatContractNumber()
     {
         $invoiceSettings = company() ? company()->invoiceSetting : $this->company->invoiceSetting;
         return \App\Helper\NumberFormat::contract($this->contract_number, $invoiceSettings);
     }
 
+    /**
+     * Accessor: Get company signature URL
+     */
     public function getCompanySignatureAttribute()
     {
         return asset_url_local_s3('contract/sign/' . $this->company_sign);

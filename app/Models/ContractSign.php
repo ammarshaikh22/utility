@@ -41,21 +41,24 @@ class ContractSign extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'date' => 'datetime',
     ];
 
+    /**
+     * Accessor: Get the signature image URL
+     */
     public function getSignatureAttribute()
     {
         return asset_url_local_s3('contract/sign/' . $this->attributes['signature']);
     }
 
     /**
-     * XXXXXXXXXXX
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Relationship: ContractSign belongs to one Contract
      */
-
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class, 'contract_id');

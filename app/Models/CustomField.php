@@ -45,30 +45,53 @@ class CustomField extends BaseModel
 
     use HasCompany;
 
+    /**
+     * This model does not use timestamps
+     */
     public $timestamps = false;
 
+    /**
+     * The attributes that are mass assignable (except ID)
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: CustomField has one LeadCustomForm
+     */
     public function leadCustomForm(): HasOne
     {
         return $this->hasOne(LeadCustomForm::class, 'custom_fields_id');
     }
 
+    /**
+     * Relationship: CustomField has one TicketCustomForm
+     */
     public function ticketCustomForm(): HasOne
     {
         return $this->hasOne(TicketCustomForm::class, 'custom_fields_id');
     }
 
+    /**
+     * Relationship: CustomField has one CustomFieldGroup
+     */
     public function customFieldGroup(): HasOne
     {
         return $this->hasOne(CustomFieldGroup::class, 'custom_field_group_id');
     }
 
+    /**
+     * Relationship: CustomField belongs to one CustomFieldGroup
+     */
     public function fieldGroup(): BelongsTo
     {
         return $this->belongsTo(CustomFieldGroup::class, 'custom_field_group_id');
     }
 
+    /**
+     * Static method: Get custom fields for export based on model and group
+     * @param string $model
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public static function exportCustomFields($model)
     {
         $customFieldsGroupsId = CustomFieldGroup::where('model', $model::CUSTOM_FIELD_MODEL)->select('id')->first();
@@ -83,6 +106,13 @@ class CustomField extends BaseModel
         return $customFields;
     }
 
+    /**
+     * Static method: Generate custom field data for datatables display
+     * @param object $datatables
+     * @param string $model
+     * @param string|null $relation
+     * @return array
+     */
     public static function customFieldData($datatables, $model, $relation = null)
     {
         $customFields = CustomField::exportCustomFields($model);
@@ -135,6 +165,12 @@ class CustomField extends BaseModel
         return $customFieldNames;
     }
 
+    /**
+     * Static method: Generate unique slug for custom field name
+     * @param string $label
+     * @param int $moduleId
+     * @return string
+     */
     public static function generateUniqueSlug($label, $moduleId)
     {
         $slug = str_slug($label);

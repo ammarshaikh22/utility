@@ -25,9 +25,10 @@ use App\Traits\HasCompany;
  */
 class ClientCategory extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Specify the custom table name for this model
     protected $table = 'client_categories';
 
 }

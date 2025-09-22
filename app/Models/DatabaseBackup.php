@@ -21,6 +21,9 @@ namespace App\Models;
 class DatabaseBackup extends BaseModel
 {
 
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'database_backups';
 
 }

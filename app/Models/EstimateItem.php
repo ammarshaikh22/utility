@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+/**
+ * Imports necessary relationship classes for EstimateItem model.
+ */
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -48,25 +51,49 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EstimateItem extends BaseModel
 {
 
+    // Prevents the id field from being mass assigned
     protected $guarded = ['id'];
 
+    // Eager loads the estimate item image relationship by default
     protected $with = ['estimateItemImage'];
 
+    /**
+     * Retrieves a tax record by ID, including soft-deleted records.
+     * 
+     * @param int $id Tax ID
+     * @return \Illuminate\Database\Eloquent\Builder|Tax Query builder for tax
+     */
     public static function taxbyid($id)
     {
         return Tax::where('id', $id)->withTrashed();
     }
 
+    /**
+     * Defines the one-to-one relationship with EstimateItemImage model.
+     * 
+     * @return HasOne Relationship to EstimateItemImage model
+     */
     public function estimateItemImage(): HasOne
     {
         return $this->hasOne(EstimateItemImage::class, 'estimate_item_id');
     }
 
+    /**
+     * Defines the belongs-to relationship with UnitType model.
+     * 
+     * @return BelongsTo Relationship to UnitType model
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
 
+    /**
+     * Accessor to format and retrieve the list of applied taxes.
+     * Parses JSON taxes field and formats tax names with percentages.
+     * 
+     * @return string Formatted tax list string or empty string
+     */
     public function getTaxListAttribute()
     {
         $estimateItem = EstimateItem::findOrFail($this->id);

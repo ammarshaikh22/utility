@@ -123,15 +123,27 @@ class Deal extends BaseModel
     use CustomFieldsTrait;
     use HasCompany;
 
+    /**
+     * Custom field model identifier
+     */
     const CUSTOM_FIELD_MODEL = 'App\Models\Deal';
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['image_url'];
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'close_date' => 'datetime',
         'next_follow_up_date' => 'datetime',
     ];
 
+    /**
+     * Accessor: Get Gravatar image URL based on deal name
+     */
     public function getImageUrlAttribute()
     {
         $gravatarHash = md5(strtolower(trim($this->name)));
@@ -151,61 +163,97 @@ class Deal extends BaseModel
         return $this->contact->client_email;
     }
 
+    /**
+     * Relationship: Deal belongs to one LeadAgent
+     */
     public function leadAgent(): BelongsTo
     {
         return $this->belongsTo(LeadAgent::class, 'agent_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one User (deal watcher)
+     */
     public function dealWatcher()
     {
         return $this->belongsTo(User::class, 'deal_watcher', 'id');
     }
 
+    /**
+     * Relationship: Deal belongs to one Lead (contact)
+     */
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Lead::class, 'lead_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one DealNote
+     */
     public function note(): BelongsTo
     {
         return $this->belongsTo(DealNote::class, 'deal_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one LeadSource
+     */
     public function leadSource(): BelongsTo
     {
         return $this->belongsTo(LeadSource::class, 'source_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one LeadCategory
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(LeadCategory::class, 'category_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one PipelineStage
+     */
     public function leadStage(): BelongsTo
     {
         return $this->belongsTo(PipelineStage::class, 'pipeline_stage_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one LeadPipeline
+     */
     public function pipeline(): BelongsTo
     {
         return $this->belongsTo(LeadPipeline::class, 'lead_pipeline_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one Client User (bypassing active scope)
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    /**
+     * Relationship: Deal belongs to one Currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Relationship: Deal belongs to many Products through LeadProduct pivot table
+     */
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'lead_products', 'deal_id')->using(LeadProduct::class);
     }
 
+    /**
+     * Relationship: Deal has many DealFollowUp (filtered by user permissions)
+     */
     public function follow()
     {
         if (user()) {
@@ -225,16 +273,27 @@ class Deal extends BaseModel
         return $this->hasMany(DealFollowUp::class);
     }
 
+    /**
+     * Relationship: Deal has one latest DealFollowUp (ordered by creation date)
+     */
     public function followup(): HasOne
     {
         return $this->hasOne(DealFollowUp::class, 'deal_id')->orderByDesc('created_at');
     }
 
+    /**
+     * Relationship: Deal has many DealFile (ordered by creation date)
+     */
     public function files(): HasMany
     {
         return $this->hasMany(DealFile::class, 'deal_id')->orderByDesc('created_at');
     }
 
+    /**
+     * Static method: Get all deals optionally filtered by contact ID
+     * @param int|null $contactId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public static function allLeads($contactId = null)
     {
 
@@ -247,6 +306,9 @@ class Deal extends BaseModel
         return $leads->get();
     }
 
+    /**
+     * Relationship: Deal belongs to User who added it (bypassing active scope)
+     */
     public function addedBy()
     {
         return $this->belongsTo(User::class, 'added_by')->withoutGlobalScope(ActiveScope::class);

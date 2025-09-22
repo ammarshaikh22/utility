@@ -45,16 +45,25 @@ class ContractRenew extends BaseModel
 
     use HasCompany;
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: ContractRenew belongs to one Contract
+     */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class, 'contract_id');
     }
 
+    /**
+     * Relationship: ContractRenew belongs to one User (person who renewed the contract, bypassing active scope)
+     */
     public function renewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'renewed_by')->withoutGlobalScope(ActiveScope::class);

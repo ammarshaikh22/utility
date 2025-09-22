@@ -46,11 +46,17 @@ class ContractTemplate extends BaseModel
 
     use HasFactory, HasCompany;
 
+    /**
+     * Relationship: ContractTemplate belongs to one ContractType
+     */
     public function contractType(): BelongsTo
     {
         return $this->belongsTo(ContractType::class, 'contract_type_id');
     }
 
+    /**
+     * Relationship: ContractTemplate belongs to one Currency (optional)
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');

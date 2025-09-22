@@ -53,10 +53,19 @@ class DiscussionFile extends BaseModel
 
     use IconTrait, HasCompany;
 
+    /**
+     * Constant: Base file path for discussion files
+     */
     const FILE_PATH = 'discussion-files';
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['file_url', 'icon', 'file'];
 
+    /**
+     * Accessor: Get the file URL (handles external links and local storage)
+     */
     public function getFileUrlAttribute()
     {
         if($this->external_link){
@@ -66,11 +75,17 @@ class DiscussionFile extends BaseModel
         return asset_url_local_s3(DiscussionFile::FILE_PATH . '/' . $this->hashname);
     }
 
+    /**
+     * Accessor: Get the file path (external link or relative local path)
+     */
     public function getFileAttribute()
     {
         return $this->external_link ?: (DiscussionFile::FILE_PATH . '/' . $this->hashname);
     }
 
+    /**
+     * Relationship: DiscussionFile belongs to one Discussion
+     */
     public function discussion(): BelongsTo
     {
         return $this->belongsTo(Discussion::class, 'discussion_id');

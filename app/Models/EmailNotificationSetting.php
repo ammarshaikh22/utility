@@ -39,8 +39,14 @@ class EmailNotificationSetting extends BaseModel
 
     use HasCompany;
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Constant: Array defining all available email notification settings with default values
+     */
     const NOTIFICATIONS = [
         [
             'send_email' => 'yes',
@@ -48,7 +54,6 @@ class EmailNotificationSetting extends BaseModel
             'send_slack' => 'no',
             'setting_name' => 'New Expense/Added by Admin',
             'slug' => 'new-expenseadded-by-admin',
-
         ],
         [
             'send_email' => 'yes',
@@ -100,40 +105,32 @@ class EmailNotificationSetting extends BaseModel
             'slug' => 'invoice-createupdate-notification',
         ],
         [
-
             'send_email' => 'yes',
             'send_push' => 'no',
             'send_slack' => 'no',
             'setting_name' => 'Discussion Reply',
             'slug' => 'discussion-reply',
-
         ],
         [
-
             'send_email' => 'yes',
             'send_push' => 'no',
             'send_slack' => 'no',
             'setting_name' => 'New Product Purchase Request',
             'slug' => 'new-product-purchase-request',
-
         ],
         [
-
             'send_email' => 'yes',
             'send_push' => 'no',
             'send_slack' => 'no',
             'setting_name' => 'Lead notification',
             'slug' => 'lead-notification',
-
         ],
         [
-
             'send_email' => 'no',
             'send_push' => 'no',
             'send_slack' => 'no',
             'setting_name' => 'Order Create/Update Notification',
             'slug' => 'order-createupdate-notification',
-
         ],
         [
             'send_email' => 'no',
@@ -256,6 +253,10 @@ class EmailNotificationSetting extends BaseModel
         ]
     ];
 
+    /**
+     * Static method: Get email notification setting for user assignment to task
+     * @return EmailNotificationSetting|null
+     */
     public static function userAssignTask()
     {
         return EmailNotificationSetting::where('slug', 'user-assign-to-task')->first();

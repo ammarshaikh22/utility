@@ -37,20 +37,31 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ExpensesCategory extends BaseModel
 {
-
     use HasCompany;
 
+    /**
+     * Explicitly set the table name
+     */
     protected $table = 'expenses_category';
+
+    /**
+     * Default fields to select (id and category_name)
+     */
     protected $default = ['id', 'category_name'];
 
+    /**
+     * Relationship: One category can have many expenses
+     */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class, 'category_id');
     }
 
+    /**
+     * Relationship: One category can have many role assignments
+     */
     public function roles(): HasMany
     {
         return $this->hasMany(ExpensesCategoryRole::class, 'expenses_category_id');
     }
-
 }

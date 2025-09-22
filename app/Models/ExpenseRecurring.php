@@ -87,20 +87,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ExpenseRecurring extends BaseModel
 {
-
     use CustomFieldsTrait, HasCompany;
 
+    /**
+     * Casts for date attributes to Carbon instances
+     */
     protected $casts = [
         'issue_date' => 'datetime',
         'created_at' => 'datetime',
         'next_expense_date' => 'datetime',
     ];
+
+    /**
+     * Always eager load these relationships
+     */
     protected $with = ['currency', 'company:id'];
 
+    /**
+     * Automatically append these custom attributes
+     */
     protected $appends = ['total_amount', 'created_on', 'bill_url'];
 
+    /**
+     * Custom table name
+     */
     protected $table = 'expenses_recurring';
 
+    /**
+     * Color mapping for different rotation cycles
+     */
     const ROTATION_COLOR = [
         'daily' => 'success',
         'weekly' => 'info',
@@ -111,62 +126,90 @@ class ExpenseRecurring extends BaseModel
         'annually' => 'success',
     ];
 
+    /**
+     * Relationship: Each recurring expense belongs to a currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Relationship: ExpenseRecurring belongs to a user (creator/owner)
+     * Skips the ActiveScope global filter
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: Each recurring expense may belong to a project
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    /**
+     * Relationship: Creator of the recurring expense
+     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: Expense category
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpensesCategory::class, 'category_id');
     }
 
+    /**
+     * Relationship: All child expense records generated from this recurring setup
+     */
     public function recurrings(): HasMany
     {
         return $this->hasMany(Expense::class, 'expenses_recurring_id');
     }
 
+    /**
+     * Relationship: Associated bank account
+     */
     public function bank(): BelongsTo
     {
         return $this->belongsTo(BankAccount::class, 'bank_account_id');
     }
 
+    /**
+     * Accessor: Calculate total amount with currency formatting
+     */
     public function getTotalAmountAttribute()
     {
         if (!is_null($this->price) && !is_null($this->currency_id)) {
             return currency_format($this->price, $this->currency->id);
         }
-
         return '';
     }
 
+    /**
+     * Accessor: Format created_at date according to company settings
+     */
     public function getCreatedOnAttribute()
     {
         if (!is_null($this->created_at)) {
             return $this->created_at->format($this->company->date_format);
         }
-
         return '';
     }
 
+    /**
+     * Accessor: Generate bill URL if bill exists
+     */
     public function getBillUrlAttribute()
     {
         return ($this->bill) ? asset_url_local_s3(Expense::FILE_PATH . '/' . $this->bill) : '';
     }
-
 }

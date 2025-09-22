@@ -93,58 +93,75 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Expense extends BaseModel
 {
 
+    // Traits for custom fields, factory helpers and company association
     use CustomFieldsTrait, HasFactory, HasCompany;
 
+    // Directory for storing uploaded expense bills/invoices
     const FILE_PATH = 'expense-invoice';
+    // Model class used by custom fields trait
     const CUSTOM_FIELD_MODEL = 'App\Models\Expense';
 
+    // Cast attributes to proper types (Carbon instances for dates)
     protected $casts = [
         'purchase_date' => 'datetime',
         'purchase_on' => 'datetime',
     ];
+
+    // Attributes appended to array/json representation of model
     protected $appends = ['total_amount', 'purchase_on', 'bill_url', 'default_currency_price'];
+
+    // Eager load these relations by default
     protected $with = ['currency', 'company:id'];
 
+    // Return full public URL for the uploaded bill file (S3/local helper used)
     public function getBillUrlAttribute()
     {
         return ($this->bill) ? asset_url_local_s3(Expense::FILE_PATH . '/' . $this->bill) : '';
     }
 
+    // Relation: expense belongs to a currency
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    // Relation: expense may belong to a project (include trashed projects)
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id')->withTrashed();
     }
 
+    // Relation: category for the expense
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpensesCategory::class, 'category_id');
     }
 
+    // Relation: user who created the expense (ignores ActiveScope)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    // Relation: user who approved the expense (ignores ActiveScope)
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approver_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    // Recurring child expenses (if this is a parent recurring entry)
     public function recurrings(): HasMany
     {
         return $this->hasMany(Expense::class, 'parent_id');
     }
 
+    // Bank transactions associated with this expense
     public function transactions(): HasMany
     {
         return $this->hasMany(BankTransaction::class, 'expense_id');
     }
 
+    // Accessor: formatted total amount using the expense currency
     public function getTotalAmountAttribute()
     {
 
@@ -155,6 +172,7 @@ class Expense extends BaseModel
         return '';
     }
 
+    // Accessor: formatted purchase date using company date format (or global company())
     public function getPurchaseOnAttribute()
     {
         if (is_null($this->purchase_date)) {
@@ -165,11 +183,13 @@ class Expense extends BaseModel
 
     }
 
+    // Users mentioned in this expense via mention_users pivot (ignores ActiveScope)
     public function mentionUser(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
     }
 
+    // Attribute: price converted to company's default currency using exchange rate when available
     public function defaultCurrencyPrice() : Attribute
     {
         return Attribute::make(
@@ -188,6 +208,7 @@ class Expense extends BaseModel
         );
     }
 
+    // Relation: bank account used for this expense (if any)
     public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class, 'bank_account_id');

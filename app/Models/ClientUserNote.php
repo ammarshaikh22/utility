@@ -27,10 +27,13 @@ use App\Traits\HasCompany;
  */
 class ClientUserNote extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Specify the custom table name for this model
     protected $table = 'client_user_notes';
+
+    // Fields that can be mass assigned
     protected $fillable = ['user_id', 'client_note_id'];
 
 }

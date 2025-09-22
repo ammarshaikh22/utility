@@ -275,19 +275,25 @@ class Company extends BaseModel
     use CustomFieldsTrait, Billable;
 
     // WORKSUITESAAS
+    // Eager loading relationships for this model
     protected $with = [];
 
+    // Database table name for this model
     protected $table = 'companies';
 
+    // Date attributes that should be cast to Carbon instances
     public $dates = [
         'last_login',
         'subscription_updated_at', // WORKSUITESAAS
         'licence_expire_on' // WORKSUITESAAS
     ];
 
+    // Attribute casting definitions
     protected $casts = [
         'google_calendar_status' => 'string'
     ];
+    
+    // Attributes that should be appended to the model's array form
     protected $appends = [
         'logo_url',
         'login_background_url',
@@ -295,28 +301,46 @@ class Company extends BaseModel
         'favicon_url'
     ];
 
+    // Constant array of available date formats
     const DATE_FORMATS = GlobalSetting::DATE_FORMATS;
 
+    /**
+     * Relationship: Company belongs to one Currency
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Relationship: Company belongs to one Package (subscription package)
+     */
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'package_id');
     }
 
+    /**
+     * Relationship: Company has many GlobalInvoices
+     */
     public function globalInvoices()
     {
         return $this->hasMany(GlobalInvoice::class, 'company_id', 'id');
     }
 
+    /**
+     * Relationship: Company has one User (primary admin user, bypassing scopes)
+     */
     public function user()
     {
         return $this->hasOne(User::class)->withoutGlobalScopes([CompanyScope::class, ActiveScope::class])->setEagerLoads([]);
     }
 
+    /**
+     * Static method: Get the first active admin user for this company
+     * @param Company $company
+     * @return User|null
+     */
     public static function firstActiveAdmin($company)
     {
         $admins = Role::with('users')->where('name', 'admin')->where('company_id', $company->id)->first();
@@ -324,11 +348,17 @@ class Company extends BaseModel
         return $admins->users->first();
     }
 
+    /**
+     * Relationship: Company has many employee Users
+     */
     public function employees()
     {
         return $this->hasMany(User::class)->whereHas('employeeDetail');
     }
 
+    /**
+     * Accessor: Get the appropriate logo URL based on theme settings
+     */
     public function getLogoUrlAttribute()
     {
         if (user()) {
@@ -350,6 +380,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Method: Get default (dark theme) logo URL
+     */
     public function defaultLogo()
     {
         if (is_null($this->logo)) {
@@ -359,6 +392,9 @@ class Company extends BaseModel
         return asset_url_local_s3('app-logo/' . $this->logo);
     }
 
+    /**
+     * Accessor: Get light logo URL
+     */
     public function getLightLogoUrlAttribute()
     {
         if (is_null($this->light_logo)) {
@@ -368,6 +404,9 @@ class Company extends BaseModel
         return asset_url_local_s3('app-logo/' . $this->light_logo);
     }
 
+    /**
+     * Accessor: Get dark logo URL
+     */
     public function getDarkLogoUrlAttribute()
     {
 
@@ -378,6 +417,9 @@ class Company extends BaseModel
         return asset_url_local_s3('app-logo/' . $this->logo);
     }
 
+    /**
+     * Accessor: Get login background URL
+     */
     public function getLoginBackgroundUrlAttribute()
     {
 
@@ -388,6 +430,9 @@ class Company extends BaseModel
         return asset_url_local_s3('login-background/' . $this->login_background);
     }
 
+    /**
+     * Attribute: Masked default logo URL (for privacy/security)
+     */
     public function maskedDefaultLogo(): Attribute
     {
         return Attribute::make(
@@ -402,6 +447,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Attribute: Masked logo URL based on theme settings
+     */
     public function maskedLogoUrl(): Attribute
     {
         return Attribute::make(
@@ -426,6 +474,9 @@ class Company extends BaseModel
         );
     }
 
+    /**
+     * Attribute: Masked light logo URL
+     */
     public function maskedLightLogoUrl(): Attribute
     {
         return Attribute::make(
@@ -440,6 +491,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Attribute: Masked dark logo URL
+     */
     public function maskedDarkLogoUrl(): Attribute
     {
         return Attribute::make(
@@ -454,6 +508,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Attribute: Masked login background URL
+     */
     public function maskedLoginBackgroundUrl(): Attribute
     {
         return Attribute::make(
@@ -468,6 +525,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Attribute: Masked favicon URL
+     */
     public function maskedFaviconUrl(): Attribute
     {
         return Attribute::make(
@@ -482,6 +542,9 @@ class Company extends BaseModel
 
     }
 
+    /**
+     * Accessor: Get Moment.js date format corresponding to the company's date format
+     */
     public function getMomentDateFormatAttribute()
     {
         return array_key_exists($this->date_format, self::DATE_FORMATS)
@@ -491,11 +554,17 @@ class Company extends BaseModel
         // return isset($this->date_format) ? self::DATE_FORMATS[$this->date_format] : null;
     }
 
+    /**
+     * Scope: Filter companies by active status
+     */
     public function scopeActive(Builder $query): void
     {
         $query->where('companies.status', 'active');
     }
 
+    /**
+     * Accessor: Get favicon URL
+     */
     public function getFaviconUrlAttribute()
     {
         if (is_null($this->favicon)) {
@@ -505,126 +574,202 @@ class Company extends BaseModel
         return asset_url_local_s3('favicon/' . $this->favicon);
     }
 
+    /**
+     * Relationship: Company has one PaymentGatewayCredentials
+     */
     public function paymentGatewayCredentials(): HasOne
     {
         return $this->hasOne(PaymentGatewayCredentials::class);
     }
 
+    /**
+     * Relationship: Company has one InvoiceSetting
+     */
     public function invoiceSetting(): HasOne
     {
         return $this->hasOne(InvoiceSetting::class);
     }
 
+    /**
+     * Relationship: Company has many OfflinePaymentMethod
+     */
     public function offlinePaymentMethod(): HasMany
     {
         return $this->hasMany(OfflinePaymentMethod::class);
     }
 
+    /**
+     * Relationship: Company has many LeaveType
+     */
     public function leaveTypes()
     {
         return $this->hasMany(LeaveType::class);
     }
 
+    /**
+     * Relationship: Company has many CompanyAddress
+     */
     public function companyAddress(): HasMany
     {
         return $this->hasMany(CompanyAddress::class);
     }
 
+    /**
+     * Relationship: Company has one default CompanyAddress
+     */
     public function defaultAddress(): HasOne
     {
         return $this->hasOne(CompanyAddress::class)->where('is_default', 1);
     }
 
+    /**
+     * Relationship: Company has many Tax
+     */
     public function taxes(): HasMany
     {
         return $this->hasMany(Tax::class);
     }
 
+    /**
+     * Relationship: Company has many TicketType
+     */
     public function ticketTypes(): HasMany
     {
         return $this->hasMany(TicketType::class);
     }
 
+    /**
+     * Relationship: Company has many TicketChannel
+     */
     public function ticketChannels(): HasMany
     {
         return $this->hasMany(TicketChannel::class);
     }
 
+    /**
+     * Relationship: Company has one ProjectSetting
+     */
     public function projectSetting(): HasOne
     {
         return $this->hasOne(ProjectSetting::class);
     }
 
+    /**
+     * Relationship: Company has many ProjectStatusSetting
+     */
     public function projectStatusSettings(): HasMany
     {
         return $this->HasMany(ProjectStatusSetting::class);
     }
 
+    /**
+     * Relationship: Company has one AttendanceSetting
+     */
     public function attendanceSetting(): HasOne
     {
         return $this->HasOne(AttendanceSetting::class);
     }
 
+    /**
+     * Relationship: Company has one MessageSetting
+     */
     public function messageSetting(): HasOne
     {
         return $this->HasOne(MessageSetting::class);
     }
 
+    /**
+     * Relationship: Company has many LeadSource
+     */
     public function leadSources(): HasMany
     {
         return $this->HasMany(LeadSource::class);
     }
 
+    /**
+     * Relationship: Company has many LeadStatus
+     */
     public function leadStats(): HasMany
     {
         return $this->HasMany(LeadStatus::class);
     }
 
+    /**
+     * Relationship: Company has many LeadAgent
+     */
     public function leadAgents(): HasMany
     {
         return $this->HasMany(LeadAgent::class);
     }
 
+    /**
+     * Relationship: Company has many LeadCategory
+     */
     public function leadCategories(): HasMany
     {
         return $this->HasMany(LeadCategory::class);
     }
 
+    /**
+     * Relationship: Company has many ModuleSetting
+     */
     public function moduleSetting(): HasMany
     {
         return $this->HasMany(ModuleSetting::class);
     }
 
+    /**
+     * Relationship: Company has many Currency
+     */
     public function currencies(): HasMany
     {
         return $this->HasMany(Currency::class);
     }
 
+    /**
+     * Relationship: Company has one ProjectTimeLog (time log setting)
+     */
     public function timeLogSetting(): HasOne
     {
         return $this->HasOne(ProjectTimeLog::class);
     }
 
+    /**
+     * Relationship: Company has one TaskSetting
+     */
     public function taskSetting(): HasOne
     {
         return $this->HasOne(TaskSetting::class);
     }
 
+    /**
+     * Relationship: Company has one LeaveSetting
+     */
     public function leaveSetting(): HasOne
     {
         return $this->HasOne(LeaveSetting::class);
     }
 
+    /**
+     * Relationship: Company has one SlackSetting
+     */
     public function slackSetting(): HasOne
     {
         return $this->HasOne(SlackSetting::class);
     }
 
+    /**
+     * Relationship: Company has many FileStorage
+     */
     public function fileStorage(): HasMany
     {
         return $this->hasMany(FileStorage::class);
     }
 
+    /**
+     * Static method: Rename legacy organisation_settings table to companies
+     * Used during database migration
+     */
     public static function renameOrganisationTableToCompanyTable()
     {
         if (Schema::hasTable('organisation_settings')) {
@@ -632,62 +777,98 @@ class Company extends BaseModel
         }
     }
 
+    /**
+     * Relationship: Company has many client Users
+     */
     public function clients(): HasMany
     {
         return $this->hasMany(User::class)->whereHas('ClientDetails');
     }
 
+    /**
+     * Relationship: Company has many Invoice
+     */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Relationship: Company has many Estimate
+     */
     public function estimates(): HasMany
     {
         return $this->hasMany(Estimate::class);
     }
 
+    /**
+     * Relationship: Company has many Project
+     */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
     }
 
+    /**
+     * Relationship: Company has many Task
+     */
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
     }
 
+    /**
+     * Relationship: Company has many Deal (leads)
+     */
     public function leads(): HasMany
     {
         return $this->hasMany(Deal::class);
     }
 
+    /**
+     * Relationship: Company has many Order
+     */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
 
+    /**
+     * Relationship: Company has many Ticket
+     */
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Relationship: Company has many Contract
+     */
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);
     }
 
+    /**
+     * Relationship: Company has many Event
+     */
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
     }
 
+    /**
+     * Relationship: Company has many User (all users, bypassing company and active scopes)
+     */
     public function users()
     {
         return $this->hasMany(User::class)->withoutGlobalScope(CompanyScope::class)->withoutGlobalScope('active');
     }
 
     // WORKSUITESAAS
+    /**
+     * Relationship: Company belongs to approving User
+     */
     public function approvalBy()
     {
         return $this->belongsTo(User::class, 'approved_by');

@@ -33,8 +33,14 @@ class DashboardWidget extends BaseModel
 
     use HasCompany;
 
-    protected $fillable = ['widget_name', 'status', 'dashboard_type', 'company_id','active'];
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = ['widget_name', 'status', 'dashboard_type', 'company_id', 'active'];
 
+    /**
+     * Constant: Array defining available admin dashboard widgets with default status
+     */
     const WIDGETS = [
         ['dashboard_type' => 'admin-dashboard', 'widget_name' => 'total_clients',  'status' => 1],
         ['dashboard_type' => 'admin-dashboard', 'widget_name' => 'total_employees',  'status' => 1],
@@ -127,7 +133,9 @@ class DashboardWidget extends BaseModel
         ['dashboard_type' => 'private-dashboard', 'widget_name' => 'follow_ups', 'status' => 1],
     ];
 
-
+    /**
+     * Constant: Array mapping dashboard modules to their widget names
+     */
     const MODULE = [
         ['tickets' => 'ticket'],
         ['leads' => 'lead'],
@@ -138,6 +146,5 @@ class DashboardWidget extends BaseModel
         ['leaves' => 'leave'],
         ['contracts' => 'contract_date'],
     ];
-
 
 }

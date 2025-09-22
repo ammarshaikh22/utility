@@ -40,15 +40,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClientContact extends BaseModel
 {
-
+    // Eager load the client relationship for performance
     protected $with = [
                 'client'
         ];
 
+    // Trait providing company-related functionality
     use HasCompany;
 
+    // Fields that can be mass assigned
     protected $fillable = ['user_id', 'client_id' ,'contact_name', 'email', 'phone', 'title', 'address'];
 
+    /**
+     * Define relationship with the User model (client)
+     * Links this contact to the associated client user
+     *
+     * @return BelongsTo
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

@@ -33,14 +33,24 @@ use App\Traits\HasCompany;
  */
 class AcceptEstimate extends BaseModel
 {
-
+    // Trait providing company-related functionality
     use HasCompany;
 
+    /**
+     * Define the belongs-to relationship with the Estimate model
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function estimate()
     {
         return $this->belongsTo(Estimate::class);
     }
 
+    /**
+     * Accessor for the signature attribute - generates full URL to signature file
+     *
+     * @return string
+     */
     public function getSignatureAttribute()
     {
         return asset_url_local_s3('estimate/accept/' . $this->attributes['signature']);

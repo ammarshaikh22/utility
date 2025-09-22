@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * App\Models\InvoiceFiles
  *
+ * Model representing files attached to invoices.
+ * Handles file storage, metadata, and relationships to invoices.
+ *
  * @property-read \App\Models\Company|null $company
  * @property-read mixed $file_url
  * @property-read mixed $icon
@@ -37,30 +40,44 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class InvoiceFiles extends BaseModel
 {
-
+    // Trait that provides icon handling functionality
     use IconTrait;
 
+    // Directory path where invoice files are stored
     const FILE_PATH = 'invoices';
 
+    // Mass-assignable fields (none allowed here for security)
     protected $fillable = [];
 
+    // Guarded fields (id is protected from mass assignment)
     protected $guarded = ['id'];
 
+    // Database table associated with this model
     protected $table = 'invoice_files';
+
+    // Dates that should be mutated to Carbon instances
     public $dates = ['created_at', 'updated_at'];
 
+    // Accessor attributes automatically appended to model
     protected $appends = ['file_url', 'icon'];
 
+    // Disabling Laravel's automatic timestamps
     public $timestamps = false;
 
+    /**
+     * Accessor for file URL
+     * Generates the full S3/local path to the stored invoice file
+     */
     public function getFileUrlAttribute()
     {
         return asset_url_local_s3(InvoiceFiles::FILE_PATH . '/' . $this->hashname);
     }
 
+    /**
+     * Relationship: Each file belongs to a single invoice
+     */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
-
 }

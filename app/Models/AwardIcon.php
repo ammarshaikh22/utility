@@ -25,9 +25,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class AwardIcon extends BaseModel
 {
-
+    // Fields that can be mass assigned
     protected $fillable = ['company_id', 'title', 'icon'];
 
+    /**
+     * Define one-to-one relationship with Award
+     * Note: The foreign key 'icon' appears to be incorrectly specified
+     * Should likely be 'award_icon_id' based on the Award model relationship
+     *
+     * @return HasOne
+     */
     public function award(): HasOne
     {
         return $this->hasOne(Award::class, 'icon');

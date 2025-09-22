@@ -29,5 +29,12 @@ class ContractType extends BaseModel
 
     use HasCompany;
 
-    //
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'name',
+        'company_id'
+    ];
+
 }

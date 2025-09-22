@@ -23,7 +23,14 @@ namespace App\Models;
 class DatabaseBackupSetting extends BaseModel
 {
 
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'database_backup_cron_settings';
+    
+    /**
+     * This model does not use timestamps
+     */
     public $timestamps = false;
 
 }

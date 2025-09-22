@@ -51,43 +51,73 @@ class EmployeeShiftSchedule extends BaseModel
 
     use HasFactory;
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'date' => 'datetime',
         'shift_start_time' => 'datetime',
         'shift_end_time' => 'datetime',
     ];
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['file_url', 'download_file_url'];
 
+    /**
+     * The attributes that are not mass assignable.
+     */
     protected $guarded = ['id'];
 
+    /**
+     * Eager loading relationships for this model
+     */
     protected $with = ['shift'];
 
+    /**
+     * Accessor: Get the file URL for the shift schedule
+     */
     public function getFileUrlAttribute()
     {
         return ($this->file) ? asset_url_local_s3('employee-shift-file/'. $this->id.'/' . $this->file) : '';
     }
 
+    /**
+     * Accessor: Get the download file URL for the shift schedule
+     */
     public function getDownloadFileUrlAttribute()
     {
         return ($this->file) ? asset_url_local_s3('employee-shift-file/'. $this->id.'/' . $this->file) : null;
     }
 
+    /**
+     * Relationship: EmployeeShiftSchedule belongs to one User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Relationship: EmployeeShiftSchedule belongs to one EmployeeShift
+     */
     public function shift(): BelongsTo
     {
         return $this->belongsTo(EmployeeShift::class, 'employee_shift_id');
     }
 
+    /**
+     * Relationship: EmployeeShiftSchedule has one EmployeeShiftChangeRequest
+     */
     public function requestChange(): HasOne
     {
         return $this->hasOne(EmployeeShiftChangeRequest::class, 'shift_schedule_id');
     }
 
+    /**
+     * Relationship: EmployeeShiftSchedule has one pending EmployeeShiftChangeRequest (status = waiting)
+     */
     public function pendingRequestChange(): HasOne
     {
         return $this->hasOne(EmployeeShiftChangeRequest::class, 'shift_schedule_id')->where('status', 'waiting');

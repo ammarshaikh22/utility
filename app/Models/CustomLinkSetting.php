@@ -34,4 +34,15 @@ class CustomLinkSetting extends BaseModel
 {
 
     use HasFactory, HasCompany;
+
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'link_title',
+        'url',
+        'can_be_viewed_by',
+        'status'
+    ];
+
 }

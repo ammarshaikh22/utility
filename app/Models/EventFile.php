@@ -38,14 +38,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class EventFile extends BaseModel
 {
 
+    // Trait to provide icon-related helpers for this model
     use IconTrait;
 
+    // Enables the model factory (useful for testing and seeding)
     use HasFactory;
 
+    // Folder name where event files are stored
     const FILE_PATH = 'events';
 
+    // Attributes appended to the model when converting to array/json
     protected $appends = ['file_url', 'icon'];
 
+    /**
+     * Accessor to generate the public URL for the stored file.
+     */
     public function getFileUrlAttribute()
     {
         return asset_url_local_s3(EventFile::FILE_PATH . '/' . $this->event_id . '/' . $this->hashname);

@@ -89,22 +89,40 @@ class EmployeeDetails extends BaseModel
 
     use CustomFieldsTrait, HasCompany;
 
+    /**
+     * Custom table name for this model
+     */
     protected $table = 'employee_details';
 
+    /**
+     * Date attributes that should be cast to Carbon instances
+     */
     protected $casts = [
         'joining_date' => 'datetime',
         'last_date' => 'datetime',
         'date_of_birth' => 'datetime',
-        'calendar_view	' => 'array',
+        'calendar_view' => 'array',
         'marital_status' => MaritalStatus::class,
     ];
 
+    /**
+     * Eager loading relationships for this model
+     */
     protected $with = ['company:id'];
 
+    /**
+     * Attributes that should be appended to the model's array form
+     */
     protected $appends = ['upcoming_birthday'];
 
+    /**
+     * Custom field model identifier
+     */
     const CUSTOM_FIELD_MODEL = 'App\Models\EmployeeDetails';
 
+    /**
+     * Accessor: Get the upcoming birthday date for this year
+     */
     public function getUpcomingBirthdayAttribute()
     {
         if (is_null($this->date_of_birth)) {
@@ -120,21 +138,33 @@ class EmployeeDetails extends BaseModel
         return $dob->toDateString();
     }
 
+    /**
+     * Relationship: EmployeeDetails belongs to one User (bypassing active scope)
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: EmployeeDetails belongs to one User (reporting manager, bypassing active scope)
+     */
     public function reportingTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reporting_to')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: EmployeeDetails belongs to one Designation
+     */
     public function designation(): BelongsTo
     {
         return $this->belongsTo(Designation::class, 'designation_id');
     }
 
+    /**
+     * Relationship: EmployeeDetails belongs to one Team (department)
+     */
     public function department(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'department_id');
