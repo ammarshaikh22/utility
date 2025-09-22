@@ -9,7 +9,6 @@ use Illuminate\Support\HtmlString;
 
 class ContractSigned extends BaseNotification
 {
-
     /**
      * Create a new notification instance.
      *
@@ -20,6 +19,7 @@ class ContractSigned extends BaseNotification
 
     public function __construct(Contract $contract, ContractSign $contractSign)
     {
+        // Initialize the notification with contract and contract sign data
         $this->contract = $contract;
         $this->contractSign = $contractSign;
         $this->company = $this->contract->company;
@@ -33,8 +33,10 @@ class ContractSigned extends BaseNotification
      */
     public function via($notifiable)
     {
+        // Default delivery channel is database
         $via = ['database'];
 
+        // Add mail channel if email notifications are enabled and user has an email
         if ($notifiable->email_notifications && $notifiable->email != '') {
             array_push($via, 'mail');
         }
@@ -50,22 +52,29 @@ class ContractSigned extends BaseNotification
      */
     public function toMail($notifiable)
     {
+        // Build the base notification message
         $contract = parent::build($notifiable);
+
+        // Generate PDF for the contract using ContractController
         $publicUrlController = new ContractController();
         $pdfOption = $publicUrlController->downloadView($this->contract->id);
         $pdf = $pdfOption['pdf'];
         $filename = $pdfOption['fileName'];
 
-        $content = new HtmlString(__('email.contractSign.text', ['contract' => '<strong>' . $this->contract->subject . '</strong>', 'client' => '<strong>' . $this->contractSign->full_name . '</strong>']));
+        // Construct email content with contract subject and client name
+        $content = new HtmlString(__('email.contractSign.text', [
+            'contract' => '<strong>' . $this->contract->subject . '</strong>',
+            'client' => '<strong>' . $this->contractSign->full_name . '</strong>'
+        ]));
 
+        // Configure the mail message with subject, template data, and PDF attachment
         $contract->subject(__('email.contractSign.subject'))
             ->markdown('mail.email', [
                 'content' => $content,
                 'themeColor' => $this->company->header_color,
                 'notifiableName' => $notifiable->name
-            ]);
-
-        $contract->attachData($pdf->output(), $filename . '.pdf');
+            ])
+            ->attachData($pdf->output(), $filename . '.pdf');
 
         return $contract;
     }
@@ -76,11 +85,10 @@ class ContractSigned extends BaseNotification
      * @param mixed $notifiable
      * @return array
      */
-
     // phpcs:ignore
     public function toArray($notifiable)
     {
+        // Return the contract data as an array
         return $this->contract->toArray();
     }
-
 }
