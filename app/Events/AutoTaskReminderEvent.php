@@ -9,14 +9,19 @@ use Illuminate\Queue\SerializesModels;
 
 class AutoTaskReminderEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $task;
+    public $task;  // Task that requires a reminder
 
+    /**
+     * Create a new event instance.
+     *
+     * @param Task $task
+     */
     public function __construct(Task $task)
     {
+        // Initialize the task property
         $this->task = $task;
     }
-
 }
