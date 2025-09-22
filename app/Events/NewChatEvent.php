@@ -2,32 +2,30 @@
 
 namespace App\Events;
 
-use App\Models\UserChat;
+// Import necessary classes
+use App\Models\Chat;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewChatEvent implements ShouldBroadcast
+class NewChatEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $userChat;
+    public $chat;    // The new chat instance
+    public $sender;  // The user who initiated the chat
 
-    public function __construct(UserChat $userChat)
+    /**
+     * Create a new event instance.
+     *
+     * @param Chat $chat
+     * @param mixed $sender
+     */
+    public function __construct(Chat $chat, $sender)
     {
-        $this->userChat = $userChat;
+        // Initialize the properties with the provided values
+        $this->chat = $chat;
+        $this->sender = $sender;
     }
-
-    public function broadcastOn()
-    {
-        return ['messages-channel'];
-    }
-
-    public function broadcastAs()
-    {
-        return 'messages.received';
-    }
-
 }
