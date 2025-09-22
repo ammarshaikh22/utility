@@ -1,43 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class FileMultiple extends Component
 {
-
-    public $fieldLabel;
-    public $fieldName;
-    public $fieldId;
-    public $fieldHelp;
-    public $fieldRequired;
-    public $popover;
-
+    public $files;  // Multiple files data to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param array $files Array of file data to display
      */
-    public function __construct($fieldId, $fieldName, $fieldLabel, $fieldHelp = null, $fieldRequired = false, $popover = null)
+    public function __construct($files)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->fieldHelp = $fieldHelp;
-        $this->fieldRequired = $fieldRequired;
-        $this->popover = $popover;
+        $this->files = $files;  // Set the multiple files data
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.file-multiple');
+        return view('components.file-multiple');  // Render the multiple files view
     }
-
 }

@@ -7,33 +7,31 @@ use Illuminate\View\Component;
 
 class OnboardingItem extends Component
 {
-
+    public $image;
     public $title;
-    public $summary;
-    public $completed;
-    public $link;
-
+    public $description;
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $image Image for the onboarding item
+     * @param string $title Title for the onboarding item
+     * @param string $description Description for the onboarding item
      */
-    public function __construct($title, $summary, $completed = false, $link = '')
+    public function __construct($image, $title, $description)
     {
+        $this->image = $image;
         $this->title = $title;
-        $this->summary = $summary;
-        $this->completed = $completed;
-        $this->link = $link;
+        $this->description = $description;
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
-     * @return View|Closure|string
+     * 
+     * @return View|string
      */
     public function render()
     {
-        return view('components.cards.onboarding-item');
+        return view('components.cards.onboarding-item');  // Render the view for the onboarding item
     }
-
 }

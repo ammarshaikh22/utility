@@ -7,19 +7,19 @@ use Illuminate\View\Component;
 
 class NoRecord extends Component
 {
-
     public $icon;
     public $message;
 
     /**
      * Create a new component instance.
      *
-     * @return void
+     * @param string $icon The icon to display.
+     * @param string $message The message to display.
      */
     public function __construct($icon, $message)
     {
-        $this->icon = $icon;
-        $this->message = $message;
+        $this->icon = $icon;  // Initialize icon property
+        $this->message = $message;  // Initialize message property
     }
 
     /**
@@ -29,7 +29,6 @@ class NoRecord extends Component
      */
     public function render()
     {
-        return view('components.cards.no-record');
+        return view('components.cards.no-record');  // Render the view for this component
     }
-
 }

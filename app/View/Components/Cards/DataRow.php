@@ -7,35 +7,25 @@ use Illuminate\View\Component;
 
 class DataRow extends Component
 {
-
-    public $label;
-    public $value;
-    public $html;
-    public $otherClasses;
-    public $labelClasses;
+    public $columns;  // Array of data columns for the row
 
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param array $columns List of columns to display in the row
      */
-    public function __construct($label, $value, $html = false, $otherClasses = '', $labelClasses = '')
+    public function __construct($columns)
     {
-        $this->label = $label;
-        $this->value = $value;
-        $this->html = $html;
-        $this->otherClasses = $otherClasses;
-        $this->labelClasses = $labelClasses;
+        $this->columns = $columns;  // Set the columns property
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.cards.data-row');
+        return view('components.cards.data-row');  // Render the data row view
     }
-
 }

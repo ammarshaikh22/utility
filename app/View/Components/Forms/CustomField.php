@@ -1,35 +1,34 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class CustomField extends Component
 {
-
-    public $fields;
-    public $model;
-
+    public $field;  // The custom field data to display
+    public $value;  // The value of the custom field
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param mixed $field The custom field data
+     * @param mixed $value The value of the custom field
      */
-    public function __construct($fields, $model = false)
+    public function __construct($field, $value)
     {
-        $this->fields = $fields;
-        $this->model = $model;
+        $this->field = $field;  // Set the custom field data
+        $this->value = $value;  // Set the value of the custom field
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.custom-field');
+        return view('components.custom-field');  // Render the custom field view
     }
-
 }

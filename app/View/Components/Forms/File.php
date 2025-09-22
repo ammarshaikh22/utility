@@ -1,49 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class File extends Component
 {
-
-    public $fieldLabel;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-    public $fieldHelp;
-    public $fieldRequired;
-    public $fieldHeight;
-    public $popover;
-    public $allowedFileExtensions;
-
+    public $file;  // File data to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param mixed $file The file data to display
      */
-    public function __construct($fieldId, $fieldName, $fieldLabel, $fieldValue = null, $fieldHelp = null, $fieldRequired = false, $fieldHeight = 100, $popover = null, $allowedFileExtensions = null)
+    public function __construct($file)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->fieldHelp = $fieldHelp;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldHeight = $fieldHeight;
-        $this->popover = $popover;
-        $this->allowedFileExtensions = $allowedFileExtensions;
+        $this->file = $file;  // Set the file data
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.file');
+        return view('components.file');  // Render the file view
     }
-
 }

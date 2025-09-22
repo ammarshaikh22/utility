@@ -1,47 +1,34 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class ToggleSwitch extends Component
 {
-
-    public $fieldLabel;
-    public $fieldRequired;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-    public $fieldHelp;
-    public $checked;
-    public $popover;
-
+    public $label;  // Label for the toggle switch
+    public $checked;  // Whether the toggle switch is checked or not
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $label Label for the toggle switch
+     * @param bool $checked Whether the toggle switch is checked (default is false)
      */
-    public function __construct($fieldLabel, $fieldName, $fieldId, $fieldRequired = false, $fieldValue = null, $fieldHelp = null, $checked = false, $popover = null)
+    public function __construct($label, $checked = false)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->fieldHelp = $fieldHelp;
-        $this->checked = $checked;
-        $this->popover = $popover;
+        $this->label = $label;  // Set the label
+        $this->checked = $checked;  // Set the checked state
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.toggle-switch');
+        return view('components.toggle-switch');  // Render the toggle switch view
     }
-
 }

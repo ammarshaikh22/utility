@@ -1,49 +1,31 @@
 <?php
 
-namespace App\View\Components\Forms;
+namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class Email extends Component
 {
-
-    public $fieldLabel;
-    public $fieldRequired;
-    public $fieldPlaceholder;
-    public $fieldValue;
-    public $fieldName;
-    public $fieldId;
-    public $popover;
-    public $fieldReadOnly;
-    public $fieldHelp;
-
+    public $email;  // Email address to be displayed
+    
     /**
      * Create a new component instance.
-     *
-     * @return void
+     * 
+     * @param string $email Email address to display
      */
-    public function __construct($fieldLabel, $fieldPlaceholder, $fieldName, $fieldId, $fieldRequired = false, $fieldValue = null, $popover = null, $fieldHelp = null, $fieldReadOnly = false)
+    public function __construct($email)
     {
-        $this->fieldLabel = $fieldLabel;
-        $this->fieldRequired = $fieldRequired;
-        $this->fieldPlaceholder = $fieldPlaceholder;
-        $this->fieldValue = $fieldValue;
-        $this->fieldName = $fieldName;
-        $this->fieldId = $fieldId;
-        $this->popover = $popover;
-        $this->fieldHelp = $fieldHelp;
-        $this->fieldReadOnly = $fieldReadOnly;
+        $this->email = $email;  // Set the email address
     }
 
     /**
      * Get the view / contents that represent the component.
-     *
+     * 
      * @return View|string
      */
     public function render()
     {
-        return view('components.forms.email');
+        return view('components.email');  // Render the email view
     }
-
 }

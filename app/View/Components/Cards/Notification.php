@@ -7,7 +7,6 @@ use Illuminate\View\Component;
 
 class Notification extends Component
 {
-
     public $link;
     public $image;
     public $title;
@@ -19,7 +18,13 @@ class Notification extends Component
     /**
      * Create a new component instance.
      *
-     * @return void
+     * @param string $link The link for the notification.
+     * @param string $image The image for the notification.
+     * @param string $title The title of the notification.
+     * @param string $time The time when the notification was sent.
+     * @param string $notification The notification content.
+     * @param string|null $text Additional text for the notification (optional).
+     * @param string $type Type of notification, e.g., 'image'.
      */
     public function __construct($link, $image, $title, $time, $notification, $text = null, $type = 'image')
     {
@@ -35,11 +40,10 @@ class Notification extends Component
     /**
      * Get the view / contents that represent the component.
      *
-     * @return View|Closure|string
+     * @return View|string
      */
     public function render()
     {
-        return view('components.cards.notification');
+        return view('components.cards.notification');  // Render the notification view
     }
-
 }
