@@ -2,36 +2,30 @@
 
 namespace App\Events;
 
-use App\Models\UserInvitation;
+// Import necessary classes
+use App\Models\Invitation;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class InvitationEmailEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $invite;
+    public $invitation; // The invitation instance
+    public $email;      // The email address where the invitation is sent
 
     /**
      * Create a new event instance.
      *
-     * @return void
+     * @param Invitation $invitation
+     * @param string $email
      */
-    public function __construct(UserInvitation $invite)
+    public function __construct(Invitation $invitation, $email)
     {
-        $this->invite = $invite;
+        // Initialize the properties with the provided values
+        $this->invitation = $invitation;
+        $this->email = $email;
     }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
-    {
-        return [];
-    }
-
 }

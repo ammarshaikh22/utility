@@ -2,32 +2,30 @@
 
 namespace App\Events;
 
+// Import necessary classes
 use App\Models\Holiday;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 class HolidayEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public $holiday;    // The holiday event instance
+    public $user;       // The user associated with the holiday event
 
     /**
      * Create a new event instance.
      *
-     * @return void
+     * @param Holiday $holiday
+     * @param mixed $user
      */
-    public $holiday;
-    public $date;
-    public $occassion;
-    public $notifyUser;
-
-    public function __construct(Holiday $holiday, $date, $occassion, $notifyUser)
+    public function __construct(Holiday $holiday, $user)
     {
+        // Initialize the properties with the provided values
         $this->holiday = $holiday;
-        $this->date = $date;
-        $this->occassion = $occassion;
-        $this->notifyUser = $notifyUser;
+        $this->user = $user;
     }
-
 }

@@ -2,23 +2,30 @@
 
 namespace App\Events;
 
-use App\Models\Event;
+// Import necessary classes
+use App\Models\EventInvite;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class EventInviteEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $event;
-    public $notifyUser;
+    public $eventInvite;  // The event invite instance
+    public $invitee;      // The invitee for the event
 
-    public function __construct(Event $event, $notifyUser)
+    /**
+     * Create a new event instance.
+     *
+     * @param EventInvite $eventInvite
+     * @param mixed $invitee
+     */
+    public function __construct(EventInvite $eventInvite, $invitee)
     {
-        $this->event = $event;
-        $this->notifyUser = $notifyUser;
+        // Initialize the properties with the provided values
+        $this->eventInvite = $eventInvite;
+        $this->invitee = $invitee;
     }
-
 }

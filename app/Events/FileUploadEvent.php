@@ -2,21 +2,30 @@
 
 namespace App\Events;
 
-use App\Models\ProjectFile;
+// Import necessary classes
+use App\Models\File;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class FileUploadEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $fileUpload;
+    public $file;    // The file that is uploaded
+    public $user;    // The user who uploaded the file
 
-    public function __construct(ProjectFile $fileUpload)
+    /**
+     * Create a new event instance.
+     *
+     * @param File $file
+     * @param mixed $user
+     */
+    public function __construct(File $file, $user)
     {
-        $this->fileUpload = $fileUpload;
+        // Initialize the properties with the provided values
+        $this->file = $file;
+        $this->user = $user;
     }
-
 }

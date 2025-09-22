@@ -2,24 +2,30 @@
 
 namespace App\Events;
 
+// Import necessary classes
+use App\Models\Invoice;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class InvoiceReminderEvent
 {
-
+    // Use necessary traits for event handling
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $notifyUser;
-    public $invoice;
-    public $invoice_setting;
+    public $invoice;     // The invoice related to the reminder
+    public $reminderDate; // The date when the reminder is sent
 
-    public function __construct($invoice, $notifyUser, $invoice_setting)
+    /**
+     * Create a new event instance.
+     *
+     * @param Invoice $invoice
+     * @param string $reminderDate
+     */
+    public function __construct(Invoice $invoice, $reminderDate)
     {
+        // Initialize the properties with the provided values
         $this->invoice = $invoice;
-        $this->notifyUser = $notifyUser;
-        $this->invoice_setting = $invoice_setting;
+        $this->reminderDate = $reminderDate;
     }
-
 }
