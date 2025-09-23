@@ -7,6 +7,18 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
 
+
+/**
+ * DataTable for deal notes (per-deal note listings).
+ *
+ * Provides select-all checkbox, title, created date, and actions (view/edit/delete),
+ * with action visibility controlled by the user's note permissions.
+ *
+ * Properties:
+ * - $editLeadNotePermission   Scope for editing notes ('all'/'added'/'both'/...).
+ * - $deleteLeadNotePermission Scope for deleting notes.
+ * - $viewLeadNotePermission   Scope for viewing notes.
+ */
 class DealNotesDataTable extends BaseDataTable
 {
 

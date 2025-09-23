@@ -6,7 +6,17 @@ use App\Models\ClientNote;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
-
+/**
+ * DataTable for client notes attached to a specific client.
+ *
+ * Renders title, type (public/private), created date and actions (view/edit/delete),
+ * with support for client-visible filtering and per-user note visibility rules.
+ *
+ * Properties:
+ * - $editClientNotePermission   Scope for editing notes.
+ * - $deleteClientNotePermission Scope for deleting notes.
+ * - $viewClientNotePermission   Scope for viewing notes (added/owned/both).
+ */
 class ClientNotesDataTable extends BaseDataTable
 {
 

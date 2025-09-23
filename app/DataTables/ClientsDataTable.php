@@ -13,9 +13,20 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * DataTable for company clients/customers.
+ *
+ * Presents core client information (name, contact, company, added on, status)
+ * along with action controls (view/edit/delete) governed by your client
+ * permissions. Typically supports filters (owner/agent/date/status) and exports.
+ *
+ * Note: This table usually relies on permission properties (e.g., view/edit/delete
+ * scopes) initialized in the constructor or inherited from BaseDataTable.
+ */
 
 class ClientsDataTable extends BaseDataTable
 {
+    // No explicit custom properties shown here; uses app-wide permission checks.
 
     private $viewClientPermission;
     private $editClientPermission;
@@ -119,7 +130,7 @@ class ClientsDataTable extends BaseDataTable
             ->leftJoin('client_details', 'users.id', '=', 'client_details.user_id')
             ->leftJoin('client_categories', 'client_details.category_id', '=', 'client_categories.id')
             ->join('roles', 'roles.id', '=', 'role_user.role_id')
-            ->select('client_categories.category_name as cat_name','users.id','users.salutation','users.is_client_contact', 'users.name', 'client_details.company_name', 'users.email', 'users.mobile', 'users.country_phonecode', 'users.image', 'users.created_at', 'users.status', 'client_details.added_by', 'users.admin_approval')
+            ->select('client_categories.category_name as cat_name', 'users.id', 'users.salutation', 'users.is_client_contact', 'users.name', 'client_details.company_name', 'users.email', 'users.mobile', 'users.country_phonecode', 'users.image', 'users.created_at', 'users.status', 'client_details.added_by', 'users.admin_approval')
             ->where('roles.name', 'client')
             ->whereNull('users.is_client_contact');
 
@@ -170,8 +181,7 @@ class ClientsDataTable extends BaseDataTable
         if ($request->verification != 'all') {
             if ($request->verification == 'yes') {
                 $users->where('users.admin_approval', 1);
-            }
-            elseif ($request->verification == 'no') {
+            } elseif ($request->verification == 'no') {
                 $users->where('users.admin_approval', 0);
             }
         }

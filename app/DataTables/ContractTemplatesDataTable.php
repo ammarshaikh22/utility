@@ -6,6 +6,12 @@ use App\Models\ContractTemplate;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
 
+/**
+ * DataTable for reusable contract templates.
+ *
+ * Shows template title, type/category, last updated date, and actions
+ * (view/edit/delete/duplicate) depending on user permissions.
+ */
 class ContractTemplatesDataTable extends BaseDataTable
 {
 

@@ -7,6 +7,12 @@ use Carbon\Carbon;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 
+/**
+ * DataTable for GDPR consent records (purposes + statuses).
+ *
+ * Shows purpose, status (granted/revoked), actor, IP, timestamps and any
+ * description. Typically used read-only with export and simple filters.
+ */
 class ConsentDataTable extends BaseDataTable
 {
 

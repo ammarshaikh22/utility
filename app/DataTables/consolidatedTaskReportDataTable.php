@@ -5,7 +5,12 @@ namespace App\DataTables;
 use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Html\Button;
-
+/**
+ * DataTable for a consolidated task report across projects/users.
+ *
+ * Summarizes tasks (assignee, project/board, status, dates, estimates vs. logs)
+ * for reporting/export. Columns and filters are usually driven by request input.
+ */
 class consolidatedTaskReportDataTable extends BaseDataTable
 {
 

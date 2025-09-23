@@ -8,9 +8,18 @@ use Carbon\Carbon;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 
+/**
+ * DataTable for GDPR customer data removal requests.
+ *
+ * Renders request name/description/date/status and exposes approve/reject
+ * actions unless already resolved. Status column is displayed with badges.
+ * No custom permission properties are stored here; relies on global gates.
+ */
 class CustomerDataRemovalDataTable extends BaseDataTable
 {
 
+    // No custom class properties required for this table; it uses
+    // global configuration and per-row logic in dataTable()/query().
     /**
      * Build DataTable class.
      *
@@ -56,7 +65,7 @@ class CustomerDataRemovalDataTable extends BaseDataTable
                     default => ''
                 };
             })
-            ->editColumn('created_at', fn ($row) => Carbon::parse($row->created_at)->translatedFormat($this->company->date_format))
+            ->editColumn('created_at', fn($row) => Carbon::parse($row->created_at)->translatedFormat($this->company->date_format))
             ->rawColumns(['status', 'action', 'status']);
     }
 

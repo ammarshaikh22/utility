@@ -15,9 +15,25 @@ use Illuminate\Support\Facades\DB;
 use App\Scopes\ActiveScope;
 use App\Helper\Common;
 
+/**
+ * DataTable for CRM Deals (pipeline view + filters).
+ *
+ * Displays deal name, lead contact, value, pipeline/stage, close & follow-up dates,
+ * agent/owner, watcher, and actions (view/edit/delete/follow-up) based on permissions.
+ * Supports extensive filtering (agent, watcher, stage, source, dates, search).
+ *
+ * Common permission properties used by this table (names may vary by project):
+ * - $viewLeadPermission          Controls row visibility for the user.
+ * - $editLeadPermission          Restricts editing.
+ * - $deleteLeadPermission        Restricts deletion.
+ * - $addFollowUpPermission       Allows adding a follow-up when permitted.
+ * - $viewLeadFollowUpPermission  Governs visibility/export of next follow-up column.
+ */
 class DealsDataTable extends BaseDataTable
 {
 
+    // Note: This class relies on several permission properties (see above)
+    // that are typically initialized in the constructor or parent base class.
     private $editLeadPermission;
     private $viewLeadFollowUpPermission;
     private $deleteLeadPermission;

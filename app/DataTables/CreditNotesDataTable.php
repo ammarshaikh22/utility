@@ -8,18 +8,33 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\UserService;
 use App\Helper\Common;
+
+/**
+ * DataTable for listing and managing Credit Notes.
+ *
+ * Shows credit note number, linked invoice, client, totals, issue date,
+ * and status with action dropdowns (view/download/edit/delete/upload etc.)
+ * Visibility of actions is driven by the user's invoice permissions.
+ *
+ * Properties:
+ * - $firstCreditNotes         Tracks the most recently created credit note (used in row actions/UI).
+ * - $viewInvoicePermission    Current user's scope for viewing invoices ('all'/'added'/'owned'/...).
+ * - $editInvoicePermission    Current user's scope for editing invoices.
+ * - $deleteInvoicePermission  Current user's scope for deleting invoices.
+ */
 class CreditNotesDataTable extends BaseDataTable
 {
 
-    /**
-     * Build DataTable class.
-     *
-     * @param mixed $query Results from query() method.
-     * @return \Yajra\DataTables\DataTableAbstract
-     */
+    /** @var \App\Models\CreditNotes|null */
     protected $firstCreditNotes;
+
+    /** @var string Permission scope for viewing invoices */
     private $viewInvoicePermission;
+
+    /** @var string Permission scope for editing invoices */
     private $editInvoicePermission;
+
+    /** @var string Permission scope for deleting invoices */
     private $deleteInvoicePermission;
 
     public function __construct()
@@ -124,8 +139,7 @@ class CreditNotesDataTable extends BaseDataTable
             ->editColumn('status', function ($row) {
                 if ($row->status == 'open') {
                     return ' <i class="fa fa-circle mr-1 text-dark-green f-10"></i>' . __('app.' . $row->status);
-                }
-                else {
+                } else {
                     return '<i class="fa fa-circle mr-1 text-red f-10"></i>' . __('app.' . $row->status);
                 }
             })
@@ -210,16 +224,16 @@ class CreditNotesDataTable extends BaseDataTable
     {
         $dataTable = $this->setBuilder('invoices-table', 0)
             ->parameters([
-                'initComplete' => 'function () {
+            'initComplete' => 'function () {
                     window.LaravelDataTables["invoices-table"].buttons().container()
                     .appendTo( "#table-actions")
                 }',
-                'fnDrawCallback' => 'function( oSettings ) {
+            'fnDrawCallback' => 'function( oSettings ) {
                     $("body").tooltip({
                         selector: \'[data-toggle="tooltip"]\'
                     })
                 }',
-            ]);
+        ]);
 
         if (canDataTableExport()) {
             $dataTable->buttons(Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));

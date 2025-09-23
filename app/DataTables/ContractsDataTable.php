@@ -12,9 +12,16 @@ use Illuminate\Support\Facades\DB;
 use App\Helper\UserService;
 use App\Helper\Common;
 
+/**
+ * DataTable for contracts and their lifecycle status.
+ *
+ * Lists contract number, client, subject, value, start/end dates, status,
+ * and actions (view/edit/delete/download). May include filters (client/date/status).
+ */
+
 class ContractsDataTable extends BaseDataTable
 {
-
+// Uses app permissions for visibility of sensitive actions; no extra props here.
     private $editContractPermission;
     private $deleteContractPermission;
     private $addContractPermission;
