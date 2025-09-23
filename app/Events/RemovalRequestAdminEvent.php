@@ -9,14 +9,15 @@ use Illuminate\Queue\SerializesModels;
 
 class RemovalRequestAdminEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $removalRequest;
+    public $removalRequest; // Removal request to process/notify
 
+    /**
+     * @param RemovalRequest $removalRequest
+     */
     public function __construct(RemovalRequest $removalRequest)
     {
         $this->removalRequest = $removalRequest;
     }
-
 }

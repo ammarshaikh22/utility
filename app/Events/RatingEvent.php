@@ -9,17 +9,19 @@ use Illuminate\Queue\SerializesModels;
 
 class RatingEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $rating;
-    public $type;
-    public $multiDates;
+    public $rating;     // ProjectRating model
+    public $type;       // Context (e.g., created/updated)
+    public $multiDates; // Optional: rating across multiple dates
 
+    /**
+     * @param ProjectRating $rating
+     * @param mixed         $type
+     */
     public function __construct(ProjectRating $rating, $type)
     {
         $this->rating = $rating;
         $this->type = $type;
     }
-
 }

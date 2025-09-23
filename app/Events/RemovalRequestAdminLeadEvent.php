@@ -9,14 +9,15 @@ use Illuminate\Queue\SerializesModels;
 
 class RemovalRequestAdminLeadEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $removalRequestLead;
+    public $removalRequestLead; // Lead-related removal request
 
+    /**
+     * @param RemovalRequestLead $removalRequestLead
+     */
     public function __construct(RemovalRequestLead $removalRequestLead)
     {
         $this->removalRequestLead = $removalRequestLead;
     }
-
 }
