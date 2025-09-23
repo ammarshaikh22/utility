@@ -9,14 +9,17 @@ use Illuminate\Queue\SerializesModels;
 
 class RemovalRequestApproveRejectEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $removalRequest;
+    public $removalRequest; // The generic removal request instance
 
+    /**
+     * Create a new event instance.
+     *
+     * @param RemovalRequest $removalRequest
+     */
     public function __construct(RemovalRequest $removalRequest)
     {
         $this->removalRequest = $removalRequest;
     }
-
 }

@@ -9,18 +9,23 @@ use Illuminate\Queue\SerializesModels;
 
 class TaskEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $task;
-    public $notifyUser;
-    public $notificationName;
+    public $task;       // The task instance
+    public $notifyUser; // The user who should be notified
+    public $type;       // The type of task event (created, updated, etc.)
 
-    public function __construct(Task $task, $notifyUser, $notificationName)
+    /**
+     * Create a new event instance.
+     *
+     * @param Task  $task
+     * @param mixed $notifyUser
+     * @param mixed $type
+     */
+    public function __construct(Task $task, $notifyUser, $type)
     {
         $this->task = $task;
         $this->notifyUser = $notifyUser;
-        $this->notificationName = $notificationName;
+        $this->type = $type;
     }
-
 }

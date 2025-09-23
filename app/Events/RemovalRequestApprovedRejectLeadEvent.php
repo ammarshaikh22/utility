@@ -9,14 +9,17 @@ use Illuminate\Queue\SerializesModels;
 
 class RemovalRequestApprovedRejectLeadEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $removal;
+    public $removalRequestLead; // The removal request for a lead
 
-    public function __construct(RemovalRequestLead $removal)
+    /**
+     * Create a new event instance.
+     *
+     * @param RemovalRequestLead $removalRequestLead
+     */
+    public function __construct(RemovalRequestLead $removalRequestLead)
     {
-        $this->removal = $removal;
+        $this->removalRequestLead = $removalRequestLead;
     }
-
 }

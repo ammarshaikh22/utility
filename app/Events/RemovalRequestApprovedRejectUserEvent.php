@@ -9,14 +9,17 @@ use Illuminate\Queue\SerializesModels;
 
 class RemovalRequestApprovedRejectUserEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $removal;
+    public $removalRequest; // The user removal request
 
-    public function __construct(RemovalRequest $removal)
+    /**
+     * Create a new event instance.
+     *
+     * @param RemovalRequest $removalRequest
+     */
+    public function __construct(RemovalRequest $removalRequest)
     {
-        $this->removal = $removal;
+        $this->removalRequest = $removalRequest;
     }
-
 }

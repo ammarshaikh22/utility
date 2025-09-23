@@ -9,20 +9,23 @@ use Illuminate\Queue\SerializesModels;
 
 class TaskNoteEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $task;
-    public $notifyUser;
-    public $created_at;
-    public $client;
+    public $task;    // The task the note belongs to
+    public $note;    // The note content/details
+    public $user;    // User associated with the note (creator or target)
 
-    public function __construct(Task $task, $created_at, $notifyUser, $client = null)
+    /**
+     * Create a new event instance.
+     *
+     * @param Task  $task
+     * @param mixed $note
+     * @param mixed $user
+     */
+    public function __construct(Task $task, $note, $user)
     {
         $this->task = $task;
-        $this->created_at = $created_at;
-        $this->notifyUser = $notifyUser;
-        $this->client = $client;
+        $this->note = $note;
+        $this->user = $user;
     }
-
 }

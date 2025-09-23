@@ -2,37 +2,24 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use App\Models\Timesheet;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\WeeklyTimesheet;
 
 class SubmitWeeklyTimesheet
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public $weeklyTimesheet;
-    public function __construct(WeeklyTimesheet $weeklyTimesheet)
-    {
-        $this->weeklyTimesheet = $weeklyTimesheet;
-    }
+    public $timesheet; // The submitted weekly timesheet instance
 
     /**
-     * Get the channels the event should broadcast on.
+     * Create a new event instance.
      *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @param Timesheet $timesheet
      */
-    public function broadcastOn(): array
+    public function __construct(Timesheet $timesheet)
     {
-        return [
-            new PrivateChannel('new-weekly-timesheets'),
-        ];
+        $this->timesheet = $timesheet;
     }
 }

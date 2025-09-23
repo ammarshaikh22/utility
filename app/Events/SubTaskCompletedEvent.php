@@ -9,16 +9,17 @@ use Illuminate\Queue\SerializesModels;
 
 class SubTaskCompletedEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $subTask;
-    public $status;
+    public $subTask; // The completed subtask
 
-    public function __construct(SubTask $subTask, $status)
+    /**
+     * Create a new event instance.
+     *
+     * @param SubTask $subTask
+     */
+    public function __construct(SubTask $subTask)
     {
         $this->subTask = $subTask;
-        $this->status = $status;
     }
-
 }

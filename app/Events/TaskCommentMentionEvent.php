@@ -3,25 +3,26 @@
 namespace App\Events;
 
 use App\Models\Task;
-use App\Models\TaskComment;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class TaskCommentMentionEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $task;
-    public $comment;
-    public $mentionuser;
+    public $task;        // The task related to the comment mention
+    public $mentionuser; // The user who is mentioned in the comment
 
-    public function __construct(Task $task, TaskComment $comment, $mentionuser)
+    /**
+     * Create a new event instance.
+     *
+     * @param Task  $task        The task instance
+     * @param mixed $mentionuser The mentioned user
+     */
+    public function __construct(Task $task, $mentionuser)
     {
         $this->task = $task;
-        $this->comment = $comment;
         $this->mentionuser = $mentionuser;
     }
-
 }
