@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\App;
 
 class InvitationEmail extends BaseNotification
 {
-
     /**
      * @var UserInvitation
      */
@@ -17,10 +16,12 @@ class InvitationEmail extends BaseNotification
     /**
      * Create a new notification instance.
      *
+     * @param UserInvitation $invite
      * @return void
      */
     public function __construct(UserInvitation $invite)
     {
+        // Initialize the notification with user invitation data and company settings
         $this->invite = $invite;
         $this->company = $invite->company;
     }
@@ -34,6 +35,7 @@ class InvitationEmail extends BaseNotification
     // phpcs:ignore
     public function via($notifiable)
     {
+        // Specify mail as the delivery channel
         return ['mail'];
     }
 
@@ -46,14 +48,19 @@ class InvitationEmail extends BaseNotification
     // phpcs:ignore
     public function toMail($notifiable): MailMessage
     {
+        // Build the base notification message
         $build = parent::build($notifiable);
+        // Generate the URL for the invitation
         $url = route('invitation', $this->invite->invitation_code);
         $url = getDomainSpecificUrl($url, $this->company);
 
+        // Set the locale for the email
         App::setLocale($notifiable->locale ?? $this->company->locale ?? 'en');
 
-        $content = $this->invite->user->name . ' ' . __('email.invitation.subject') . config('app.name') . '.'  . '<br>' . $this->invite->message;
+        // Construct email content with invitation details
+        $content = $this->invite->user->name . ' ' . __('email.invitation.subject') . config('app.name') . '.' . '<br>' . $this->invite->message;
 
+        // Configure the mail message with subject and template data
         $build
             ->subject($this->invite->user->name . ' ' . __('email.invitation.subject') . config('app.name'))
             ->markdown('mail.email', [
@@ -63,6 +70,7 @@ class InvitationEmail extends BaseNotification
                 'actionText' => __('email.invitation.action')
             ]);
 
+        // Reset the locale after building the message
         parent::resetLocale();
 
         return $build;
@@ -74,12 +82,10 @@ class InvitationEmail extends BaseNotification
      * @param mixed $notifiable
      * @return array
      */
-    //phpcs:ignore
+    // phpcs:ignore
     public function toArray($notifiable)
     {
-        return [
-            //
-        ];
+        // Return an empty array
+        return [];
     }
-
 }

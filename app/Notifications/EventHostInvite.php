@@ -13,30 +13,37 @@ class EventHostInvite extends BaseNotification
     /**
      * Create a new notification instance.
      */
-
     private $event;
     private $emailSetting;
 
     public function __construct(Event $event)
     {
+        // Initialize the notification with event data and company settings
         $this->event = $event;
         $this->company = $this->event->company;
-        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)->where('slug', 'event-notification')->first();
+        // Fetch email notification settings for the company
+        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)
+            ->where('slug', 'event-notification')
+            ->first();
     }
 
     /**
      * Get the notification's delivery channels.
      *
+     * @param object $notifiable
      * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
+        // Default delivery channel is database
         $via = ['database'];
 
+        // Add mail channel if email notifications are enabled and user has an email
         if ($this->emailSetting->send_email == 'yes' && $notifiable->email_notifications && $notifiable->email != '') {
             array_push($via, 'mail');
         }
 
+        // Add Slack channel if Slack notifications are enabled and active for the company
         if ($this->emailSetting->send_slack == 'yes' && $this->company->slackSetting->status == 'active') {
             $this->slackUserNameCheck($notifiable) ? array_push($via, 'slack') : null;
         }
@@ -46,10 +53,16 @@ class EventHostInvite extends BaseNotification
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param object $notifiable
+     * @return \Illuminate\Notifications\Messages\MailMessage
      */
     public function toMail($notifiable)
     {
+        // Build the base notification message
         $eventInvite = parent::build($notifiable);
+
+        // Create iCalendar event for the notification
         $vCalendar = new \Eluceo\iCal\Component\Calendar('www.example.com');
         $vEvent = new \Eluceo\iCal\Component\Event();
         $vEvent
@@ -60,11 +73,21 @@ class EventHostInvite extends BaseNotification
         $vCalendar->addComponent($vEvent);
         $vFile = $vCalendar->render();
 
+        // Generate the URL for the event
         $url = route('events.show', $this->event->id);
         $url = getDomainSpecificUrl($url, $this->company);
 
-        $content = __('email.newEvent.hostText', ['eventName' => $this->event->event_name, 'companyName' => $this->company->company_name]) . '<br><br>' . __('modules.events.eventName') . ': <strong>' . $this->event->event_name . '<strong><br>' . __('modules.events.startOn') . ': ' . $this->event->start_date_time->translatedFormat($this->company->date_format . ' - ' . $this->company->time_format) . '<br>' . __('modules.events.endOn') . ': ' . $this->event->end_date_time->translatedFormat($this->company->date_format . ' - ' . $this->company->time_format)   . '<br>' . __('app.location') . ': <strong>' . $this->event->where . '<strong>';
+        // Construct email content with event details
+        $content = __('email.newEvent.hostText', [
+            'eventName' => $this->event->event_name,
+            'companyName' => $this->company->company_name
+        ]) . '<br><br>' . 
+        __('modules.events.eventName') . ': <strong>' . $this->event->event_name . '</strong><br>' . 
+        __('modules.events.startOn') . ': ' . $this->event->start_date_time->translatedFormat($this->company->date_format . ' - ' . $this->company->time_format) . '<br>' . 
+        __('modules.events.endOn') . ': ' . $this->event->end_date_time->translatedFormat($this->company->date_format . ' - ' . $this->company->time_format) . '<br>' . 
+        __('app.location') . ': <strong>' . $this->event->where . '</strong>';
 
+        // Configure the mail message with subject, template data, and iCalendar attachment
         $eventInvite->subject(__('email.newEvent.subject') . ' - ' . config('app.name'))
             ->markdown('mail.email', [
                 'url' => $url,
@@ -72,11 +95,13 @@ class EventHostInvite extends BaseNotification
                 'themeColor' => $this->company->header_color,
                 'actionText' => __('email.newEvent.action'),
                 'notifiableName' => $notifiable->name
+            ])
+            ->attachData($vFile, 'cal.ics', [
+                'mime' => 'text/calendar',
             ]);
 
-        $eventInvite->attachData($vFile, 'cal.ics', [
-            'mime' => 'text/calendar',
-        ]);
+        // Reset the locale after building the message
+        parent::resetLocale();
 
         return $eventInvite;
     }
@@ -84,10 +109,12 @@ class EventHostInvite extends BaseNotification
     /**
      * Get the array representation of the notification.
      *
+     * @param object $notifiable
      * @return array<string, mixed>
      */
     public function toArray($notifiable)
     {
+        // Return event data as an array
         return [
             'id' => $this->event->id,
             'start_date_time' => $this->event->start_date_time->format('Y-m-d H:i:s'),
@@ -95,11 +122,23 @@ class EventHostInvite extends BaseNotification
         ];
     }
 
+    /**
+     * Get the Slack representation of the notification.
+     *
+     * @param object $notifiable
+     * @return \Illuminate\Notifications\Messages\SlackMessage
+     */
     public function toSlack($notifiable)
     {
+        // Generate the URL for the event
+        $url = route('events.show', $this->event->id);
+        $url = getDomainSpecificUrl($url, $this->company);
+
+        // Build and return the Slack message with event details
         return $this->slackBuild($notifiable)
-            ->content(__('email.newEvent.subject') . "\n" . __('modules.events.eventName') . ': ' . $this->event->event_name . "\n" . __('modules.events.startOn') . ': ' . $this->event->start_date_time->format($this->company->date_format . ' - ' . $this->company->time_format) . "\n" . __('modules.events.endOn') . ': ' . $this->event->end_date_time->format($this->company->date_format . ' - ' . $this->company->time_format));
-
+            ->content(__('email.newEvent.subject') . "\n" . 
+                      __('modules.events.eventName') . ': ' . $this->event->event_name . "\n" . 
+                      __('modules.events.startOn') . ': ' . $this->event->start_date_time->format($this->company->date_format . ' - ' . $this->company->time_format) . "\n" . 
+                      __('modules.events.endOn') . ': ' . $this->event->end_date_time->format($this->company->date_format . ' - ' . $this->company->time_format));
     }
-
 }

@@ -7,16 +7,17 @@ use Illuminate\Support\HtmlString;
 
 class InvoiceReminder extends BaseNotification
 {
-
     private $invoice;
 
     /**
      * Create a new notification instance.
      *
+     * @param mixed $invoice
      * @return void
      */
     public function __construct($invoice)
     {
+        // Initialize the notification with invoice data and company settings
         $this->invoice = $invoice;
         $this->company = $this->invoice->company;
     }
@@ -30,8 +31,10 @@ class InvoiceReminder extends BaseNotification
     // phpcs:ignore
     public function via($notifiable)
     {
+        // Default delivery channel is database
         $via = ['database'];
 
+        // Add mail channel if user has an email
         if ($notifiable->email != '') {
             array_push($via, 'mail');
         }
@@ -47,16 +50,27 @@ class InvoiceReminder extends BaseNotification
      */
     public function toMail($notifiable)
     {
+        // Build the base notification message
         $build = parent::build($notifiable);
         $setting = $this->company;
         $invoice_setting = $this->company->invoiceSetting->send_reminder;
         $invoice_number = $this->invoice->invoice_number;
 
-        $url = url()->temporarySignedRoute('front.invoice', now()->addDays(GlobalSetting::SIGNED_ROUTE_EXPIRY), $this->invoice->hash);
+        // Generate a temporary signed URL for the invoice
+        $url = url()->temporarySignedRoute(
+            'front.invoice',
+            now()->addDays(GlobalSetting::SIGNED_ROUTE_EXPIRY),
+            $this->invoice->hash
+        );
         $url = getDomainSpecificUrl($url, $this->company);
 
-        $content = __('email.invoiceReminder.text') . ' ' . now($setting->timezone)->addDays($invoice_setting)->toFormattedDateString() . '<br>' . new HtmlString($invoice_number) . '<br>' . __('email.messages.loginForMoreDetails');
+        // Construct email content with invoice reminder details
+        $content = __('email.invoiceReminder.text') . ' ' . 
+                   now($setting->timezone)->addDays($invoice_setting)->toFormattedDateString() . '<br>' . 
+                   new HtmlString($invoice_number) . '<br>' . 
+                   __('email.messages.loginForMoreDetails');
 
+        // Configure the mail message with subject and template data
         $build
             ->subject(__('email.invoiceReminder.subject') . ' - ' . config('app.name'))
             ->markdown('mail.email', [
@@ -67,6 +81,7 @@ class InvoiceReminder extends BaseNotification
                 'notifiableName' => $notifiable->name
             ]);
 
+        // Reset the locale after building the message
         parent::resetLocale();
 
         return $build;
@@ -78,10 +93,10 @@ class InvoiceReminder extends BaseNotification
      * @param mixed $notifiable
      * @return array
      */
-//phpcs:ignore
+    // phpcs:ignore
     public function toArray($notifiable)
     {
+        // Return notifiable data as an array
         return $notifiable->toArray();
     }
-
 }
