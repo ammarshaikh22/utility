@@ -5,9 +5,19 @@ namespace App\DataTables;
 use App\Models\Discussion;
 use App\Scopes\ActiveScope;
 
+/**
+ * DataTable for project discussions/threads. Renders title with last reply info,
+ * avatar, category badge, reply count, and action dropdowns governed by
+ * permissions (e.g., delete discussion).
+ *
+ * Properties:
+ * - $deleteDiscussionPermission  Current user's scope for deleting discussions.
+ */
+
 class DiscussionDataTable extends BaseDataTable
 {
 
+    /** @var string */
     private $deleteDiscussionPermission;
 
     public function __construct()
@@ -47,8 +57,7 @@ class DiscussionDataTable extends BaseDataTable
 
                 if (count($row->replies) > 1) {
                     $title .= __('modules.discussions.replied');
-                }
-                else {
+                } else {
                     $title .= __('modules.discussions.posted');
                 }
 
@@ -108,11 +117,16 @@ class DiscussionDataTable extends BaseDataTable
     {
         $request = $this->request();
 
-        $model = $model->with(['user' => function ($query) {
-            $query->withoutGlobalScope(ActiveScope::class);
-        }, 'replies', 'category', 'lastReplyBy' => function ($query) {
-            $query->withoutGlobalScope(ActiveScope::class);
-        }])
+        $model = $model->with([
+            'user' => function ($query) {
+                $query->withoutGlobalScope(ActiveScope::class);
+            },
+            'replies',
+            'category',
+            'lastReplyBy' => function ($query) {
+                $query->withoutGlobalScope(ActiveScope::class);
+            }
+        ])
             ->select('discussions.*');
 
         if (!is_null($request->project_id)) {

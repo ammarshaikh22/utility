@@ -5,9 +5,19 @@ namespace App\DataTables;
 use App\Models\Award;
 use App\Scopes\ActiveScope;
 
+/**
+ * DataTable for employee appreciation records (awards/recognitions).
+ *
+ * Typical columns: recipient, type, description, date, and status. Action
+ * buttons (view/edit/delete) are usually permission-gated. Filters often
+ * include date range, recipient, and appreciation type.
+ *
+ * Note: This table typically relies on app-level permission checks; no
+ * dedicated class properties are required unless you cache permission scopes.
+ */
 class EmployeeAppreciationDataTable extends BaseDataTable
 {
-
+    // No class properties defined here by default; add only if you cache scopes.
     private $deleteDiscussionPermission;
 
     public function __construct()
@@ -47,8 +57,7 @@ class EmployeeAppreciationDataTable extends BaseDataTable
 
                 if (count($row->replies) > 1) {
                     $title .= __('modules.discussions.replied');
-                }
-                else {
+                } else {
                     $title .= __('modules.discussions.posted');
                 }
 
@@ -119,12 +128,12 @@ class EmployeeAppreciationDataTable extends BaseDataTable
     {
         $dataTable = $this->setBuilder('employee-appreciation-table', 0)
             ->parameters([
-                'fnDrawCallback' => 'function( oSettings ) {
+            'fnDrawCallback' => 'function( oSettings ) {
                     $("body").tooltip({
                         selector: \'[data-toggle="tooltip"]\'
                     })
                 }',
-            ]);
+        ]);
 
         return $dataTable;
     }

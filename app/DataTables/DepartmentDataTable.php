@@ -7,11 +7,23 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
 
+/**
+ * DataTable for Departments (Teams) with parent/child traversal.
+ *
+ * Renders department name (links to details), parent department name,
+ * checkbox column, and an action menu (view/edit/delete) based on permissions.
+ * Supports filtering by parent and recursive expansion of child departments.
+ */
 class DepartmentDataTable extends BaseDataTable
 {
 
+    /** @var string Scope for editing departments. */
     private $editDepartmentPermission;
+
+    /** @var string Scope for deleting departments. */
     private $deleteDepartmentPermission;
+
+    /** @var array<int,int> Working array to collect IDs of child departments. */
     public $arr = [];
 
     public function __construct()

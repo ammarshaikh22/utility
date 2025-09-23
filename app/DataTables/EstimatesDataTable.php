@@ -13,18 +13,45 @@ use Illuminate\Support\Facades\DB;
 use App\Helper\UserService;
 use App\Helper\Common;
 
+/**
+ * DataTable for listing/managing Estimates.
+ *
+ * Presents estimate number, client/project, total, valid-till, created date,
+ * request number (if any), status + “not sent” badge, and action dropdowns
+ * (view/copy link/public URL/duplicate/create invoice/cancel) based on user
+ * permissions. Also merges custom-field columns in the table definition.
+ */
 class EstimatesDataTable extends BaseDataTable
 {
 
     protected $firstEstimate;
+    /** @var \App\Models\Estimate|null First (most recent) estimate, used in actions. */
+
+    /** @var string Scope for creating estimates (e.g., 'all'/'added'). */
     private $addEstimatePermission;
+
+    /** @var string Scope for editing estimates. */
     private $editEstimatePermission;
+
+    /** @var string Scope for deleting estimates. */
     private $deleteEstimatePermission;
+
+    /** @var string Scope for creating invoices. */
     private $addInvoicePermission;
+
+    /** @var string Scope for viewing estimates (filters query). */
     private $viewEstimatePermission;
+
+    /** @var bool Whether to show Estimate Request-related columns. */
     private $showRequest;
+
+    /** @var string Scope for viewing project estimates. */
     private $viewProjectEstimatePermission;
+
+    /** @var int|null Optional filter: project ID. */
     private $projectID;
+
+    /** @var int|null Optional filter: client ID. */
     private $clientID;
 
     public function __construct($projectID = null, $clientID = null)

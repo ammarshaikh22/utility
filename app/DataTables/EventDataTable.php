@@ -13,11 +13,25 @@ use App\Models\CustomFieldGroup;
 use App\Helper\UserService;
 use App\Helper\Common;
 
+/**
+ * DataTable for calendar events with attendee lists, time/date formatting,
+ * recurring badges, custom fields, and permissioned actions (view/edit/delete).
+ *
+ * Properties:
+ * - $viewPermission   Scope controlling which events the user may see.
+ * - $editPermission   Scope controlling edit access.
+ * - $deletePermission Scope controlling delete access.
+ */
 class EventDataTable extends BaseDataTable
 {
 
+    /** @var string */
     private $editPermission;
+
+    /** @var string */
     private $deletePermission;
+
+    /** @var string */
     private $viewPermission;
 
     public function __construct()
@@ -154,7 +168,7 @@ class EventDataTable extends BaseDataTable
                             </a>';
                 }
                 // }
-
+    
                 $actions .= '</div> </div> </div>';
 
                 return $actions;

@@ -6,9 +6,19 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Html\Button;
 
+/**
+ * DataTable that summarizes tasks per employee for a selected date range.
+ *
+ * Columns include: employee name/avatar, total assigned, completed, pending,
+ * and missed deadlines. Filters support date range and assignee.
+ * Export buttons/column visibility are configured in the HTML builder.
+ */
 class EmployeeWiseTaskDataTable extends BaseDataTable
 {
 
+    // No special per-class permissions stored; metrics are computed in query()
+    // and formatted in dataTable(). See columns: total_tasks, total_tasks_completed,
+    // total_tasks_pending, task_missed_deadline for computed values.
     public function dataTable($query)
     {
         return datatables()
@@ -61,22 +71,23 @@ class EmployeeWiseTaskDataTable extends BaseDataTable
         }
 
         $model = User::withRole('employee')
-            ->leftJoin('task_users', function($join) use ($startDate, $endDate, $request) {
+            ->leftJoin('task_users', function ($join) use ($startDate, $endDate, $request) {
                 $join->on('users.id', '=', 'task_users.user_id')
-                    ->when($startDate !== null && $endDate !== null, function($query) use ($startDate, $endDate) {
-                        $query->whereExists(function($subquery) use ($startDate, $endDate) {
+                    ->when($startDate !== null && $endDate !== null, function ($query) use ($startDate, $endDate) {
+                        $query->whereExists(function ($subquery) use ($startDate, $endDate) {
                             $subquery->from('tasks')
                                 ->whereRaw('tasks.id = task_users.task_id')
-                                ->where(function($q) use ($startDate, $endDate) {
+                                ->where(function ($q) use ($startDate, $endDate) {
                                     $q->whereBetween(DB::raw('DATE(tasks.due_date)'), [$startDate, $endDate])
-                                    ->orWhereBetween(DB::raw('DATE(tasks.start_date)'), [$startDate, $endDate]);
+                                        ->orWhereBetween(DB::raw('DATE(tasks.start_date)'), [$startDate, $endDate]);
                                 });
                         });
                     });
             })
             ->leftJoin('tasks', 'task_users.task_id', '=', 'tasks.id')
             ->leftJoin('taskboard_columns', 'tasks.board_column_id', '=', 'taskboard_columns.id')
-            ->select('users.*',
+            ->select(
+                'users.*',
                 DB::raw('IFNULL(COUNT(DISTINCT task_users.task_id), "0") as total_tasks'),
                 DB::raw('SUM(CASE WHEN taskboard_columns.slug = "completed" THEN 1 ELSE 0 END) as total_tasks_completed'),
                 DB::raw('SUM(CASE WHEN taskboard_columns.slug != "completed" THEN 1 ELSE 0 END) as total_tasks_pending'),

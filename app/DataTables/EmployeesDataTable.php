@@ -14,10 +14,19 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use Illuminate\Support\Facades\DB;
 
-
+/**
+ * DataTable for employees directory (profile, role, department, status).
+ *
+ * Typical features: avatar + name link, designation/department, email/phone,
+ * join date, status badges, and action menu. Supports search and filters
+ * (department/designation/status/date) and exports via buttons.
+ *
+ * Note: Many implementations rely on global permission helpers (view/edit/delete)
+ * rather than storing per-class properties.
+ */
 class EmployeesDataTable extends BaseDataTable
 {
-
+    // No explicit properties unless you cache permission scopes locally.
     private $editEmployeePermission;
     private $deleteEmployeePermission;
     private $viewEmployeePermission;
@@ -340,7 +349,7 @@ class EmployeesDataTable extends BaseDataTable
         if ($request->reporting_employee != 'all' && $request->reporting_employee != '') {
             $users = $users->where('employee_details.reporting_to', $request->reporting_employee);
         }
-        
+
 
         if ($request->designation != 'all' && $request->designation != '') {
             $users = $users->where('employee_details.designation_id', $request->designation);

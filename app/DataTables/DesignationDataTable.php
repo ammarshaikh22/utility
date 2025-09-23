@@ -7,11 +7,25 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
 
+/**
+ * DataTable for organization designations (roles/titles) with hierarchical
+ * filtering (parent/child traversal) and permissioned actions.
+ *
+ * Properties:
+ * - $editDesignationPermission   Gate for editing designations.
+ * - $deleteDesignationPermission Gate for deleting designations.
+ * - $arr                         Collector array used to accumulate child IDs.
+ */
 class DesignationDataTable extends BaseDataTable
 {
 
+    /** @var string */
     private $editDesignationPermission;
+
+    /** @var string */
     private $deleteDesignationPermission;
+
+    /** @var array<int,int> */
     public $arr = [];
 
     public function __construct()

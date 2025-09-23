@@ -13,12 +13,29 @@ use App\Helper\UserService;
 use App\Models\ClientContact;
 use App\Helper\Common;
 
+/**
+ * DataTable for Estimate Requests (pre-estimate inquiries).
+ *
+ * Shows request number, client (avatar/company), project, estimated budget,
+ * linked estimate (if any), status (with colored badge), early requirement,
+ * and actions (view/edit/reject/create estimate/delete) — all gated by
+ * granular permissions and the viewer’s role (client vs. staff).
+ */
 class EstimateRequestDataTable extends BaseDataTable
 {
+   /** @var string Scope for creating estimates from requests. */
     private $addEstimatePermission;
+
+    /** @var string Scope for editing estimate requests. */
     private $editEstimateRequestPermission;
+
+    /** @var string Scope for deleting estimate requests. */
     private $deleteEstimateRequestPermission;
+
+    /** @var string Scope for rejecting estimate requests. */
     private $rejectEstimateRequestPermission;
+
+    /** @var string Scope controlling which requests are visible to the user. */
     private $viewEstimateRequestPermission;
 
     public function __construct()
@@ -259,7 +276,7 @@ class EstimateRequestDataTable extends BaseDataTable
             __('modules.estimateRequest.estimatedBudget') => ['data' => 'estimated_budget', 'name' => 'estimated_budget', 'title' => __('modules.estimateRequest.estimatedBudget')],
             __('app.estimate') => ['data' => 'estimate_id', 'name' => 'estimate_id', 'title' => __('app.estimate')],
             __('app.status') => ['data' => 'status1', 'name' => 'status', 'width' => '10%', 'exportable' => false, 'visible' => true, 'title' => __('app.status')],
-            __('modules.estimateRequest.earlyRequirement') => ['data' => 'early_requirement', 'name' => 'early_requirement',  'visible' => false],
+            __('modules.estimateRequest.earlyRequirement') => ['data' => 'early_requirement', 'name' => 'early_requirement', 'visible' => false],
             __('modules.estimateRequest.estimateRequest') . ' ' . __('app.status') => ['data' => 'status_name', 'name' => 'status', 'visible' => false, 'exportable' => true, 'title' => __('modules.estimateRequest.estimateRequest') . ' ' . __('app.status')],
             Column::computed('action', __('app.action'))
                 ->exportable(false)

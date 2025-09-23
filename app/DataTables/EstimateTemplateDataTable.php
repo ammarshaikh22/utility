@@ -9,9 +9,20 @@ use Illuminate\Support\Carbon;
 use App\Helper\UserService;
 use App\Helper\Common;
 
+/**
+ * DataTable for listing estimate templates with actions (view, create from template,
+ * edit, delete) gated by user permissions.
+ *
+ * Properties:
+ * - $editEstimatePermission   Current user's scope for editing estimates.
+ * - $deleteEstimatePermission Current user's scope for deleting estimates.
+ */
 class EstimateTemplateDataTable extends BaseDataTable
 {
+    /** @var string */
     private $editEstimatePermission;
+
+    /** @var string */
     private $deleteEstimatePermission;
 
     public function __construct()
