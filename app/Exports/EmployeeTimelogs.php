@@ -31,6 +31,9 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
 
     private $viewTimelogPermission;
 
+    /**
+     * Initialize the export class and enforce permission checks for timelogs module.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -41,6 +44,11 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         });
     }
 
+    /**
+     * Generate the view for the Excel export, fetching and processing employee timelog data.
+     *
+     * @return View The Blade view for rendering the timelog data
+     */
     public function view(): View
     {
         $this->startDate = $startDate = Carbon::createFromFormat(company()->date_format, urldecode(request()->startDate))->toDateString();
@@ -108,6 +116,14 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         return view('exports.employee_timelogs', $this->data);
     }
 
+    /**
+     * Calculate the total expected working hours for an employee, excluding holidays and leaves.
+     *
+     * @param mixed $user The employee object
+     * @param string $startDate The start date of the period
+     * @param string $endDate The end date of the period
+     * @return int The total expected working hours
+     */
     public function calculateTotalHours($user, $startDate, $endDate)
     {
         $totalHours = 0;
@@ -168,6 +184,12 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         return $totalHours;
     }
 
+    /**
+     * Apply styles to the Excel worksheet, such as bolding and font size for headers.
+     *
+     * @param Worksheet $sheet The worksheet to style
+     * @return array The style configuration
+     */
     // phpcs:ignore
     public function styles(Worksheet $sheet)
     {
@@ -177,6 +199,11 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         ];
     }
 
+    /**
+     * Register events for the Excel export, adding holiday comments to specific cells.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [
@@ -203,6 +230,13 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         ];
     }
 
+    /**
+     * Calculate the total number of days in the given date range, inclusive.
+     *
+     * @param string $startDate The start date of the period
+     * @param string $endDate The end date of the period
+     * @return int The total number of days
+     */
     private function countTotalDays($startDate, $endDate)
     {
         $start = Carbon::parse($startDate);
@@ -210,6 +244,13 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         return $start->diffInDays($end) + 1;
     }
 
+    /**
+     * Count the number of weekend days (Saturday and Sunday) in the given date range.
+     *
+     * @param string $startDate The start date of the period
+     * @param string $endDate The end date of the period
+     * @return int The total number of weekend days
+     */
     private function countWeekends($startDate, $endDate)
     {
         $start = Carbon::parse($startDate);
@@ -226,6 +267,14 @@ class EmployeeTimelogs extends AccountBaseController implements FromView, Should
         return $count;
     }
 
+    /**
+     * Retrieve holidays for an employee within the given date range, filtered by department, designation, and employment type.
+     *
+     * @param mixed $user The employee object
+     * @param string $startDate The start date of the period
+     * @param string $endDate The end date of the period
+     * @return \Illuminate\Support\Collection The collection of holidays
+     */
     private function countHolidays($user, $startDate, $endDate)
     {
         $holidays = Holiday::orderBy('date', 'ASC');

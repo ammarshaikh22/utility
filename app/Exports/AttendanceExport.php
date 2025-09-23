@@ -37,6 +37,17 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
     public $startdate;
     public $enddate;
 
+    /**
+     * Initialize the export class with parameters for year, month, user ID, department, designation, and date range.
+     *
+     * @param int $year The year for the attendance report
+     * @param int $month The month for the attendance report
+     * @param string $id The user ID or 'all' for all employees
+     * @param string $department The department ID or 'all' for all departments
+     * @param string $designation The designation ID or 'all' for all designations
+     * @param Carbon $startdate The start date of the report period
+     * @param Carbon $enddate The end date of the report period
+     */
     public function __construct($year, $month, $id, $department, $designation, $startdate, $enddate)
     {
         $this->viewAttendancePermission = user()->permission('view_attendance');
@@ -49,6 +60,11 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         $this->enddate = $enddate;
     }
 
+    /**
+     * Register events for the Excel export, specifically handling post-sheet creation tasks.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [
@@ -56,6 +72,11 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         ];
     }
 
+    /**
+     * Add comments and apply styling to the Excel sheet after it is generated.
+     *
+     * @param AfterSheet $event The event object for post-sheet processing
+     */
     public static function afterSheet(AfterSheet $event)
     {
         $emp_status = self::$sum;
@@ -84,6 +105,11 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 
+    /**
+     * Define the column headings for the Excel export, including the date range.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         $arr = array();
@@ -99,6 +125,11 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         ];
     }
 
+    /**
+     * Collect and process attendance data for employees based on filters (user, department, designation, and date range).
+     *
+     * @return Collection The processed attendance data
+     */
     public function collection()
     {
         $startDate = $this->startdate;
@@ -350,6 +381,12 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         return $employeedata;
     }
 
+    /**
+     * Map the attendance data to the format required for the Excel export.
+     *
+     * @param array $employeedata The attendance data for a specific employee
+     * @return array The mapped data for a single row in the Excel file
+     */
     public function map($employeedata): array
     {
         $data = array();
@@ -371,6 +408,12 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         return $data;
     }
 
+    /**
+     * Update the attendance collection to reset the status for a specific date if it coincides with a holiday.
+     *
+     * @param Collection $attendances The attendance collection
+     * @param Carbon $date The date to check for holidays
+     */
     public function checkHolidays($attendances, $date)
     {
         foreach ($attendances as $attendance) {
@@ -380,6 +423,13 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         }
     }
 
+    /**
+     * Determine the default clock-out time based on the shift settings or company defaults.
+     *
+     * @param Carbon $date The clock-in date and time
+     * @param mixed $attendanceSettings The employee's shift settings for the given date
+     * @return Carbon The calculated default clock-out time
+     */
     private function getDefaultClockOutTime($date, $attendanceSettings)
     {
 

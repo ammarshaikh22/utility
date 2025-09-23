@@ -34,9 +34,14 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
     private $user;
 
     /**
-     * Create a new job instance.
+     * Constructor for ImportExpenseJob.
      *
-     * @return void
+     * - Initializes the job with a row of expense data, column mapping, and company context.
+     * - Also sets the current authenticated user (the one running the import).
+     *
+     * @param array $row     A single row of expense data from Excel.
+     * @param array $columns Column mapping from Excel file.
+     * @param mixed $company Company model instance (optional, for multi-tenant).
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -47,7 +52,15 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
     }
 
     /**
-     * Execute the job.
+     * Handle function that executes the expense import process.
+     *
+     * - Validates required fields (`item_name`, `price`, `purchase_date`).
+     * - Creates a new expense record with details like purchase date, price, description, etc.
+     * - Links expense to an employee (if a valid email is provided).
+     * - Creates/assigns an expense category if provided (and creates missing categories + role associations).
+     * - Associates expense with a bank account if available.
+     * - Wraps all operations in a database transaction for data consistency.
+     * - Handles invalid data, duplicate entries, and formatting issues with proper failure logging.
      *
      * @return void
      */
@@ -58,6 +71,7 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
             DB::beginTransaction();
             try {
 
+                // Create new expense instance
                 $expense = new Expense();
                 $expense->company_id = $this->company->id;
                 $expense->item_name = $this->getColumnValue('item_name');
@@ -71,9 +85,13 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
 
                 $userId = null;
 
+                // Link expense to employee if email is valid and exists
                 if ($this->isEmailValid($this->getColumnValue('email'))) {
 
-                    $user = User::where('email', $this->getColumnValue('email'))->where('company_id', $this->company->id)->onlyEmployee()->first();
+                    $user = User::where('email', $this->getColumnValue('email'))
+                                ->where('company_id', $this->company->id)
+                                ->onlyEmployee()
+                                ->first();
 
                     if ($user) {
                         $userId = $user->id;
@@ -82,8 +100,11 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
 
                 $expense->user_id = $userId;
 
+                // Handle expense category (create if not exists)
                 if ($this->getColumnValue('category')) {
-                    $category = ExpensesCategory::where('category_name', $this->getColumnValue('category'))->where('company_id', $this->company->id)->first();
+                    $category = ExpensesCategory::where('category_name', $this->getColumnValue('category'))
+                                                ->where('company_id', $this->company->id)
+                                                ->first();
 
                     if (!$category) {
                         $category = new ExpensesCategory();
@@ -91,7 +112,11 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
                         $category->company_id = $this->company->id;
                         $category->save();
 
-                        $rolesData = Role::where('name', '<>', 'admin')->where('name', '<>', 'client')->where('company_id', $this->company->id)->get();
+                        // Assign category to all roles except admin & client
+                        $rolesData = Role::where('name', '<>', 'admin')
+                                        ->where('name', '<>', 'client')
+                                        ->where('company_id', $this->company->id)
+                                        ->get();
 
                         foreach ($rolesData as $roleData) {
                             $expansesCategoryRoles = new ExpensesCategoryRole();
@@ -105,7 +130,10 @@ class ImportExpenseJob implements ShouldQueue, ShouldBeUnique
                     $expense->category_id = $category->id;
                 }
 
-                $bankAccount = BankAccount::where('account_name', $this->getColumnValue('bank_account'))->where('company_id', $this->company->id)->first();
+                // Assign bank account if provided
+                $bankAccount = BankAccount::where('account_name', $this->getColumnValue('bank_account'))
+                                          ->where('company_id', $this->company->id)
+                                          ->first();
                 $expense->bank_account_id = $bankAccount?->id;
 
                 $expense->save();

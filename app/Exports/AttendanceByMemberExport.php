@@ -32,6 +32,16 @@ class AttendanceByMemberExport implements FromCollection, WithHeadings, WithMapp
     public $date;
     public $enddate;
 
+    /**
+     * Initialize the export class with parameters for year, month, user ID, employee name, and date range.
+     *
+     * @param int $year The year for the attendance report
+     * @param int $month The month for the attendance report
+     * @param int $id The user ID of the employee
+     * @param string $employeeName The name of the employee
+     * @param Carbon $startDate The start date of the report period
+     * @param Carbon $endaDate The end date of the report period
+     */
     public function __construct($year, $month, $id, $employeeName, $startDate, $endaDate)
     {
         $this->year = $year;
@@ -43,6 +53,11 @@ class AttendanceByMemberExport implements FromCollection, WithHeadings, WithMapp
         $this->date = $this->enddate->lessThan(now()) ? $this->enddate : now();
     }
 
+    /**
+     * Define the column headings for the Excel export.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         return [
@@ -50,6 +65,11 @@ class AttendanceByMemberExport implements FromCollection, WithHeadings, WithMapp
         ];
     }
 
+    /**
+     * Collect and process attendance data for the specified user and date range, including leaves and holidays.
+     *
+     * @return \Illuminate\Support\Collection The processed attendance data
+     */
     public function collection()
     {
 
@@ -248,6 +268,12 @@ class AttendanceByMemberExport implements FromCollection, WithHeadings, WithMapp
 
     }
 
+    /**
+     * Map the attendance data to the format required for the Excel export.
+     *
+     * @param array $employeedata The attendance data for a specific day
+     * @return array The mapped data for a single row in the Excel file
+     */
     public function map($employeedata): array
     {
         $diff = $employeedata['total_hours'];
@@ -269,6 +295,14 @@ class AttendanceByMemberExport implements FromCollection, WithHeadings, WithMapp
         ];
     }
 
+    /**
+     * Update the attendance collection to mark a specific date as a holiday if applicable.
+     *
+     * @param \Illuminate\Support\Collection $attendances The attendance collection
+     * @param Carbon $date The date to check for holidays
+     * @param string $occassion The occasion of the holiday
+     * @return void
+     */
     public function checkHolidays($attendances, $date, $occassion)
     {
         foreach ($attendances as $attendance) {

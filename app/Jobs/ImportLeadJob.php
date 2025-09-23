@@ -32,9 +32,14 @@ class ImportLeadJob implements ShouldQueue
     private $company;
 
     /**
-     * Create a new job instance.
+     * Constructor for ImportLeadJob.
      *
-     * @return void
+     * - Accepts one row of lead data, column mappings, and optional company context.
+     * - Stores them as private properties to be used during job execution.
+     *
+     * @param array $row     A single row of lead data from Excel.
+     * @param array $columns Column mapping from Excel file.
+     * @param mixed $company (optional) Company model instance for multi-tenant setup.
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -44,7 +49,15 @@ class ImportLeadJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
+     * Handle function that executes the lead import process.
+     *
+     * - Increments the total lead counter in session for tracking.
+     * - Validates required fields (`name`, `email`) and prevents duplicate leads/users by email.
+     * - Creates a new Lead record with details such as company info, contact details, source, etc.
+     * - Stores imported leads in session for reporting purposes.
+     * - Automatically creates a related Deal using the company’s default pipeline and stage.
+     * - Logs searchable entries for lead name, email, and company name to enable quick lookups.
+     * - Uses a database transaction to ensure data consistency and rolls back on failure.
      *
      * @return void
      */
@@ -57,20 +70,18 @@ class ImportLeadJob implements ShouldQueue
 
         if ($this->isColumnExists('name')) {
 
+            // Validate email field and check for duplicates
             if ($this->isColumnExists('email') && $this->isEmailValid($this->getColumnValue('email'))) {
                 $lead = Lead::where('client_email', $this->getColumnValue('email'))->where('company_id', $this->company?->id)->first();
                 $user = User::where('email', $this->getColumnValue('email'))->first();
 
                 if ($lead || $user) {
-
                     $this->failJobWithMessage(__('messages.duplicateEntryForEmail') . $this->getColumnValue('email'));
-
                     return;
                 }
             }
             else {
                 $this->failJob(__('messages.invalidData'));
-
                 return;
             }
 
@@ -85,6 +96,7 @@ class ImportLeadJob implements ShouldQueue
                     $leadSource = LeadSource::where('type', $this->getColumnValue('source'))->where('company_id', $this->company?->id)->first();
                 }
 
+                // Create new lead
                 $lead = new Lead();
                 $lead->company_id = $this->company?->id;
                 $lead->client_name = $this->getColumnValue('name');
@@ -102,6 +114,7 @@ class ImportLeadJob implements ShouldQueue
                 $lead->source_id = $leadSource?->id;
                 $lead->created_at = $this->isColumnExists('created_at') ? Carbon::parse($this->getColumnValue('created_at')) : now();
 
+                // Track leads in session (for reporting after import)
                 $leads = Session::get('leads', []);
 
                 $leads[] = [
@@ -115,6 +128,7 @@ class ImportLeadJob implements ShouldQueue
 
                 $lead->save();
 
+                // Create associated deal in default pipeline
                 $leadPipeline = LeadPipeline::where('default', '1')->where('company_id', $lead->company_id)->first();
                 $leadStage = PipelineStage::where('default', '1')->where('lead_pipeline_id', $leadPipeline->id)->where('company_id', $lead->company_id)->first();
 
@@ -128,7 +142,7 @@ class ImportLeadJob implements ShouldQueue
                 $deal->currency_id = $lead->company?->currency_id;
                 $deal->save();
 
-                // Log search
+                // Log searchable entries for quick search
                 $this->logSearchEntry($lead->id, $lead->client_name, 'lead-contact', 'lead', $lead->company_id);
 
                 if (!is_null($lead->client_email)) {
@@ -148,9 +162,6 @@ class ImportLeadJob implements ShouldQueue
         else {
             $this->failJob(__('messages.invalidData'));
         }
-
-
     }
 
 }
-

@@ -20,18 +20,30 @@ use Illuminate\Support\Facades\Session;
 
 class ImportDealJob implements ShouldQueue
 {
-
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels, UniversalSearchTrait;
     use ExcelImportable;
 
+    /**
+     * @var array The row data to process
+     */
     private $row;
+
+    /**
+     * @var array The column headers
+     */
     private $columns;
+
+    /**
+     * @var \App\Models\Company|null The company instance
+     */
     private $company;
 
     /**
      * Create a new job instance.
      *
-     * @return void
+     * @param array $row The row data from the import
+     * @param array $columns The column headers
+     * @param \App\Models\Company|null $company The company instance (optional)
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -41,9 +53,7 @@ class ImportDealJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
-     *
-     * @return void
+     * Execute the job to import deal data.
      */
     public function handle()
     {
@@ -58,12 +68,10 @@ class ImportDealJob implements ShouldQueue
             $this->isColumnExists('value') &&
             $this->isColumnExists('close_date')
         ) {
-
             $lead = Lead::withoutGlobalScopes()->where('client_email', $this->getColumnValue('email'))->where('company_id', $this->company?->id)->first();
 
             if (!$lead) {
                 $this->failJob(__('messages.invalidData'));
-
                 return;
             }
 
@@ -75,7 +83,6 @@ class ImportDealJob implements ShouldQueue
 
             if (!$pipeline) {
                 $this->failJob(__('messages.invalidData'));
-
                 return;
             }
 
@@ -87,14 +94,12 @@ class ImportDealJob implements ShouldQueue
 
             if (!$stage) {
                 $this->failJob(__('messages.invalidData'));
-
                 return;
             }
 
             DB::beginTransaction();
             Session::put('is_imported', true);
             try {
-
                 $deal = new Deal();
                 $deal->name = $this->getColumnValue('name');
                 $deal->lead_id = $lead->id;
@@ -116,7 +121,7 @@ class ImportDealJob implements ShouldQueue
 
                 $deal->save();
 
-                // Log search
+                // Log search entry for the deal
                 $this->logSearchEntry($deal->id, $deal->name, 'deals.show', 'deal');
 
                 DB::commit();
@@ -124,11 +129,8 @@ class ImportDealJob implements ShouldQueue
                 DB::rollBack();
                 $this->failJobWithMessage($e->getMessage());
             }
-        }
-        else {
+        } else {
             $this->failJob(__('messages.invalidData'));
         }
     }
-
 }
-

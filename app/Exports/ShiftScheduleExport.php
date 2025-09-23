@@ -31,6 +31,17 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
     public $weekStartDate;
     public $weekEndDate;
 
+    /**
+     * Initialize the export class with parameters for year, month, user ID, department, date range, and view type.
+     *
+     * @param int $year The year for the shift schedule report
+     * @param int $month The month for the shift schedule report
+     * @param string $id The user ID or 'all' for all employees
+     * @param string $department The department ID or 'all' for all departments
+     * @param Carbon $startdate The start date of the report period
+     * @param Carbon $enddate The end date of the report period
+     * @param string $viewType The view type (e.g., 'week' or 'month')
+     */
     public function __construct($year, $month, $id, $department, $startdate, $enddate, $viewType)
     {
         $this->viewAttendancePermission = user()->permission('view_shift_roster');
@@ -43,6 +54,11 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
         $this->viewType = $viewType;
     }
 
+    /**
+     * Register events for the Excel export, specifically handling post-sheet creation tasks.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [
@@ -50,6 +66,11 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
         ];
     }
 
+    /**
+     * Apply alignment to the Excel sheet after it is generated.
+     *
+     * @param AfterSheet $event The event object for post-sheet processing
+     */
     public static function afterSheet(AfterSheet $event)
     {
         $emp_status = self::$sum;
@@ -57,12 +78,16 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
         $arr = array('B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ');
         $j = 2;
 
-
         $event->sheet->getDelegate()->getStyle('b:ag')
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 
+    /**
+     * Define the column headings for the Excel export, including the date range.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         $arr = array();
@@ -78,6 +103,11 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
         ];
     }
 
+    /**
+     * Collect and process shift schedule data for employees based on filters (user, department, and date range).
+     *
+     * @return \Illuminate\Support\Collection The processed shift schedule data
+     */
     public function collection()
     {
         $startDate = $this->startdate;
@@ -196,6 +226,12 @@ class ShiftScheduleExport implements FromCollection, WithHeadings, WithMapping, 
         return $employeedata;
     }
 
+    /**
+     * Map the shift schedule data to the format required for the Excel export.
+     *
+     * @param array $employeedata The shift schedule data for a specific employee
+     * @return array The mapped data for a single row in the Excel file
+     */
     public function map($employeedata): array
     {
         $data = array();

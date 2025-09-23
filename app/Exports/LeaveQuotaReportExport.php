@@ -16,13 +16,20 @@ use Carbon\Carbon;
 class LeaveQuotaReportExport implements FromCollection, WithStyles, WithEvents
 {
     /**
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public $viewAttendancePermission;
     public $userId;
     public $forMontDate;
     public $thisMonthStartDate;
 
+    /**
+     * Initialize the export class with parameters for user ID, year, and month.
+     *
+     * @param string $id The user ID or 'all' for all employees
+     * @param int $year The year for the leave quota report
+     * @param int $month The month for the leave quota report
+     */
     public function __construct($id, $year, $month)
     {
         $this->viewAttendancePermission = user()->permission('view_attendance');
@@ -32,8 +39,10 @@ class LeaveQuotaReportExport implements FromCollection, WithStyles, WithEvents
     }
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * Collect and process leave quota data for employees, including leave types and monthly leave counts.
+     *
+     * @return \Illuminate\Support\Collection The processed leave quota data
+     */
     public function collection()
     {
         $employees = User::with([
@@ -145,6 +154,12 @@ class LeaveQuotaReportExport implements FromCollection, WithStyles, WithEvents
         return $employeeData;
     }
 
+    /**
+     * Retrieve the allowed leave quotas for an employee, either from historical data or current leave types.
+     *
+     * @param mixed $employee The employee object
+     * @return \Illuminate\Support\Collection The allowed leave quotas
+     */
     protected function getAllowedLeavesQuota($employee)
     {
         if (!$this->thisMonthStartDate->eq($this->forMontDate)) {
@@ -163,6 +178,12 @@ class LeaveQuotaReportExport implements FromCollection, WithStyles, WithEvents
         return $allowedLeavesQuota;
     }
 
+    /**
+     * Apply styles to the Excel worksheet, centering text alignment.
+     *
+     * @param Worksheet $sheet The worksheet to style
+     * @return array The style configuration
+     */
     public function styles(Worksheet $sheet)
     {
         return [
@@ -175,6 +196,11 @@ class LeaveQuotaReportExport implements FromCollection, WithStyles, WithEvents
         ];
     }
 
+    /**
+     * Register events for the Excel export, adjusting column widths and row heights, and styling headers.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [

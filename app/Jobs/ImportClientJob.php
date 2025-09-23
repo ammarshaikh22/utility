@@ -20,18 +20,30 @@ use Illuminate\Foundation\Bus\Dispatchable;
 
 class ImportClientJob implements ShouldQueue
 {
-
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels, UniversalSearchTrait;
     use ExcelImportable;
 
+    /**
+     * @var array The row data to process
+     */
     private $row;
+
+    /**
+     * @var array The column headers
+     */
     private $columns;
+
+    /**
+     * @var \App\Models\Company|null The company instance
+     */
     private $company;
 
     /**
      * Create a new job instance.
      *
-     * @return void
+     * @param array $row The row data from the import
+     * @param array $columns The column headers
+     * @param \App\Models\Company|null $company The company instance (optional)
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -41,14 +53,11 @@ class ImportClientJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
-     *
-     * @return void
+     * Execute the job to import client data.
      */
     public function handle()
     {
         if ($this->isColumnExists('name')) {
-
             $user = null;
 
             if ($this->isColumnExists('email') && $this->isEmailValid($this->getColumnValue('email'))) {
@@ -57,11 +66,9 @@ class ImportClientJob implements ShouldQueue
 
             if ($user) {
                 $this->failJobWithMessage(__('messages.duplicateEntryForEmail') . $this->getColumnValue('email'));
-            }
-            else {
+            } else {
                 DB::beginTransaction();
                 try {
-
                     $countryID = $this->isColumnExists('country_id') ? Country::where('name', $this->getColumnValue('country_id'))->first()->id : null;
 
                     $user = new User();
@@ -72,7 +79,7 @@ class ImportClientJob implements ShouldQueue
                     $user->gender = $this->isColumnExists('gender') ? strtolower($this->getColumnValue('gender')) : null;
                     $user->country_id = $countryID;
 
-                    if(!empty(array_keys($this->columns, 'email')) && filter_var($this->row[array_keys($this->columns, 'email')[0]], FILTER_VALIDATE_EMAIL)){
+                    if (!empty(array_keys($this->columns, 'email')) && filter_var($this->row[array_keys($this->columns, 'email')[0]], FILTER_VALIDATE_EMAIL)) {
                         $userAuth = UserAuth::createUserAuthCredentials(array_keys($this->columns, 'email')[0]);
                         $user->user_auth_id = $userAuth->id;
                     }
@@ -113,10 +120,8 @@ class ImportClientJob implements ShouldQueue
                     $this->failJobWithMessage($e->getMessage());
                 }
             }
-        }
-        else {
+        } else {
             $this->failJob(__('messages.invalidData'));
         }
     }
-
 }
