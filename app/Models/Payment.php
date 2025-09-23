@@ -96,19 +96,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Payment extends BaseModel
 {
-
     use HasCompany;
 
+    // Directory for storing payment receipts
     const FILE_PATH = 'payment-receipt';
 
+    // Attribute casting
     protected $casts = [
         'paid_on' => 'datetime',
-        'payment_gateway_response' => 'object'
+        'payment_gateway_response' => 'object',
     ];
 
+    // Auto-append these attributes when model is serialized
     protected $appends = ['total_amount', 'paid_date', 'file_url', 'default_currency_price'];
+
+    // Eager load relations by default
     protected $with = ['currency', 'order'];
 
+    /**
+     * Resolve the client based on project or invoice relations.
+     */
     public function client()
     {
         if (!is_null($this->project_id) && $this->project->client_id) {
@@ -128,84 +135,111 @@ class Payment extends BaseModel
         return null;
     }
 
+    /** Each payment may belong to an invoice */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
+    /** Each payment may belong to an order */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id');
     }
 
+    /** Each payment may be linked to a credit note */
     public function creditNote(): BelongsTo
     {
         return $this->belongsTo(CreditNotes::class, 'credit_notes_id');
     }
 
+    /** Each payment may belong to a project */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id')->withTrashed();
     }
 
+    /** Each payment belongs to a currency */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /** A payment can have many bank transactions */
     public function transactions(): HasMany
     {
         return $this->hasMany(BankTransaction::class, 'payment_id');
     }
 
+    /** Payment may have an offline payment method */
     public function offlineMethod(): BelongsTo
     {
         return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id');
     }
 
+    /**
+     * Accessor: get the total amount.
+     */
     public function getTotalAmountAttribute()
     {
         return (!is_null($this->amount) && !is_null($this->currency_id)) ? $this->amount : '';
     }
 
+    /**
+     * Accessor: get formatted paid date.
+     */
     public function getPaidDateAttribute()
     {
         return !is_null($this->paid_on) ? Carbon::parse($this->paid_on)->format('d F, Y H:i A') : '';
     }
 
+    /**
+     * Accessor: get full file URL for receipt.
+     */
     public function getFileUrlAttribute()
     {
         return asset_url_local_s3(Payment::FILE_PATH . '/' . $this->bill);
     }
 
+    /**
+     * Query scope: only completed payments.
+     */
     public function scopeCompleted($query)
     {
         return $query->where('status', 'complete');
     }
 
+    /** Duplicate relation for offlineMethod (possibly for backward compatibility) */
     public function offlineMethods(): BelongsTo
     {
         return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id');
     }
 
-    public function defaultCurrencyPrice() : Attribute
+    /**
+     * Custom accessor for default currency price.
+     * It converts amount using exchange_rate if available,
+     * otherwise falls back to the currency model exchange rate.
+     */
+    public function defaultCurrencyPrice(): Attribute
     {
         return Attribute::make(
             get: function () {
+                // Determine the base currency
                 $currency = (company() == null) ? $this->company->currency_id : company()->currency_id;
+
                 if ($this->currency_id == $currency) {
                     return $this->amount;
                 }
 
-                if($this->exchange_rate){
-                    return ($this->amount * ((float)$this->exchange_rate));
+                if ($this->exchange_rate) {
+                    return ($this->amount * ((float) $this->exchange_rate));
                 }
 
                 // Retrieve the currency associated with the payment
                 $currency = Currency::find($this->currency_id);
 
-                if($currency && $currency->exchange_rate){
-                    return ($this->amount * ((float)$currency->exchange_rate));
+                if ($currency && $currency->exchange_rate) {
+                    return ($this->amount * ((float) $currency->exchange_rate));
                 }
 
                 // If exchange rate is not available or invalid, return the original amount
@@ -213,5 +247,4 @@ class Payment extends BaseModel
             },
         );
     }
-
 }

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * App\Models\ProposalTemplateItem
  *
+ * Represents an item within a proposal template.
+ *
  * @property int $id
  * @property int|null $company_id
  * @property int $proposal_template_id
@@ -47,24 +49,33 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class ProposalTemplateItem extends BaseModel
 {
-
+    // Guard the ID from mass assignment
     protected $guarded = ['id'];
 
+    // Always load the related image with the item
     protected $with = ['proposalTemplateItemImage'];
 
+    /**
+     * Get the image associated with this template item.
+     */
     public function proposalTemplateItemImage(): HasOne
     {
         return $this->hasOne(ProposalTemplateItemImage::class, 'proposal_template_item_id');
     }
 
+    /**
+     * Get tax details by tax ID, including trashed (soft-deleted) taxes.
+     */
     public static function taxbyid($id)
     {
         return Tax::where('id', $id)->withTrashed();
     }
 
+    /**
+     * Get the unit type associated with this item.
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
-    
 }

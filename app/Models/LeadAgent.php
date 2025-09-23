@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * App\Models\LeadAgent
  *
+ * This model represents a Lead Agent in the system.
+ * A Lead Agent is typically linked with a user and manages multiple leads.
+ *
  * @property int $id
  * @property int $user_id
  * @property string $status
@@ -39,16 +42,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class LeadAgent extends BaseModel
 {
 
+    // Trait to associate Lead Agents with a company
     use HasCompany;
 
+    // Explicitly defining the database table
     protected $table = 'lead_agents';
+
+    // Protect the primary key from mass assignment
     protected $guarded = ['id'];
 
+    /**
+     * Relationship: LeadAgent belongs to a User
+     * Removes the ActiveScope so inactive users can also be retrieved.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class)->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: LeadAgent has many Leads (Deals)
+     */
     public function leads(): HasMany
     {
         return $this->hasMany(Deal::class, 'agent_id');

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * App\Models\ProposalTemplate
  *
+ * Represents a template for proposals.
+ *
  * @property int $id
  * @property int|null $company_id
  * @property string $name
@@ -57,29 +59,40 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ProposalTemplate extends BaseModel
 {
-
     use HasCompany;
 
+    // Explicitly set table name
     protected $table = 'proposal_templates';
 
+    /**
+     * Get the items associated with this proposal template.
+     */
     public function items(): HasMany
     {
         return $this->hasMany(ProposalTemplateItem::class, 'proposal_template_id');
     }
 
+    /**
+     * Get the currency associated with this template.
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Get the lead (deal) associated with this template.
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Deal::class);
     }
 
+    /**
+     * Get the unit type associated with this template.
+     */
     public function units(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
-
 }

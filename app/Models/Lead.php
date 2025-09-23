@@ -14,6 +14,9 @@ use Illuminate\Notifications\Notifiable;
 /**
  * App\Models\Lead
  *
+ * This is the Eloquent model for managing Leads in the system.
+ * It includes relationships, attributes, traits, and query scopes.
+ *
  * @property int $id
  * @property int|null $client_id
  * @property int|null $source_id
@@ -105,28 +108,45 @@ use Illuminate\Notifications\Notifiable;
 class Lead extends BaseModel
 {
 
+    // Traits for notifications, factories, custom fields, and company associations
     use Notifiable, HasFactory;
     use CustomFieldsTrait;
     use HasCompany;
 
+    // Constant reference for custom fields
     const CUSTOM_FIELD_MODEL = 'App\Models\Lead';
 
+    // Additional attributes to be appended in JSON results
     protected $appends = ['image_url', 'client_name_salutation'];
 
+    // Type casting for attributes
     protected $casts = [
         'salutation' => Salutation::class,
     ];
 
+    /**
+     * Accessor for generating Gravatar image URL
+     *
+     * @return string
+     */
     public function getImageUrlAttribute()
     {
+        // Generate hash from email if available
         $gravatarHash = !is_null($this->email) ? md5(strtolower(trim($this->email))) : '';
 
+        // Return Gravatar URL with default avatar
         return 'https://www.gravatar.com/avatar/' . $gravatarHash . '.png?s=200&d=mp';
     }
 
+    /**
+     * Accessor for client name with salutation
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
     public function clientNameSalutation(): Attribute
     {
         return Attribute::make(
+            // Add salutation label if available before client name
             get: fn($value) => ($this->salutation ? $this->salutation->label() . ' ' : '') . $this->client_name
         );
     }
@@ -140,39 +160,64 @@ class Lead extends BaseModel
     // phpcs:ignore
     public function routeNotificationForMail($notification)
     {
+        // Use lead email for notification delivery
         return $this->email;
     }
 
+    /**
+     * Relationship: Lead belongs to a source
+     */
     public function leadSource(): BelongsTo
     {
         return $this->belongsTo(LeadSource::class, 'source_id');
     }
 
+    /**
+     * Relationship: Lead belongs to a category
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(LeadCategory::class, 'category_id');
     }
 
+    /**
+     * Relationship: Lead belongs to a note
+     */
     public function note(): BelongsTo
     {
         return $this->belongsTo(LeadNote::class, 'lead_id');
     }
 
+    /**
+     * Relationship: Lead belongs to a client (user)
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    /**
+     * Relationship: User who added the lead
+     */
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Relationship: Lead owner (user)
+     */
     public function leadOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lead_owner')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Retrieve all leads with respect to user permissions
+     *
+     * @param int|null $contactId
+     * @return \Illuminate\Support\Collection
+     */
     public static function allLeads($contactId = null)
     {
         // Retrieve user's lead view permission
@@ -183,17 +228,20 @@ class Lead extends BaseModel
             return collect();
         }
 
-        // Initialize lead query
+        // Initialize lead query ordered by client name
         $leadsQuery = Lead::select('*')->orderBy('client_name');
 
+        // Filter: Only leads owned by user
         if ($viewLeadPermission == 'owned') {
             $leadsQuery = $leadsQuery->where('lead_owner', user()->id);
         }
 
+        // Filter: Only leads added by user
         if ($viewLeadPermission == 'added') {
             $leadsQuery = $leadsQuery->where('added_by', user()->id);
         }
 
+        // Filter: Both owned and added leads
         if ($viewLeadPermission == 'both') {
             $leadsQuery = $leadsQuery->where(function ($query) {
                 $query->where('lead_owner', user()->id)
@@ -206,7 +254,7 @@ class Lead extends BaseModel
             $leadsQuery->where('id', $contactId);
         }
 
-        // Retrieve leads
+        // Retrieve final results
         return $leadsQuery->get();
     }
 

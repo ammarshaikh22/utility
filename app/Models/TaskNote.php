@@ -36,13 +36,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $mention_note_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentionUser
  * @property-read int|null $mention_user_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MentionUser> $mentionNote
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentionUser
  * @mixin \Eloquent
  */
 class TaskNote extends BaseModel
 {
-
     protected $with = [];
 
     public function user(): BelongsTo
@@ -57,12 +54,13 @@ class TaskNote extends BaseModel
 
     public function mentionUser(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
+        return $this->belongsToMany(User::class, 'mention_users')
+            ->withoutGlobalScope(ActiveScope::class)
+            ->using(MentionUser::class);
     }
 
     public function mentionNote(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'task_note_id');
     }
-
 }

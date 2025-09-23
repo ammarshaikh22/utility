@@ -12,6 +12,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * App\Models\Leave
  *
+ * Represents an employee leave request/record.
+ * Stores details about type, duration, approval, and attachments (files).
+ *
+ * Core properties:
+ * - `user_id` → User who applied for the leave.
+ * - `leave_type_id` → Type of leave (sick, casual, etc.).
+ * - `leave_date` → The date of the leave.
+ * - `status` → Pending, Approved, Rejected, etc.
+ * - `approved_by` / `approved_at` → Manager who approved and timestamp.
+ * - `files` → Related uploaded files/documents.
+ *
+ * Relationships:
+ * - Belongs to `User` (employee).
+ * - Belongs to `User` (approvedBy, manager).
+ * - Belongs to `LeaveType`.
+ * - Has many `LeaveFile`.
+ *
  * @property int $id
  * @property int $user_id
  * @property int $leave_type_id
@@ -22,95 +39,112 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $reason
  * @property string $status
  * @property string|null $reject_reason
+ * @property int $paid
+ * @property int|null $approved_by
+ * @property \Illuminate\Support\Carbon|null $approved_at
+ * @property string|null $half_day_type
+ * @property string|null $event_id
+ * @property string|null $unique_id
+ * @property string|null $manager_status_permission
+ * @property string|null $approve_reason
+ * @property int|null $company_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property int $paid
- * @property int|null $added_by
- * @property int|null $last_updated_by
- * @property-read mixed $date
- * @property-read mixed $icon
- * @property-read mixed $leaves_taken_count
- * @property-read \App\Models\LeaveType $type
+ *
  * @property-read \App\Models\User $user
+ * @property-read \App\Models\User|null $approvedBy
+ * @property-read \App\Models\LeaveType $type
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveFile> $files
+ * @property-read int|null $files_count
+ *
  * @method static \Database\Factories\LeaveFactory factory(...$parameters)
  * @method static \Illuminate\Database\Eloquent\Builder|Leave newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Leave newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Leave query()
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereAddedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereDuration($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereLastUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereLeaveDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereLeaveTypeId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave wherePaid($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereRejectReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereUserId($value)
- * @property string|null $event_id
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereEventId($value)
- * @property int|null $company_id
- * @property int|null $approved_by
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property string|null $half_day_type
- * @property-read \App\Models\User|null $approvedBy
- * @property-read \App\Models\Company|null $company
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereApprovedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereApprovedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereHalfDayType($value)
- * @property string|null $manager_status_permission
- * @property string|null $approve_reason
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereApproveReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereManagerStatusPermission($value)
- * @property string|null $unique_id
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveFile> $files
- * @property-read int|null $files_count
- * @property-read \App\Models\Leave|null $ldate
- * @method static \Illuminate\Database\Eloquent\Builder|Leave whereUniqueId($value)
  * @mixin \Eloquent
  */
 class Leave extends BaseModel
 {
+    use HasFactory, HasCompany;
 
-    use HasFactory;
-    use HasCompany;
-
+    /**
+     * Casts for date fields to Carbon instances.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'leave_date' => 'datetime',
         'approved_at' => 'datetime',
     ];
-    protected $guarded = ['id'];
-    protected $appends = ['date']; // Being used in attendance
 
+    /**
+     * Protects ID from mass-assignment.
+     *
+     * @var array<int, string>
+     */
+    protected $guarded = ['id'];
+
+    /**
+     * Appends computed attributes to model JSON.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['date'];
+
+    /**
+     * Accessor: Returns leave_date as a plain date string (Y-m-d).
+     *
+     * @return string
+     */
     public function getDateAttribute()
     {
         return $this->leave_date->toDateString();
     }
 
+    /**
+     * Relationship: Leave belongs to a user (employee).
+     */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class)->withOut('clientDetails');
+        return $this->belongsTo(User::class, 'user_id')
+            ->withoutGlobalScope(ActiveScope::class)
+            ->withOut('clientDetails');
     }
 
+    /**
+     * Relationship: Leave was approved by a manager (user).
+     */
     public function approvedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'approved_by')->withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role');
+        return $this->belongsTo(User::class, 'approved_by')
+            ->withoutGlobalScope(ActiveScope::class)
+            ->withOut('clientDetails', 'role');
     }
 
+    /**
+     * Relationship: Leave belongs to a leave type (sick, casual, etc.).
+     */
     public function type(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class, 'leave_type_id')->withTrashed();
     }
 
+    /**
+     * Accessor: Returns total leaves taken by user within defined period.
+     *
+     * Combines full-day and half-day leaves.
+     */
     public function getLeavesTakenCountAttribute()
     {
         $userId = $this->user_id;
         $setting = company();
-        $user = User::withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role')->findOrFail($userId);
-        $currentYearJoiningDate = Carbon::parse($user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d'));
+        $user = User::withoutGlobalScope(ActiveScope::class)
+            ->withOut('clientDetails', 'role')
+            ->findOrFail($userId);
+
+        $currentYearJoiningDate = Carbon::parse(
+            $user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d')
+        );
 
         if ($currentYearJoiningDate->isFuture()) {
             $currentYearJoiningDate->subYear();
@@ -119,13 +153,12 @@ class Leave extends BaseModel
         $leaveFrom = $currentYearJoiningDate->copy()->toDateString();
         $leaveTo = $currentYearJoiningDate->copy()->addYear()->toDateString();
 
+        // Adjust leave cycle if not based on joining date
         if ($setting->leaves_start_from !== 'joining_date') {
             $leaveStartYear = Carbon::parse(now()->format((now(company()->timezone)->year) . '-' . company()->year_starts_from . '-01'));
-
             if ($leaveStartYear->isFuture()) {
                 $leaveStartYear = $leaveStartYear->subYear();
             }
-
             $leaveFrom = $leaveStartYear->copy()->toDateString();
             $leaveTo = $leaveStartYear->copy()->addYear()->toDateString();
         }
@@ -143,22 +176,38 @@ class Leave extends BaseModel
             ->count();
 
         return ($fullDay + ($halfDay / 2));
-
     }
 
+    /**
+     * Static helper: Count leaves taken by a user for a specific year.
+     *
+     * @param \App\Models\User|int $user
+     * @param int|null $year
+     * @return float|int
+     */
     public static function byUserCount($user, $year = null)
     {
         $setting = company();
 
         if (!$user instanceof User) {
-            $user = User::withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role')->findOrFail($user);
+            $user = User::withoutGlobalScope(ActiveScope::class)
+                ->withOut('clientDetails', 'role')
+                ->findOrFail($user);
         }
 
-        $leaveFrom = (is_null($year)) ? Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.now(company()->timezone)->year)->startOfMonth()->toDateString() : Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.$year)->startOfMonth()->toDateString();
+        $leaveFrom = is_null($year)
+            ? Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.now(company()->timezone)->year)
+                ->startOfMonth()->toDateString()
+            : Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.$year)
+                ->startOfMonth()->toDateString();
+
         $leaveTo = Carbon::parse($leaveFrom)->addYear()->subDay()->toDateString();
 
+        // Adjust for joining-date based leave cycle
         if ($setting->leaves_start_from == 'joining_date' && isset($user->employee[0])) {
-            $currentYearJoiningDate = Carbon::parse($user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d'));
+            $currentYearJoiningDate = Carbon::parse(
+                $user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d')
+            );
 
             if ($currentYearJoiningDate->isFuture()) {
                 $currentYearJoiningDate->subYear();
@@ -183,9 +232,11 @@ class Leave extends BaseModel
         return (count($fullDay) + (count($halfDay) / 2));
     }
 
+    /**
+     * Relationship: Leave has many related files (attachments).
+     */
     public function files(): HasMany
     {
         return $this->hasMany(LeaveFile::class, 'leave_id')->orderByDesc('id');
     }
-
 }

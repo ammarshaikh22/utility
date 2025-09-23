@@ -42,32 +42,44 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Passport extends BaseModel
 {
-
     use HasCompany;
 
+    // Table name for this model
     protected $table = 'passport_details';
+
+    // Constant for file storage path
     const FILE_PATH = 'passport';
 
+    // Add computed attribute "image_url" to JSON/output
     protected $appends = ['image_url'];
 
+    // Automatically cast issue_date and expiry_date to Carbon instances
     protected $casts = [
         'issue_date' => 'datetime',
         'expiry_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each passport belongs to a single user.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Accessor: Get the full image URL for the passport file.
+     */
     public function getImageUrlAttribute()
     {
         return asset_url_local_s3(Passport::FILE_PATH . '/' . $this->file);
     }
 
+    /**
+     * Relationship: Each passport is linked to one country.
+     */
     public function country(): HasOne
     {
         return $this->hasOne(Country::class, 'id', 'country_id');
     }
-
 }

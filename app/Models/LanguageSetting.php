@@ -30,7 +30,7 @@ namespace App\Models;
  */
 class LanguageSetting extends BaseModel
 {
-
+    // Mass assignable attributes for the model
     protected $fillable = [
         'language_code',
         'language_name',
@@ -39,6 +39,7 @@ class LanguageSetting extends BaseModel
         'is_rtl'
     ];
 
+    // Translation labels for languages in their native script
     const LANGUAGES_TRANS = [
         'en' => 'English',
         'ar' => 'عربي',
@@ -61,6 +62,7 @@ class LanguageSetting extends BaseModel
         'zh-TW' => '中國人'
     ];
 
+    // Predefined language configurations with default settings
     const LANGUAGES = [
         [
             'language_code' => 'en',
@@ -287,6 +289,7 @@ class LanguageSetting extends BaseModel
         ],
     ];
 
+    // Accessor method for the 'label' attribute that generates an HTML span with flag icon
     public function getLabelAttribute()
     {
         $langCode = ($this->language_code == 'en') ? 'gb' : strtolower($this->flag_code);

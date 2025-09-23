@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Class StickyNote
  *
- * @package App
+ * Represents a sticky note created by a user in the system.
+ *
  * @property int $id
  * @property int $user_id
  * @property string $note_text
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read mixed $icon
  * @property-read \App\Models\User $userDetail
+ * @property int|null $company_id
+ * @property-read \App\Models\Company|null $company
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote query()
@@ -27,29 +30,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote whereNoteText($value)
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote whereUserId($value)
- * @property int|null $company_id
- * @property-read \App\Models\Company|null $company
  * @method static \Illuminate\Database\Eloquent\Builder|StickyNote whereCompanyId($value)
  * @mixin \Eloquent
  */
 class StickyNote extends BaseModel
 {
-
     use HasCompany;
 
+    // Table associated with the model
     protected $table = 'sticky_notes';
 
+    // Cast datetime fields automatically to Carbon instances
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
     /**
+     * Defines the relationship to the User who created the sticky note.
+     * Excludes the global "ActiveScope" so that all users can be referenced.
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function userDetail(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
-
 }

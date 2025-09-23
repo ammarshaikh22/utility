@@ -7,6 +7,8 @@ use App\Traits\IconTrait;
 /**
  * App\Models\ProposalTemplateItemImage
  *
+ * Represents an image associated with a proposal template item.
+ *
  * @property int $id
  * @property int|null $company_id
  * @property int $proposal_template_item_id
@@ -35,26 +37,44 @@ use App\Traits\IconTrait;
  */
 class ProposalTemplateItemImage extends BaseModel
 {
-
     use IconTrait;
 
+    // Base folder path for storing proposal files
     const FILE_PATH = 'proposal-files';
 
+    // Auto-append these attributes when serializing the model
     protected $appends = ['file_url', 'icon', 'file'];
+
+    // Mass assignable fields
     protected $fillable = ['proposal_template_item_id', 'filename', 'hashname', 'size', 'external_link'];
 
+    /**
+     * Get the full URL of the image file.
+     *
+     * If `external_link` is set, return it directly if it contains 'http', otherwise resolve with asset_url_local_s3.
+     * Otherwise, construct the path from FILE_PATH, proposal_template_item_id, and hashname.
+     */
     public function getFileUrlAttribute()
     {
-        if($this->external_link){
-            return str($this->external_link)->contains('http') ? $this->external_link : asset_url_local_s3($this->external_link);
+        if ($this->external_link) {
+            return str($this->external_link)->contains('http') 
+                ? $this->external_link 
+                : asset_url_local_s3($this->external_link);
         }
 
-        return asset_url_local_s3(ProposalTemplateItemImage::FILE_PATH . '/' . $this->proposal_template_item_id . '/' . $this->hashname);
+        return asset_url_local_s3(
+            ProposalTemplateItemImage::FILE_PATH . '/' . $this->proposal_template_item_id . '/' . $this->hashname
+        );
     }
 
+    /**
+     * Get the relative file path.
+     *
+     * Returns `external_link` if set, otherwise constructs the file path using FILE_PATH, proposal_template_item_id, and hashname.
+     */
     public function getFileAttribute()
     {
-        return $this->external_link ?: (ProposalTemplateItemImage::FILE_PATH . '/' . $this->proposal_template_item_id . '/' . $this->hashname);
+        return $this->external_link ?: 
+            (ProposalTemplateItemImage::FILE_PATH . '/' . $this->proposal_template_item_id . '/' . $this->hashname);
     }
-
 }

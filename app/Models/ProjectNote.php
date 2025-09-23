@@ -10,72 +10,74 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  * App\Models\ProjectNote
  *
+ * Represents a note associated with a project. Notes can be linked to users,
+ * mentioned users, and optionally visible to clients. They can also require
+ * a password for access depending on the configuration.
+ *
  * @property int $id
- * @property int|null $project_id
- * @property string $title
- * @property int $type
- * @property int|null $client_id
- * @property int $is_client_show
- * @property int $ask_password
- * @property string $details
- * @property int|null $added_by
- * @property int|null $last_updated_by
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectUserNote[] $members
- * @property-read \App\Models\Project $project
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectUserNote[] $noteUsers
- * @property-read int|null $members_count
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote query()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereAddedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereAskPassword($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereClientId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereDetails($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereIsClientShow($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereLastUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereProjectId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereTitle($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectNote whereUpdatedAt($value)
- * @property-read int|null $note_users_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MentionUser> $mentionNote
- * @property-read int|null $mention_note_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentionUser
- * @property-read int|null $mention_user_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MentionUser> $mentionNote
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentionUser
+ * @property int|null $project_id ID of the related project
+ * @property string $title Title of the note
+ * @property int $type Type/category of the note (custom-defined meaning)
+ * @property int|null $client_id ID of the related client (if applicable)
+ * @property int $is_client_show Flag if the note should be visible to clients
+ * @property int $ask_password Flag if the note requires password protection
+ * @property string $details Detailed description/content of the note
+ * @property int|null $added_by User ID who created the note
+ * @property int|null $last_updated_by User ID who last updated the note
+ * @property \Illuminate\Support\Carbon|null $created_at Timestamp when created
+ * @property \Illuminate\Support\Carbon|null $updated_at Timestamp when updated
+ *
+ * @property-read \App\Models\Project $project Related project
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectUserNote[] $members Users linked to this note
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $noteUsers Users directly related through pivot table
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $mentionUser Users mentioned in this note
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MentionUser[] $mentionNote Mention-user pivot records
+ *
  * @mixin \Eloquent
  */
 class ProjectNote extends BaseModel
 {
-
+    /**
+     * Relation: Get project-user notes linked to this project note
+     */
     public function members(): HasMany
     {
         return $this->hasMany(ProjectUserNote::class, 'project_note_id');
     }
 
+    /**
+     * Relation: Get the project this note belongs to
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    /**
+     * Relation: Get users associated with this note
+     * (via project_user_notes pivot table)
+     */
     public function noteUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user_notes');
     }
 
+    /**
+     * Relation: Get users mentioned in this note
+     * Uses custom MentionUser pivot model
+     */
     public function mentionUser(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
+        return $this->belongsToMany(User::class, 'mention_users')
+            ->withoutGlobalScope(ActiveScope::class)
+            ->using(MentionUser::class);
     }
 
+    /**
+     * Relation: Get mention-user pivot records for this note
+     */
     public function mentionNote(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'project_note_id');
     }
-
 }

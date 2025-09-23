@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\PurposeConsentUser
  *
+ * Represents a user's consent record for a specific purpose.
+ *
  * @property int $id
  * @property int $client_id
  * @property int $purpose_consent_id
@@ -31,7 +33,8 @@ namespace App\Models;
  */
 class PurposeConsentUser extends BaseModel
 {
-
+    // Define the table associated with this model
     protected $table = 'purpose_consent_users';
 
+    // You can add $fillable, $casts, or relationships here if needed
 }

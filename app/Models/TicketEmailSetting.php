@@ -7,45 +7,32 @@ use App\Traits\HasCompany;
 /**
  * App\Models\TicketEmailSetting
  *
+ * Represents email configurations for ticketing system to handle incoming/outgoing emails.
+ *
  * @property int $id
- * @property int|null $company_id
- * @property string|null $mail_username
- * @property string|null $mail_password
- * @property string|null $mail_from_name
- * @property string|null $mail_from_email
- * @property string|null $imap_host
- * @property string|null $imap_port
- * @property string|null $imap_encryption
- * @property int $status
- * @property int $verified
- * @property int $sync_interval
+ * @property int|null $company_id          // The company this email setting belongs to
+ * @property string|null $mail_username    // Email username for authentication
+ * @property string|null $mail_password    // Password for email authentication
+ * @property string|null $mail_from_name   // Display name for outgoing emails
+ * @property string|null $mail_from_email  // Email address for outgoing emails
+ * @property string|null $imap_host        // IMAP server host for incoming emails
+ * @property string|null $imap_port        // IMAP server port
+ * @property string|null $imap_encryption  // IMAP encryption type (ssl, tls)
+ * @property int $status                    // Status (active/inactive)
+ * @property int $verified                  // Whether email settings are verified (1 = yes, 0 = no)
+ * @property int $sync_interval             // Interval (in minutes) for syncing emails
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting query()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereImapEncryption($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereImapHost($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereImapPort($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereMailFromEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereMailFromName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereMailPassword($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereMailUsername($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereSyncInterval($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketEmailSetting whereVerified($value)
- * @property-read \App\Models\Company|null $company
+ *
+ * Relations:
+ * @property-read \App\Models\Company|null $company    // The company linked to these settings
+ *
  * @mixin \Eloquent
  */
 class TicketEmailSetting extends BaseModel
 {
-
     use HasCompany;
 
+    // Protect the ID field from mass assignment
     protected $guarded = ['id'];
-
 }

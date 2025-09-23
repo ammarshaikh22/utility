@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\PushNotificationSetting
  *
+ * Represents the settings for push notifications using OneSignal.
+ *
  * @property int $id
  * @property string|null $onesignal_app_id
  * @property string|null $onesignal_rest_api_key
@@ -28,9 +30,15 @@ namespace App\Models;
  */
 class PushNotificationSetting extends BaseModel
 {
-
+    // Append custom attribute to the model for retrieving logo URL
     protected $appends = ['notification_logo_url'];
 
+    /**
+     * Get the full URL for the notification logo.
+     * If no logo is set, return a placeholder image with descriptive text.
+     *
+     * @return string
+     */
     public function getNotificationLogoUrlAttribute()
     {
         if (is_null($this->notification_logo)) {
@@ -39,5 +47,4 @@ class PushNotificationSetting extends BaseModel
 
         return asset_url_local_s3('notification-logo/' . $this->notification_logo);
     }
-
 }

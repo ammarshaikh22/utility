@@ -7,9 +7,15 @@ use App\Traits\IconTrait;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Class Holiday
+ * Class ProductFiles
  *
- * @package App\Models
+ * Represents uploaded files associated with a product.
+ * Handles file storage, retrieval, and relation to Product.
+ */
+
+/**
+ * App\Models\ProductFiles
+ *
  * @property int $id
  * @property int $user_id
  * @property string $filename
@@ -52,29 +58,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ProductFiles extends BaseModel
 {
+    use HasCompany; // Trait to automatically add company context
+    use IconTrait;  // Provides icon accessor for UI usage
 
-    use HasCompany;
-    use IconTrait;
-
+    // Directory path for storing product files
     const FILE_PATH = 'products';
 
     protected $fillable = [];
-
     protected $guarded = ['id'];
+
     protected $table = 'product_files';
 
     protected $appends = ['file_url', 'icon'];
 
+    // Disable timestamps for this table
     public $timestamps = false;
 
+    /**
+     * Accessor: Get the full file URL from S3/local storage.
+     */
     public function getFileUrlAttribute()
     {
         return asset_url_local_s3(Product::FILE_PATH . '/' . $this->hashname);
     }
 
+    /**
+     * Relationship: A file belongs to a single product.
+     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
-
 }

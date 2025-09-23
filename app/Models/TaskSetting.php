@@ -66,6 +66,5 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 class TaskSetting extends BaseModel
 {
-
     use HasFactory, HasCompany;
 }

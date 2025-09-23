@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * App\Models\LeadCategory
  *
+ * This model represents a Lead Category which groups leads under specific categories.
+ * Each category may have multiple associated lead agents.
+ *
  * @property int $id
  * @property string $category_name
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -31,11 +34,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class LeadCategory extends BaseModel
 {
 
+    // Trait for associating categories with companies
     use HasCompany;
 
+    // Database table name
     protected $table = 'lead_category';
+
+    // Default fields for quick selection
     protected $default = ['id', 'category_name'];
 
+    /**
+     * Relationship: Category has many enabled LeadAgents
+     * Only returns agents where status = 'enabled'
+     */
     public function enabledAgents(): HasMany
     {
         return $this->hasMany(LeadAgent::class, 'lead_category_id')->where('status', '=', 'enabled');

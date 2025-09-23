@@ -18,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
  * @property-read int|null $notifications_count
  * @property-read \App\Models\ProjectTemplate $projectTemplate
- * @property-read \App\Models\User $user
+ * @property-read \App\Models\User $user 
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplateMember newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplateMember newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplateMember query()

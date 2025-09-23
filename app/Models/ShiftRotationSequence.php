@@ -2,24 +2,57 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\HasCompany;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ShiftRotationSequence extends BaseModel
+/**
+ * App\Models\ShiftRotation
+ *
+ * Represents a rotation schedule for employee shifts.
+ *
+ * @property int $id
+ * @property string $status The status of the shift rotation (e.g., 'active', 'inactive').
+ * @property int|null $company_id The ID of the company associated with this rotation.
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder|ShiftRotation active() Scope for active rotations
+ * @mixin \Eloquent
+ */
+class ShiftRotation extends BaseModel
 {
+    // Include the company relationship and scope
+    use HasCompany;
 
-    use HasFactory;
+    // Specify the table name
+    protected $table = 'employee_shift_rotations';
 
-    protected $table = 'shift_rotation_sequences';
-
-    public function rotation(): BelongsTo
+    /**
+     * Scope a query to only include active shift rotations.
+     *
+     * @param Builder $query
+     */
+    public function scopeActive(Builder $query): void
     {
-        return $this->belongsTo(ShiftRotation::class, 'employee_shift_rotation_id', 'id');
+        $query->where('employee_shift_rotations.status', 'active');
     }
 
-    public function shift(): BelongsTo
+    /**
+     * Get all sequences for this shift rotation.
+     *
+     * @return HasMany
+     */
+    public function sequences(): HasMany
     {
-        return $this->belongsTo(EmployeeShift::class, 'employee_shift_id', 'id');
+        return $this->hasMany(ShiftRotationSequence::class, 'employee_shift_rotation_id', 'id');
     }
 
+    /**
+     * Get all automated shifts associated with this rotation.
+     *
+     * @return HasMany
+     */
+    public function automateShifts(): HasMany
+    {
+        return $this->hasMany(AutomateShift::class, 'employee_shift_rotation_id', 'id');
+    }
 }

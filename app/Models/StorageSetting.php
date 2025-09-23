@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\StorageSetting
  *
+ * Represents storage configuration settings for different file systems.
+ *
  * @property int $id
  * @property string $filesystem
  * @property string|null $auth_keys
@@ -25,17 +27,21 @@ namespace App\Models;
  */
 class StorageSetting extends BaseModel
 {
-
+    // Temporary hash file expiration in minutes
     const HASH_TEMP_FILE_TIME = 60;
 
+    // Database table associated with this model
     protected $table = 'file_storage_settings';
 
+    // Encrypt auth_keys automatically
     protected $casts = [
         'auth_keys' => 'encrypted'
     ];
 
+    // Mass assignable attributes
     protected $fillable = ['filesystem', 'auth_keys', 'status'];
 
+    // Supported AWS regions
     const AWS_REGIONS = [
         'us-east-2' => 'US East (Ohio) us-east-2',
         'us-east-1' => 'US East (N. Virginia) us-east-1',
@@ -45,22 +51,23 @@ class StorageSetting extends BaseModel
         'ap-east-1' => 'Asia Pacific (Hong Kong) ap-east-1',
         'ap-south-1' => 'Asia Pacific (Mumbai) ap-south-1',
         'ap-northeast-3' => 'Asia Pacific (Osaka-Local) ap-northeast-3',
-        'ap-northeast-2' => 'Asia Pacific (Seoul)	ap-northeast-2',
-        'ap-southeast-1' => 'Asia Pacific (Singapore)	ap-southeast-1',
+        'ap-northeast-2' => 'Asia Pacific (Seoul) ap-northeast-2',
+        'ap-southeast-1' => 'Asia Pacific (Singapore) ap-southeast-1',
         'ap-southeast-2' => 'Asia Pacific (Sydney) ap-southeast-2',
-        'ap-northeast-1' => 'Asia Pacific (Tokyo)	ap-northeast-1',
+        'ap-northeast-1' => 'Asia Pacific (Tokyo) ap-northeast-1',
         'ca-central-1' => 'Canada (Central) ca-central-1',
         'eu-central-1' => 'Europe (Frankfurt) eu-central-1',
         'eu-west-1' => 'Europe (Ireland) eu-west-1',
-        'eu-west-2' => 'Europe (London)  eu-west-2',
+        'eu-west-2' => 'Europe (London) eu-west-2',
         'eu-south-1' => 'Europe (Milan) eu-south-1',
         'eu-west-3' => 'Europe (Paris) eu-west-3',
         'eu-north-1' => 'Europe (Stockholm) eu-north-1',
         'me-south-1' => 'Middle East (Bahrain) me-south-1',
-        'me-central-1' => 'Middle East (UAE) (me-central-1)',
+        'me-central-1' => 'Middle East (UAE) me-central-1',
         'sa-east-1' => 'South America (São Paulo) sa-east-1',
     ];
 
+    // Supported DigitalOcean regions
     const DIGITALOCEAN_REGIONS = [
         'nyc1' => 'New York City, United States',
         'nyc3' => 'New York City, United States',
@@ -74,6 +81,7 @@ class StorageSetting extends BaseModel
         'syd1' => 'Sydney, Australia'
     ];
 
+    // Supported Wasabi regions
     const WASABI_REGIONS = [
         'ap-southeast-2' => 'AP Southeast 2 (Sydney)',
         'ap-southeast-1' => 'AP Southeast 1 (Singapore)',
@@ -92,5 +100,6 @@ class StorageSetting extends BaseModel
         'us-east-1' => 'US East 1 (N. Virginia)',
     ];
 
+    // Supported S3-compatible storage services
     const S3_COMPATIBLE_STORAGE = ['s3', 'digitalocean', 'wasabi', 'minio'];
 }

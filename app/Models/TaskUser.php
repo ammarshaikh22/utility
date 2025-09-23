@@ -10,6 +10,9 @@ use Illuminate\Notifications\Notifiable;
 /**
  * App\Models\TaskUser
  *
+ * Represents the pivot table relationship between Tasks and Users.
+ * Each record links a user to a specific task.
+ *
  * @property int $id
  * @property int $task_id
  * @property int $user_id
@@ -31,20 +34,27 @@ use Illuminate\Notifications\Notifiable;
  */
 class TaskUser extends Pivot
 {
+    use Notifiable; // Allows notifications for this pivot model
 
-    use Notifiable;
+    protected $guarded = ['id']; // Protects the 'id' from mass assignment
+    protected $table = 'task_users'; // Specifies the pivot table name
 
-    protected $guarded = ['id'];
-    protected $table = 'task_users';
-
+    /**
+     * Relationship to the User model
+     * Returns the user associated with this task-user record
+     */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
+        return $this->belongsTo(User::class, 'user_id')
+                    ->withoutGlobalScope(ActiveScope::class); // Ignores the ActiveScope when retrieving user
     }
 
+    /**
+     * Relationship to the Task model
+     * Returns the task associated with this task-user record
+     */
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class, 'task_id');
     }
-
 }

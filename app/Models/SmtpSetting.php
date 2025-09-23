@@ -8,6 +8,8 @@ use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
 /**
  * App\Models\SmtpSetting
  *
+ * Represents SMTP email configuration for the application.
+ *
  * @property int $id
  * @property string $mail_driver
  * @property string $mail_host
@@ -17,6 +19,7 @@ use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
  * @property string $mail_from_name
  * @property string $mail_from_email
  * @property string|null $mail_encryption
+ * @property string $mail_connection
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $verified
@@ -38,24 +41,31 @@ use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
  * @method static \Illuminate\Database\Eloquent\Builder|SmtpSetting whereMailUsername($value)
  * @method static \Illuminate\Database\Eloquent\Builder|SmtpSetting whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|SmtpSetting whereVerified($value)
- * @property string $mail_connection
  * @method static \Illuminate\Database\Eloquent\Builder|SmtpSetting whereMailConnection($value)
  * @method static \Illuminate\Database\Eloquent\Builder|SmtpSetting whereEmailVerified($value)
  * @mixin \Eloquent
  */
 class SmtpSetting extends BaseModel
 {
-
+    // Protect the 'id' field from mass assignment
     protected $guarded = ['id'];
+
+    // Append custom attributes to model output
     protected $appends = ['set_smtp_message'];
 
+    // Encrypt the mail password automatically
     protected $casts = [
         'mail_password' => 'encrypted'
     ];
 
+    /**
+     * Verify SMTP configuration.
+     *
+     * @return array
+     */
     public function verifySmtp()
     {
-
+        // If not using SMTP, consider it verified
         if ($this->mail_driver !== 'smtp') {
             return [
                 'success' => true,
@@ -64,12 +74,16 @@ class SmtpSetting extends BaseModel
         }
 
         try {
+            // Determine if SSL is needed
             $tls = $this->mail_encryption === 'ssl';
+
+            // Create SMTP transport
             $transport = new EsmtpTransport($this->mail_host, $this->mail_port, $tls);
             $transport->setUsername($this->mail_username);
             $transport->setPassword($this->mail_password);
             $transport->start();
 
+            // Mark as verified if not already
             if ($this->verified == 0) {
                 $this->verified = 1;
                 $this->save();
@@ -80,6 +94,7 @@ class SmtpSetting extends BaseModel
                 'message' => __('messages.smtpSuccess')
             ];
         } catch (TransportException | \Exception $e) {
+            // Mark as unverified if exception occurs
             $this->verified = 0;
             $this->save();
 
@@ -90,6 +105,9 @@ class SmtpSetting extends BaseModel
         }
     }
 
+    /**
+     * Get a HTML message for unverified SMTP.
+     */
     public function getSetSmtpMessageAttribute()
     {
         if ($this->verified === 0 && $this->mail_driver == 'smtp') {
@@ -103,6 +121,11 @@ class SmtpSetting extends BaseModel
         return null;
     }
 
+    /**
+     * Check if SMTP is verified.
+     *
+     * @return int
+     */
     public static function isVerified()
     {
         $data = self::first();

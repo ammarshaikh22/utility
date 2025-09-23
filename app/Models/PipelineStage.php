@@ -44,29 +44,46 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class PipelineStage extends BaseModel
 {
+    use HasCompany; // Associates the stage with a specific company (multi-tenant support)
 
-    use HasCompany;
-
+    // The database table name
     protected $table = 'pipeline_stages';
 
+    /**
+     * Get all leads associated with this pipeline stage.
+     * (Technically pointing to the `Deal` model ordered by column priority)
+     */
     public function leads(): HasMany
     {
-        return $this->hasMany(Deal::class, 'pipeline_stage_id')->orderBy('deals.column_priority');
+        return $this->hasMany(Deal::class, 'pipeline_stage_id')
+                    ->orderBy('deals.column_priority');
     }
 
+    /**
+     * Get all deals associated with this pipeline stage.
+     * Alias of leads() but may be used explicitly in different contexts.
+     */
     public function deals(): HasMany
     {
-        return $this->hasMany(Deal::class, 'pipeline_stage_id')->orderBy('deals.column_priority');
+        return $this->hasMany(Deal::class, 'pipeline_stage_id')
+                    ->orderBy('deals.column_priority');
     }
 
+    /**
+     * Get the pipeline this stage belongs to.
+     */
     public function pipeline(): BelongsTo
     {
         return $this->belongsTo(LeadPipeline::class, 'lead_pipeline_id');
     }
 
+    /**
+     * Get the user-specific settings for this stage.
+     * Filters by the currently authenticated user's ID.
+     */
     public function userSetting(): HasOne
     {
-        return $this->hasOne(UserLeadboardSetting::class, 'pipeline_stage_id')->where('user_id', user()->id);
+        return $this->hasOne(UserLeadboardSetting::class, 'pipeline_stage_id')
+                    ->where('user_id', user()->id);
     }
-
 }

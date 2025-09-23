@@ -18,21 +18,33 @@ class WeeklyTimesheet extends BaseModel
         'week_start_date' => 'date:Y-m-d',
     ];
 
+/**
+     * Get the user who owns this timesheet.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the company associated with this timesheet.
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Get the entries associated with this weekly timesheet.
+     */
     public function entries(): HasMany
     {
         return $this->hasMany(WeeklyTimesheetEntries::class);
     }
 
+    /**
+     * Get the user who approved this timesheet.
+     */
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
