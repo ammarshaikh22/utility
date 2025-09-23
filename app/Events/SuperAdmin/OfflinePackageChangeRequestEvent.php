@@ -9,21 +9,23 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 
 class OfflinePackageChangeRequestEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    // Offline plan change request data
     public $offlinePlanChange;
+
+    // The company that requested the change
     public $company;
 
     /**
-     * Create a new event instance.
+     * Event triggered when a company requests an offline package change.
      *
-     * @return void
+     * @param mixed              $company             The company making the request
+     * @param OfflinePlanChange  $offlinePlanChange   Details of the package change
      */
     public function __construct($company, OfflinePlanChange $offlinePlanChange)
     {
         $this->offlinePlanChange = $offlinePlanChange;
         $this->company = $company;
     }
-
 }
