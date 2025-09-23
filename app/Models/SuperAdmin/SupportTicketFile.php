@@ -43,16 +43,23 @@ use App\Models\BaseModel;
  */
 class SupportTicketFile extends BaseModel
 {
-
     use IconTrait;
 
+    // Base folder path for support ticket files
     const FILE_PATH = 'support-ticket-files';
 
+    // Appended computed attributes
     protected $appends = ['file_url', 'icon'];
 
+    /**
+     * Get the accessible URL for the file.
+     * If an external link is provided, it returns that.
+     * Otherwise, it builds the URL from local/S3 storage.
+     */
     public function getFileUrlAttribute()
     {
-        return (!is_null($this->external_link)) ? $this->external_link : asset_url_local_s3('support-ticket-files/' . $this->support_ticket_reply_id . '/' . $this->hashname);
+        return (!is_null($this->external_link)) 
+            ? $this->external_link 
+            : asset_url_local_s3(self::FILE_PATH . '/' . $this->support_ticket_reply_id . '/' . $this->hashname);
     }
-
 }

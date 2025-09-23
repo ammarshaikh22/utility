@@ -39,33 +39,47 @@ use App\Observers\SuperAdmin\SupportTicketReplyObserver;
  */
 class SupportTicketReply extends BaseModel
 {
-
     use SoftDeletes;
 
+    // Soft delete column
     protected $dates = ['deleted_at'];
 
     protected $casts = ['deleted_at'];
 
+    /**
+     * Boot method to attach model observer.
+     */
     protected static function boot()
     {
         parent::boot();
-
         static::observe(SupportTicketReplyObserver::class);
     }
 
+    /**
+     * User who posted the reply
+     * Removes global scopes for active status and company
+     */
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->withoutGlobalScopes(['active', CompanyScope::class,]);
+        return $this->belongsTo(User::class, 'user_id')
+                    ->withoutGlobalScopes(['active', CompanyScope::class]);
     }
 
+    /**
+     * Files attached to this reply
+     */
     public function files()
     {
         return $this->hasMany(SupportTicketFile::class, 'support_ticket_reply_id');
     }
 
+    /**
+     * The ticket this reply belongs to
+     * Includes soft-deleted tickets
+     */
     public function ticket()
     {
-        return $this->belongsTo(SupportTicket::class, 'support_ticket_id')->withTrashed();
+        return $this->belongsTo(SupportTicket::class, 'support_ticket_id')
+                    ->withTrashed();
     }
-
 }

@@ -24,10 +24,13 @@ use App\Models\BaseModel;
  */
 class SupportTicketType extends BaseModel
 {
-
+    /**
+     * Returns all support tickets associated with this type
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function tickets()
     {
         return $this->hasMany(SupportTicket::class, 'support_ticket_type_id');
     }
-
 }

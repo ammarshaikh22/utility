@@ -80,30 +80,39 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 class Package extends BaseModel
 {
-
     use HasFactory;
 
     protected $guarded = ['id'];
 
+    // Attributes appended when serialized to array or JSON
     protected $appends = [
         'formatted_annual_price',
         'formatted_monthly_price'
     ];
 
+    /**
+     * Relationship: Get all companies subscribed to this package.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function companies()
     {
         return $this->hasMany(Company::class);
     }
 
+    /**
+     * Format storage sizes in human-readable format.
+     *
+     * @param int $bytes
+     * @return string
+     */
     public function formatSizeUnits($bytes)
     {
         if ($bytes >= 1024) {
             $bytes = number_format($bytes / 1024, 2) . ' GB';
-        }
-        elseif ($bytes > 1) {
+        } elseif ($bytes > 1) {
             $bytes = $bytes . ' MB';
-        }
-        else {
+        } else {
             $bytes = '0 MB';
         }
 
@@ -111,7 +120,7 @@ class Package extends BaseModel
     }
 
     /**
-     * Convert bytes to megabytes (MB).
+     * Convert bytes to MB.
      *
      * @param int $bytes
      * @return float
@@ -122,7 +131,7 @@ class Package extends BaseModel
     }
 
     /**
-     * Convert bytes to gigabytes (GB).
+     * Convert bytes to GB.
      *
      * @param int $bytes
      * @return float
@@ -133,7 +142,7 @@ class Package extends BaseModel
     }
 
     /**
-     * Convert bytes to gigabytes (GB) and megabytes (MB).
+     * Convert bytes to GB or MB string.
      *
      * @param int $bytes
      * @return string
@@ -143,27 +152,36 @@ class Package extends BaseModel
         $gb = round($bytes / 1073741824, 2);
         $mb = round($bytes / 1048576, 2);
 
-        if ($gb > 0) {
-            return $gb . ' GB';
-        }
-        else {
-            return $mb . ' MB';
-        }
+        return ($gb > 0) ? $gb . ' GB' : $mb . ' MB';
     }
 
+    /**
+     * Relationship: The currency associated with this package.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function currency()
     {
         return $this->belongsTo(GlobalCurrency::class, 'currency_id')->withTrashed();
     }
 
+    /**
+     * Accessor: Formatted annual price with currency.
+     *
+     * @return string
+     */
     public function getFormattedAnnualPriceAttribute()
     {
         return global_currency_format($this->annual_price, $this->currency_id);
     }
 
+    /**
+     * Accessor: Formatted monthly price with currency.
+     *
+     * @return string
+     */
     public function getFormattedMonthlyPriceAttribute()
     {
         return global_currency_format($this->monthly_price, $this->currency_id);
     }
-
 }

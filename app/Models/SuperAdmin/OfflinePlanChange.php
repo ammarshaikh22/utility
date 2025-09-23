@@ -44,41 +44,69 @@ use App\Models\OfflinePaymentMethod;
  */
 class OfflinePlanChange extends BaseModel
 {
-
+    // Trait to handle company-specific functionality
     use HasCompany;
 
+    // Folder path to store offline plan change files
     const FILE_PATH = 'offline-invoice';
 
+    // Automatically cast these fields to Carbon instances
     protected $dates = [
         'pay_date',
         'next_pay_date'
     ];
 
+    // Additional casts
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    // Append custom attributes to model's array/JSON form
     protected $appends = ['file'];
 
+    /**
+     * Relationship to the company making the request.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
 
+    /**
+     * Relationship to the package requested in the plan change.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function package()
     {
         return $this->belongsTo(Package::class, 'package_id');
     }
 
+    /**
+     * Relationship to the offline payment method used.
+     * Ignores the global CompanyScope to allow fetching any offline method.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function offlineMethod()
     {
-        return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id')->withoutGlobalScope(CompanyScope::class);
+        return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id')
+                    ->withoutGlobalScope(CompanyScope::class);
     }
 
+    /**
+     * Accessor for the file attribute.
+     * Returns the full URL to the uploaded file, or a default image if not set.
+     *
+     * @return string
+     */
     public function getFileAttribute()
     {
-        return ($this->file_name) ? asset_url_local_s3(OfflinePlanChange::FILE_PATH . '/' . $this->file_name) : asset('img/default-profile-3.png');
+        return ($this->file_name) 
+            ? asset_url_local_s3(self::FILE_PATH . '/' . $this->file_name) 
+            : asset('img/default-profile-3.png');
     }
-
 }

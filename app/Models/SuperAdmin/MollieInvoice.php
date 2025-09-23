@@ -37,25 +37,35 @@ use App\Models\BaseModel;
  */
 class MollieInvoice extends BaseModel
 {
-
+    // Dates to be automatically cast to Carbon instances
     protected $dates = [
         'pay_date',
         'next_pay_date',
     ];
 
+    // Additional casting for datetime fields
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship to the company associated with this invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship to the package associated with this invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

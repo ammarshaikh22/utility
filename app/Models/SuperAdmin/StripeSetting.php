@@ -80,16 +80,22 @@ use App\Models\BaseModel;
  */
 class StripeSetting extends BaseModel
 {
-
     use HasFactory;
 
+    // Table name
     protected $table = 'stripe_setting';
 
+    // Accessors to append to model output
     protected $appends = ['show_pay'];
 
+    /**
+     * Determines if any payment gateway is active.
+     *
+     * @return bool
+     */
     public function getShowPayAttribute()
     {
-
+        // Checks if 'active' exists in any of the status fields of payment gateways
         return in_array('active', [
             $this->attributes['paypal_status'],
             $this->attributes['stripe_status'],
@@ -100,5 +106,4 @@ class StripeSetting extends BaseModel
             $this->attributes['payfast_status']
         ]);
     }
-
 }

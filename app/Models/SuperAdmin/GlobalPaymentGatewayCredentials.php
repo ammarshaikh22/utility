@@ -80,9 +80,8 @@ use App\Models\BaseModel;
  */
 class GlobalPaymentGatewayCredentials extends BaseModel
 {
-
     use HasFactory;
 
+    // Define the table name explicitly (useful if it doesn't follow Laravel's convention)
     protected $table = 'global_payment_gateway_credentials';
-
 }

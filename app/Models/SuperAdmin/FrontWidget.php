@@ -24,7 +24,11 @@ use App\Models\BaseModel;
  */
 class FrontWidget extends BaseModel
 {
-
+    // Prevent mass assignment of the ID field
     protected $guarded = ['id'];
 
+    /**
+     * You can add custom methods here to render the widget
+     * or to transform the widget_code if needed.
+     */
 }

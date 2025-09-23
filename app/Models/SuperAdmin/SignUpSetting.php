@@ -26,10 +26,11 @@ use App\Models\BaseModel;
  */
 class SignUpSetting extends BaseModel
 {
-
+    /**
+     * Relationship: Each signup setting belongs to a language
+     */
     public function language()
     {
         return $this->belongsTo(LanguageSetting::class, 'language_setting_id');
     }
-
 }

@@ -35,7 +35,7 @@ use App\Models\BaseModel;
  */
 class PaystackInvoice extends BaseModel
 {
-
+    // Automatically cast these columns to Carbon datetime objects
     protected $dates = [
         'pay_date',
         'next_pay_date',
@@ -46,14 +46,19 @@ class PaystackInvoice extends BaseModel
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each PaystackInvoice belongs to a company
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship: Each PaystackInvoice belongs to a subscription package
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

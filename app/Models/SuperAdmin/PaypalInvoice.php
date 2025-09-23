@@ -56,27 +56,36 @@ use App\Models\BaseModel;
  */
 class PaypalInvoice extends BaseModel
 {
-
+    // Automatically cast these columns to Carbon instances
     protected $dates = ['paid_on', 'next_pay_date'];
 
+    // Ensure Eloquent treats these as datetime objects
     protected $casts = [
         'paid_on' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each PaypalInvoice belongs to a company
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship: Each PaypalInvoice belongs to a currency
+     */
     public function currency()
     {
         return $this->belongsTo(GlobalCurrency::class);
     }
 
+    /**
+     * Relationship: Each PaypalInvoice belongs to a subscription package
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }
