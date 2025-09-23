@@ -9,19 +9,21 @@ use Illuminate\Queue\SerializesModels;
 
 class TicketRequesterEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $ticket;
-    public $notifyUser;
-    public $mentionUser;
+    public $ticket;      // Ticket in question
+    public $notifyUser;  // Target user to notify (optional)
+    public $mentionUser; // Mentioned user (optional)
 
+    /**
+     * @param Ticket     $ticket
+     * @param mixed|null $mentionUser
+     * @param mixed|null $notifyUser
+     */
     public function __construct(Ticket $ticket, $mentionUser = null, $notifyUser = null)
     {
         $this->ticket = $ticket;
         $this->notifyUser = $notifyUser;
         $this->mentionUser = $mentionUser;
-
     }
-
 }

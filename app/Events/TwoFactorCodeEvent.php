@@ -7,22 +7,20 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Fired when a 2FA code is generated; listeners can send OTP via email/SMS.
+ */
 class TwoFactorCodeEvent
 {
-
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-
-    public $user;
+    public $user; // User for whom the 2FA code was generated
 
     /**
-     * Create a new event instance.
-     *
-     * @return void
+     * @param User $user
      */
     public function __construct(User $user)
     {
         $this->user = $user;
     }
-
 }
