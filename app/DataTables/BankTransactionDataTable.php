@@ -5,11 +5,25 @@ namespace App\DataTables;
 use App\Models\BankTransaction;
 use Yajra\DataTables\Html\Column;
 
+/**
+ * DataTable for transactions within a specific bank account.
+ * Formats amounts, transaction type (Cr/Dr), titles, dates, and exposes a view action.
+ *
+ * Permissions captured:
+ * - $editBankTransactionPermission
+ * - $deleteBankTransactionPermission
+ * - $viewBankTransactionPermission
+ */
 class BankTransactionDataTable extends BaseDataTable
 {
 
+    /** Permission to edit transactions (generally view-only in UI). */
     private $editBankTransactionPermission;
+
+    /** Permission to delete transactions. */
     private $deleteBankTransactionPermission;
+
+    /** Permission scope for viewing transactions. */
     private $viewBankTransactionPermission;
 
     public function __construct()
@@ -64,8 +78,7 @@ class BankTransactionDataTable extends BaseDataTable
                 if ($row->type == 'Cr') {
                     return '<span class="badge badge-success">' . __('modules.bankaccount.credit') . '</span>';
 
-                }
-                else {
+                } else {
                     return '<span class="badge badge-danger">' . __('modules.bankaccount.debit') . '</span>';
                 }
             })
@@ -76,11 +89,9 @@ class BankTransactionDataTable extends BaseDataTable
 
                 if ($row->transaction_relation == 'expense') {
                     $title = __('modules.bankaccount.' . $row->title) . ' ( ' . $row->transaction_related_to . ' )';
-                }
-                elseif ($row->transaction_relation == 'payment') {
+                } elseif ($row->transaction_relation == 'payment') {
                     $title = __('modules.bankaccount.' . $row->title) . ' ( ' . $row->transaction_relation . '-' . $row->transaction_related_to . ' )';
-                }
-                else {
+                } else {
                     $title = __('modules.bankaccount.' . $row->title);
                 }
 

@@ -6,10 +6,16 @@ use App\Helper\Common;
 use App\Models\Award;
 use App\Scopes\ActiveScope;
 use Yajra\DataTables\Html\Column;
-
+/**
+ * DataTable for managing award types (with status changes and actions).
+ * Handles permissioned actions (view/edit/delete), status toggles, and icon rendering.
+ *
+ * Properties:
+ * - $manageAwardPermission  Gate controlling visibility of management actions.
+ */
 class AwardDataTable extends BaseDataTable
 {
-
+    /** Permission string for managing awards (e.g., 'all', 'added', etc.) */
     private $manageAwardPermission;
 
     public function __construct()

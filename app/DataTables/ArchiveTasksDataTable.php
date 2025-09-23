@@ -11,13 +11,34 @@ use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 
+/**
+ * DataTable for listing archived (or soft-deleted) tasks with rich actions,
+ * filtering and permissions. Extends BaseDataTable to inherit common builder,
+ * DOM, server-side processing, and localization settings.
+ *
+ * Permissions used to show/hide row actions and columns:
+ * - $editTaskPermission:    user()->permission('edit_tasks')
+ * - $deleteTaskPermission:  user()->permission('delete_tasks')
+ * - $viewTaskPermission:    user()->permission('view_tasks')
+ * - $changeStatusPermission:user()->permission('change_status')
+ * - $viewUnassignedTasksPermission: user()->permission('view_unassigned_tasks')
+ */
 class ArchiveTasksDataTable extends BaseDataTable
 {
 
+    /** Can the current user edit tasks? */
     private $editTaskPermission;
+
+    /** Can the current user delete tasks? */
     private $deleteTaskPermission;
+
+    /** Can the current user view tasks? */
     private $viewTaskPermission;
+
+    /** Can the current user change a task’s board column/status? */
     private $changeStatusPermission;
+
+    /** Can the current user see unassigned tasks? */
     private $viewUnassignedTasksPermission;
 
     public function __construct()

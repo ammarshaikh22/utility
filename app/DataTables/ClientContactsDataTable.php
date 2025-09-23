@@ -8,11 +8,21 @@ use App\Scopes\ActiveScope;
 use Carbon\Carbon;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
-
+/**
+ * DataTable for listing a client's additional contacts.
+ * Renders contact name, title, email/phone, created date, and row actions.
+ *
+ * Permissions:
+ * - $editClientPermission   Controls visibility of edit action.
+ * - $deleteClientPermission Controls visibility of delete action.
+ */
 class ClientContactsDataTable extends BaseDataTable
 {
 
+    /** Whether the user may edit specific client contacts. */
     private $editClientPermission;
+
+    /** Whether the user may delete specific client contacts. */
     private $deleteClientPermission;
 
     public function __construct()

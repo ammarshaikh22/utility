@@ -5,11 +5,26 @@ namespace App\DataTables;
 use Yajra\DataTables\Services\DataTable;
 use Illuminate\Support\Facades\File;
 
+/**
+ * Common base for all DataTables.
+ * Centralizes table builder defaults, DOM layout, localization, pagination,
+ * server-side settings, export filename logic, and shared helpers (e.g., checkBox()).
+ *
+ * Shared context:
+ * - $company  Current company (timezone, date format, settings)
+ * - $user     Authenticated user
+ * - $domHtml  Default DOM string used by Yajra DataTables
+ */
 class BaseDataTable extends DataTable
 {
 
+/** Active company context (timezone, formats, settings). */
     protected $company;
+
+    /** Current authenticated user context. */
     public $user;
+
+    /** Default DataTable DOM layout used across tables. */
     public $domHtml;
 
     public function __construct()

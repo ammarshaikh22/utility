@@ -6,10 +6,16 @@ use App\Models\PurposeConsentUser;
 use Carbon\Carbon;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
-
+/**
+ * DataTable for client GDPR purpose consents (opt-in/opt-out records).
+ * Shows purpose, status mapping, IP, actor, date, and description.
+ *
+ * Notes:
+ * - No custom permission properties; relies on global access control.
+ */
 class ClientGDPRDataTable extends BaseDataTable
 {
-
+    // Intentionally no custom properties needed for this table.
     /**
      * Build DataTable class.
      *

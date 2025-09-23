@@ -8,12 +8,25 @@ use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
-
+/**
+ * DataTable for employee appreciations/awards.
+ * Supports filtering by date, type, recipient, and permissioned actions.
+ *
+ * Permissions:
+ * - $editAppreciationPermission
+ * - $deleteAppreciationPermission
+ * - $viewAppreciationPermission
+ */
 class AppreciationsDataTable extends BaseDataTable
 {
 
+    /** Can user edit appreciation rows? */
     private $editAppreciationPermission;
+
+    /** Can user delete appreciation rows? */
     private $deleteAppreciationPermission;
+
+    /** View scope of appreciations for current user. */
     private $viewAppreciationPermission;
 
     public function __construct()

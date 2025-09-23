@@ -10,6 +10,20 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Html\Button;
 
+/**
+ * DataTable for employee attendance reporting across a date period.
+ * Computes working days, present/absent counts, extra days, hours clocked,
+ * late/half days, and supports export via buttons.
+ *
+ * Internal state used during row computations:
+ * - $attendanceSettings  Global attendance configuration (e.g., late mark, half day rules)
+ * - $totalWorkingDays    Number of days in the selected period (minus future days if filtered)
+ * - $daysPresent         Running counter per user across the period
+ * - $holidaysCount       Number of holidays within the period
+ * - $extraDays           Any extra counted days (company specific logic)
+ * - $startTime/$endTime  Per-row time boundaries used to compute hours
+ * - $notClockedOut       Helper flag when a punch-out is missing
+ */
 class AttendanceReportDataTable extends BaseDataTable
 {
 
@@ -53,8 +67,7 @@ class AttendanceReportDataTable extends BaseDataTable
         // if this month filter's end date is not equal to now
         if ($endDate->gt(now($this->company->timezone))) {
             $holidayDate = Holiday::whereBetween(DB::raw('DATE(holidays.`date`)'), [$startDate->toDateString(), now($this->company->timezone)])->get('date');
-        }
-        else {
+        } else {
             $holidayDate = Holiday::whereBetween(DB::raw('DATE(holidays.`date`)'), [$startDate->toDateString(), $endDate->toDateString()])->get('date');
         }
 
@@ -123,16 +136,16 @@ class AttendanceReportDataTable extends BaseDataTable
     {
         $dataTable = $this->setBuilder('attendance-report-table')
             ->parameters([
-                'initComplete' => 'function () {
+            'initComplete' => 'function () {
                     window.LaravelDataTables["attendance-report-table"].buttons().container()
                      .appendTo( "#table-actions")
                  }',
-                'fnDrawCallback' => 'function( oSettings ) {
+            'fnDrawCallback' => 'function( oSettings ) {
                     $("body").tooltip({
                         selector: \'[data-toggle="tooltip"]\'
                     })
                 }',
-            ]);
+        ]);
 
         if (canDataTableExport()) {
             $dataTable->buttons(Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));
@@ -179,15 +192,13 @@ class AttendanceReportDataTable extends BaseDataTable
 
                 if (!is_null($value->clock_out_time)) {
                     $this->endTime = $value->clock_out_time->timezone($this->company->timezone);
-                }
-                elseif (($value->clock_in_time->timezone($this->company->timezone)->translatedFormat('Y-m-d') != now()->timezone($this->company->timezone)->translatedFormat('Y-m-d')) && is_null($value->clock_out_time)) {
+                } elseif (($value->clock_in_time->timezone($this->company->timezone)->translatedFormat('Y-m-d') != now()->timezone($this->company->timezone)->translatedFormat('Y-m-d')) && is_null($value->clock_out_time)) {
                     $this->endTime = Carbon::parse($this->startTime->translatedFormat('Y-m-d') . ' ' . $this->attendanceSettings->office_end_time, $this->company->timezone);
                     if ($this->endTime->gt(now()->timezone($this->company->timezone))) {
                         $this->endTime = now()->timezone($this->company->timezone);
                     }
                     $this->notClockedOut = true;
-                }
-                else {
+                } else {
                     $this->notClockedOut = true;
                     $this->endTime = now()->timezone($this->company->timezone);
                 }

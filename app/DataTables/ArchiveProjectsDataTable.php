@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace App\DataTables;
@@ -8,12 +7,25 @@ use App\Models\ProjectStatusSetting;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
-
+/**
+ * DataTable for archived (soft-deleted) projects.
+ * Adds restore/delete actions based on user’s membership and permissions,
+ * formats dates/status, shows members and completion progress.
+ *
+ * Permissions:
+ * - $viewProjectPermission
+ * - $editProjectPermission
+ * - $deleteProjectPermission
+ */
 class ArchiveProjectsDataTable extends BaseDataTable
 {
-    // Define private properties for user permissions related to project actions
+    /** Whether current user can view archived projects (scope rules apply). */
     private $viewProjectPermission;
+
+    /** Whether current user can restore/edit archived projects. */
     private $editProjectPermission;
+
+    /** Whether current user can permanently delete archived projects. */
     private $deleteProjectPermission;
 
     /**
@@ -309,4 +321,3 @@ class ArchiveProjectsDataTable extends BaseDataTable
         ];
     }
 }
-```

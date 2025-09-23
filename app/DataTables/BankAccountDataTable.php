@@ -7,11 +7,25 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use App\Helper\Common;
 
+/**
+ * DataTable for bank accounts (company wallets, cards, bank accounts).
+ * Shows balances, status, logos, filters, and actions based on permissions.
+ *
+ * Permissions cached on construct:
+ * - $editBankAccountPermission
+ * - $deleteBankAccountPermission
+ * - $viewBankAccountPermission
+ */
 class BankAccountDataTable extends BaseDataTable
 {
 
+    /** Can the user edit bank accounts? */
     private $editBankAccountPermission;
+
+    /** Can the user delete bank accounts? */
     private $deleteBankAccountPermission;
+
+    /** What subset of accounts the user can view. */
     private $viewBankAccountPermission;
 
     public function __construct()
@@ -237,7 +251,7 @@ class BankAccountDataTable extends BaseDataTable
             __('modules.bankaccount.type') => ['data' => 'type', 'name' => 'type', 'title' => __('modules.bankaccount.type')],
             __('app.currency') => ['data' => 'currency', 'name' => 'currency', 'title' => __('app.currency')],
             __('modules.bankaccount.bankBalance') => ['data' => 'bank_balance', 'name' => 'bank_balance', 'title' => __('modules.bankaccount.bankBalance'), 'exportable' => false],
-            __('modules.bankaccount.bankBalance') . 'export'  => ['data' => 'bank_balance_export', 'name' => 'bank_balance', 'title' => __('modules.bankaccount.bankBalance'), 'visible' => false],
+            __('modules.bankaccount.bankBalance') . 'export' => ['data' => 'bank_balance_export', 'name' => 'bank_balance', 'title' => __('modules.bankaccount.bankBalance'), 'visible' => false],
             __('app.status') => ['data' => 'status', 'name' => 'status', 'title' => __('app.status'), 'exportable' => false],
             __('modules.bankaccount.accountStatus') => ['data' => 'account_status', 'name' => 'status', 'title' => __('modules.bankaccount.accountStatus'), 'visible' => false],
             Column::computed('action', __('app.action'))
