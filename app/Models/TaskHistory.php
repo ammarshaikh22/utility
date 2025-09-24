@@ -36,7 +36,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskHistory extends BaseModel
 {
-
     protected $table = 'task_history';
 
     protected $with = ['user', 'subTask', 'boardColumn'];
@@ -60,5 +59,4 @@ class TaskHistory extends BaseModel
     {
         return $this->belongsTo(TaskboardColumn::class, 'board_column_id');
     }
-
 }

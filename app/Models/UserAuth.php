@@ -27,6 +27,8 @@ use App\Notifications\ResetPassword;
 /**
  * App\Models\UserAuth
  *
+ * Handles authentication, two-factor authentication, and verification for users.
+ *
  * @property string $name
  * @property string $email
  * @property string $password
@@ -35,7 +37,6 @@ use App\Notifications\ResetPassword;
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @mixin \Eloquent
  * @property int $two_factor_confirmed
  * @property int $two_factor_email_confirmed
  * @property string|null $salutation
@@ -49,32 +50,50 @@ use App\Notifications\ResetPassword;
  * @method static \Illuminate\Database\Eloquent\Builder|UserAuth newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|UserAuth newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|UserAuth query()
+ * @mixin \Eloquent
  */
 class UserAuth extends BaseModel implements AuthenticatableContract, AuthorizableContract, CanResetPasswordContract, MustVerifyEmail
 {
-
+    // Include traits for authentication, authorization, password reset, 2FA, notifications, and device tracking
     use Authenticatable, Authorizable, CanResetPassword, HasFactory, TwoFactorAuthenticatable, AuthMustVerifyEmail, Notifiable;
     use UseDevices;
 
+    // Mass assignable fields
     protected $fillable = ['email', 'password', 'remember_token', 'email_verification_code', 'email_verified_at', 'email_code_expires_at'];
+    // Fields hidden from JSON output
     protected $hidden = ['password'];
+    // Date fields automatically cast to Carbon instances
     public $dates = ['two_factor_expires_at', 'email_code_expires_at'];
 
+    /**
+     * Get all users associated with this UserAuth.
+     * Ignores the ActiveScope global scope.
+     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'user_auth_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Get the primary user associated with this UserAuth.
+     * Ignores the ActiveScope global scope.
+     */
     public function user(): HasOne
     {
         return $this->hasOne(User::class, 'user_auth_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Get the user associated without applying CompanyScope.
+     */
     public function userWithoutCompany(): HasOne
     {
         return $this->hasOne(User::class, 'user_auth_id')->withoutGlobalScope(CompanyScope::class);
     }
 
+    /**
+     * Generate a new 2FA code and set expiration (10 mins).
+     */
     public function generateTwoFactorCode()
     {
         $this->timestamps = false;
@@ -83,6 +102,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         $this->save();
     }
 
+    /**
+     * Reset the 2FA code and expiration.
+     */
     public function resetTwoFactorCode()
     {
         $this->timestamps = false;
@@ -91,6 +113,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         $this->save();
     }
 
+    /**
+     * Confirm the provided 2FA code using the provider.
+     */
     public function confirmTwoFactorAuth($code)
     {
         $codeIsValid = app(TwoFactorAuthenticationProvider::class)
@@ -99,23 +124,27 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         if ($codeIsValid) {
             $this->two_factor_confirmed = true;
             $this->save();
-
             return true;
         }
 
         return false;
     }
 
+    /**
+     * Create or update UserAuth credentials.
+     */
     public static function createUserAuthCredentials($email, $password = null, $oldEmail = null)
     {
         $checkAuth = UserAuth::where('email', $email)->first();
 
         if (is_null($checkAuth)) {
+            // Generate random password if not provided
             if (is_null($password)) {
                 $string = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcefghijklmnopqrstuvwxyz';
                 $password = substr(str_shuffle($string), 0, 8);
             }
 
+            // Update email if old email exists
             if (!is_null($oldEmail)) {
                 UserAuth::where('email', $oldEmail)->update(['email' => $email]);
                 return $checkAuth;
@@ -124,18 +153,18 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
             $verifiedAt = user() ? now() : null;
             $checkAuth = UserAuth::create(['email' => $email, 'password' => bcrypt($password), 'email_verified_at' => $verifiedAt]);
             session(['auth_pass' => $password]);
-
         }
 
         return $checkAuth;
     }
 
     /**
+     * Validate login and check for inactive/disabled users or companies.
+     *
      * @throws ValidationException
      */
     public static function validateLoginActiveDisabled($userAuth)
     {
-
         self::restrictUserLoginFromOtherSubdomain($userAuth);
 
         $globalSetting = GlobalSetting::first();
@@ -145,31 +174,29 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         if ($globalSetting->company_need_approval) {
             $userUnapprovedCompanies = DB::select('Select count(companies.id) as company_count from companies left join users on users.company_id = companies.id where users.email = "' . $userAuth->email . '" and companies.approved = 0');
 
-            // Check count of all user companies and match with total unapproved companies
+            // Check if all user companies are unapproved
             if ($userCompanies[0]->company_count > 0 && $userCompanies[0]->company_count == $userUnapprovedCompanies[0]->company_count) {
                 throw ValidationException::withMessages([
                     'email' => __('auth.failedCompanyUnapproved')
                 ]);
             }
-
         }
 
-        // Check count of all user companies and match with total inactive companies
+        // Check if all user companies are inactive
         if ($userCompanies[0]->company_count > 0 && $userCompanies[0]->company_count == $userInactiveCompanies[0]->company_count) {
             throw ValidationException::withMessages([
                 'email' => __('auth.companyAccountDisabled')
             ]);
         }
 
-
-        // Check count of all user status and match with total user
+        // Check if all users are deactivated
         if ($userAuth->users->where('status', 'deactive')->count() == $userAuth->users->count()) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failedBlocked')
             ]);
         }
 
-        // Check count of all user login and match with total user
+        // Check if all user logins are disabled
         if ($userAuth->users->where('login', 'disable')->count() == $userAuth->users->count()) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failedLoginDisabled')
@@ -177,6 +204,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         }
     }
 
+    /**
+     * Send email verification notification with a 6-digit code.
+     */
     public function sendEmailVerificationNotification()
     {
         $id = (user() ? user()->user_auth_id : $this->id);
@@ -187,9 +217,12 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
                 'email_code_expires_at' => now()->addMinutes(30),
                 'email_verified_at' => null
             ]);
-        $this->notify(new VerifyEmail()); // my notification
+        $this->notify(new VerifyEmail()); // Trigger notification
     }
 
+    /**
+     * Restrict login from other subdomains if module enabled.
+     */
     private static function restrictUserLoginFromOtherSubdomain($userAuth)
     {
         if (!module_enabled('Subdomain')) {
@@ -198,11 +231,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
 
         $company = getCompanyBySubDomain();
 
-        // Check if superadmin is trying to login. Make sure the database do not have main domain as subdomain
         if (!$company) {
             $userCount = $userAuth->users->whereNull('company_id')->count();
-        }
-        else {
+        } else {
             $userCount = $userAuth->users->where('company_id', $company->id)->count();
         }
 
@@ -215,6 +246,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
         return true;
     }
 
+    /**
+     * Handle login for multiple users under the same subdomain.
+     */
     public static function multipleUserLoginSubdomain()
     {
         $company = getCompanyBySubDomain();
@@ -237,13 +271,9 @@ class UserAuth extends BaseModel implements AuthenticatableContract, Authorizabl
 
     /**
      * Send the password reset notification.
-     *
-     * @param  string  $token
-     * @return void
      */
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPassword($token));
     }
-
 }

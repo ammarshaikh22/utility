@@ -32,14 +32,21 @@ use App\Models\BaseModel;
  */
 class PackageSetting extends BaseModel
 {
-
     use HasFactory;
 
+    // Append virtual attribute when serialized
     protected $appends = ['all_packages'];
 
+    /**
+     * Accessor: Determine if the number of modules qualifies as "all packages".
+     *
+     * @return bool True if modules count is 20 or more, otherwise false.
+     */
     public function getAllPackagesAttribute()
     {
-        return count(json_decode($this->modules, true)) >= 20;
-    }
+        // Decode the JSON string in 'modules' and count the items
+        $modules = json_decode($this->modules, true);
 
+        return count($modules) >= 20;
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\Social
  *
+ * Represents social account connections for users.
+ *
  * @property int $id
  * @property int|null $user_id
  * @property string $social_id
@@ -24,7 +26,6 @@ namespace App\Models;
  */
 class Social extends BaseModel
 {
-
+    // Allow mass assignment for these fields
     protected $fillable = ['user_id', 'social_id', 'social_service'];
-
 }

@@ -11,20 +11,23 @@ use Trebol\Entrust\EntrustRole;
 /**
  * App\Models\Role
  *
- * @property int $id
- * @property string $name
- * @property string|null $display_name
- * @property string|null $description
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\PermissionRole[] $permissions
- * @property-read int|null $permissions_count
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Permission[] $perms
- * @property-read int|null $perms_count
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\RoleUser[] $roleuser
- * @property-read int|null $roleuser_count
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $users
- * @property-read int|null $users_count
+ * Represents a user role within the system with associated permissions.
+ *
+ * @property int $id Primary key.
+ * @property string $name Internal name (slug) of the role.
+ * @property string|null $display_name Human-readable name of the role.
+ * @property string|null $description Optional description of the role.
+ * @property int|null $company_id ID of the company associated with the role.
+ * @property \Illuminate\Support\Carbon|null $created_at Timestamp when the role was created.
+ * @property \Illuminate\Support\Carbon|null $updated_at Timestamp when the role was last updated.
+ *
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\PermissionRole[] $permissions Direct relation to PermissionRole.
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Permission[] $rolePermissions Permissions associated via pivot table.
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\RoleUser[] $roleuser Relation to RoleUser entries.
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $users Users assigned to this role.
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $unsyncedUsers Users not synced with permissions.
+ * @property-read \App\Models\Company|null $company Company associated with this role.
+ *
  * @method static \Illuminate\Database\Eloquent\Builder|Role newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Role newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Role query()
@@ -34,24 +37,19 @@ use Trebol\Entrust\EntrustRole;
  * @method static \Illuminate\Database\Eloquent\Builder|Role whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Role whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Role whereUpdatedAt($value)
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Permission[] $rolePermissions
- * @property-read int|null $role_permissions_count
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $unsyncedUsers
- * @property-read int|null $unsynced_users_count
- * @property int|null $company_id
- * @property-read \App\Models\Company|null $company
  * @method static \Illuminate\Database\Eloquent\Builder|Role whereCompanyId($value)
+ *
  * @mixin \Eloquent
  */
 class Role extends EntrustRole
 {
-
     use HasCompany;
 
+    // Mass assignable attributes
     protected $fillable = ['name', 'display_name', 'description'];
 
     /**
-     * Interact with the name of role to slug and lowercase
+     * Mutator to automatically convert role name to slug format when set.
      *
      * @return \Illuminate\Database\Eloquent\Casts\Attribute
      */
@@ -62,40 +60,59 @@ class Role extends EntrustRole
         );
     }
 
+    /**
+     * One-to-many relation: role to permission_role entries.
+     */
     public function permissions(): HasMany
     {
         return $this->hasMany(PermissionRole::class, 'role_id');
     }
 
+    /**
+     * Many-to-many relation: role to permissions through pivot table.
+     */
     public function rolePermissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'permission_role');
     }
 
+    /**
+     * One-to-many relation: role to role_user entries.
+     */
     public function roleuser(): HasMany
     {
         return $this->hasMany(RoleUser::class, 'role_id');
     }
 
+    /**
+     * Many-to-many relation: role to users through pivot table.
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'role_user');
     }
 
+    /**
+     * Get the permission type for a specific permission ID for this role.
+     *
+     * @param int $permissionId
+     * @return int|false
+     */
     public function permissionType($permissionId)
     {
-        $permissionType = PermissionRole::where('role_id', $this->id)->where('permission_id', $permissionId)->first();
+        $permissionType = PermissionRole::where('role_id', $this->id)
+            ->where('permission_id', $permissionId)
+            ->first();
 
-        if ($permissionType) {
-            return $permissionType->permission_type_id;
-        }
-
-        return false;
+        return $permissionType ? $permissionType->permission_type_id : false;
     }
 
+    /**
+     * Many-to-many relation: get users not synced with permissions.
+     */
     public function unsyncedUsers()
     {
-        return $this->belongsToMany(User::class, 'role_user')->where('users.permission_sync', 0);
+        return $this->belongsToMany(User::class, 'role_user')
+            ->where('users.permission_sync', 0);
     }
-
 }

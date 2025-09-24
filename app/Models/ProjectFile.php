@@ -23,48 +23,71 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $external_link
  * @property int|null $added_by
  * @property int|null $last_updated_by
+ * @property int|null $company_id
+ *
  * @property-read mixed $file_url
  * @property-read mixed $icon
  * @property-read \App\Models\Project $project
+ *
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile query()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereAddedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereDropboxLink($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereExternalLink($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereExternalLinkName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereFilename($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereGoogleUrl($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereHashname($value)
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereLastUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereProjectId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereUserId($value)
- * @property int|null $company_id
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereProjectId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereFilename($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereHashname($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereGoogleUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereDropboxLink($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereExternalLinkName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereExternalLink($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereAddedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereLastUpdatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereCompanyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ProjectFile whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class ProjectFile extends BaseModel
 {
-
     use IconTrait;
 
+    /**
+     * Directory path for project files.
+     */
     const FILE_PATH = 'project-files';
 
+    /**
+     * Append these attributes automatically.
+     *
+     * @var array<int, string>
+     */
     protected $appends = ['file_url', 'icon'];
 
+    /**
+     * Accessor for file URL.
+     *
+     * @return string
+     */
     public function getFileUrlAttribute()
     {
-        return (!is_null($this->external_link)) ? $this->external_link : asset_url_local_s3(ProjectFile::FILE_PATH . '/' . $this->project_id . '/' . $this->hashname);
+        return (!is_null($this->external_link))
+            ? $this->external_link
+            : asset_url_local_s3(
+                ProjectFile::FILE_PATH . '/' . $this->project_id . '/' . $this->hashname
+            );
     }
 
+    /**
+     * Get the project this file belongs to.
+     *
+     * @return BelongsTo
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
-
 }

@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * App\Models\LeaveFile
  *
+ * Represents a file attached to a leave request.
+ * Stores information like filename, size, and path for employee leave-related documents.
+ *
  * @property int $id
  * @property int|null $company_id
  * @property int $user_id
@@ -23,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read mixed $file_url
  * @property-read mixed $icon
  * @property-read \App\Models\Leave $leave
+ * 
  * @method static \Illuminate\Database\Eloquent\Builder|LeaveFile newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|LeaveFile newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|LeaveFile query()
@@ -41,23 +45,38 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class LeaveFile extends BaseModel
 {
-
     use IconTrait;
-
     use HasFactory;
 
+    /**
+     * Directory path where leave files are stored.
+     */
     const FILE_PATH = 'leave-files';
 
+    /**
+     * Append these attributes when model is serialized.
+     *
+     * @var array<int, string>
+     */
     protected $appends = ['file_url', 'icon'];
 
+    /**
+     * Relationship: Each leave file belongs to one leave request.
+     */
     public function leave(): BelongsTo
     {
         return $this->belongsTo(Leave::class);
     }
 
+    /**
+     * Accessor: Get the full URL of the stored leave file.
+     *
+     * @return string
+     */
     public function getFileUrlAttribute()
     {
-        return asset_url_local_s3(LeaveFile::FILE_PATH . '/' . $this->leave_id . '/' . $this->hashname);
+        return asset_url_local_s3(
+            LeaveFile::FILE_PATH . '/' . $this->leave_id . '/' . $this->hashname
+        );
     }
-
 }

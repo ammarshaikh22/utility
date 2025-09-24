@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * App\Models\Proposal
  *
+ * Represents a proposal linked to a deal, with items, currency, unit, and signature.
+ *
  * @property int $id
  * @property int $deal_id
  * @property \Illuminate\Support\Carbon $valid_till
@@ -75,46 +77,71 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Proposal extends BaseModel
 {
-
     use HasCompany;
 
     protected $table = 'proposals';
 
+    /**
+     * Cast certain attributes to datetime objects.
+     */
     protected $casts = [
         'valid_till' => 'datetime',
         'last_viewed' => 'datetime',
     ];
 
+    /**
+     * Relation: Get all items belonging to this proposal.
+     */
     public function items(): HasMany
     {
         return $this->hasMany(ProposalItem::class);
     }
 
+    /**
+     * Relation: Get the currency associated with this proposal.
+     */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
 
+    /**
+     * Relation: Get the deal (lead) associated with this proposal.
+     */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Deal::class, 'deal_id');
     }
 
+    /**
+     * Relation: Get the deal associated with this proposal (alias of lead).
+     */
     public function deal(): BelongsTo
     {
         return $this->belongsTo(Deal::class);
     }
 
+    /**
+     * Relation: Get the unit type associated with this proposal.
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
 
+    /**
+     * Relation: Get the signature associated with this proposal.
+     */
     public function signature(): HasOne
     {
         return $this->hasOne(ProposalSign::class);
     }
 
+    /**
+     * Helper: Get the last proposal number based on length and value.
+     *
+     * @return string
+     */
     public static function lastProposalNumber()
     {
         $lastProposal = Proposal::orderByRaw('LENGTH(original_proposal_number) DESC')
@@ -123,5 +150,4 @@ class Proposal extends BaseModel
 
         return $lastProposal ? $lastProposal->original_proposal_number : '0';
     }
-
 }

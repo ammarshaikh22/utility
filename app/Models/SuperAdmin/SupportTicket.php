@@ -57,86 +57,103 @@ use App\Observers\SuperAdmin\SupportTicketObserver;
  */
 class SupportTicket extends BaseModel
 {
+    use HasCompany, SoftDeletes;
 
-    use HasCompany;
-
-    use SoftDeletes;
-
+    // Define date attributes to be cast to Carbon instances
     protected $dates = ['deleted_at', 'created_at', 'updated_at'];
 
+    // Automatic casting
     protected $casts = [
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
+    // Appended attributes for easy access
     protected $appends = ['created_on', 'updated_on'];
 
+    /**
+     * Boot method to register model observer
+     */
     protected static function boot()
     {
         parent::boot();
-
         static::observe(SupportTicketObserver::class);
     }
 
+    /**
+     * Relationship to the requester user
+     */
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScopes(['active', CompanyScope::class]);
     }
 
+    /**
+     * Relationship to the assigned agent
+     */
     public function agent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'agent_id')->withoutGlobalScopes(['active', CompanyScope::class]);
     }
 
+    /**
+     * All replies for this ticket
+     */
     public function reply(): HasMany
     {
         return $this->hasMany(SupportTicketReply::class, 'support_ticket_id');
     }
 
+    /**
+     * Latest reply for this ticket
+     */
     public function latestReply(): HasOne
     {
         return $this->hasOne(SupportTicketReply::class, 'support_ticket_id')->latest();
     }
 
+    /**
+     * Client relationship
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScopes(['active']);
     }
 
+    /**
+     * Formatted created date
+     */
     public function getCreatedOnAttribute()
     {
-        if (is_null($this->created_at)) {
-            return '';
-        }
-
+        if (is_null($this->created_at)) return '';
         return $this->created_at->format('d M Y H:i');
-
     }
 
+    /**
+     * Formatted updated date
+     */
     public function getUpdatedOnAttribute()
     {
-        if (is_null($this->updated_at)) {
-            return '';
-        }
-
+        if (is_null($this->updated_at)) return '';
         return $this->updated_at->format('Y-m-d H:i a');
-
     }
 
+    /**
+     * Generate a badge HTML for ticket status
+     */
     public function badge($tag = 'p')
     {
-
         $latestReplyUser = $this->latestReply?->user;
         $totalReply = $this->reply()->count();
-
         $selfReplyCount = $this->reply()->where('user_id', $latestReplyUser?->id)->count();
 
         if ($totalReply > 1 && ($totalReply !== $selfReplyCount) && $latestReplyUser && $latestReplyUser->id !== user()->id) {
             return '<' . $tag . ' class="mb-0"><span class="badge badge-secondary mr-1 bg-info">' . __('app.newResponse') . '</span></' . $tag . '>';
         }
 
-        return $totalReply == 1 || ($totalReply == $selfReplyCount) ? '<' . $tag . ' class="mb-0"><span class="badge badge-secondary mr-1 bg-dark-green">' . __('app.new') . '</span></' . $tag . '>' : '';
+        return $totalReply == 1 || ($totalReply == $selfReplyCount)
+            ? '<' . $tag . ' class="mb-0"><span class="badge badge-secondary mr-1 bg-dark-green">' . __('app.new') . '</span></' . $tag . '>'
+            : '';
     }
-
 }

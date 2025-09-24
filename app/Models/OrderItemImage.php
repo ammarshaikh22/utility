@@ -27,7 +27,6 @@ use App\Traits\IconTrait;
  */
 class OrderItemImage extends BaseModel
 {
-
     use IconTrait;
 
     protected $appends = ['file_url', 'icon', 'file'];
@@ -36,12 +35,13 @@ class OrderItemImage extends BaseModel
 
     public function getFileUrlAttribute()
     {
-        return str($this->external_link)->contains('http') ? $this->external_link : asset_url_local_s3($this->external_link);
+        return str($this->external_link)->contains('http')
+            ? $this->external_link
+            : asset_url_local_s3($this->external_link);
     }
 
     public function getFileAttribute()
     {
         return $this->external_link;
     }
-
 }

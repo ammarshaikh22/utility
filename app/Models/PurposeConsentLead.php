@@ -2,37 +2,56 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 /**
- * App\Models\PurposeConsentLead
+ * App\Models\PurposeConsent
+ *
+ * Represents a consent purpose that can be linked to leads or users.
  *
  * @property int $id
- * @property int $deal_id
- * @property int $purpose_consent_id
- * @property string $status
- * @property string|null $ip
- * @property int|null $updated_by_id
- * @property string|null $additional_description
+ * @property string $name
+ * @property string|null $description
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read mixed $icon
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead query()
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereAdditionalDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereIp($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereLeadId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead wherePurposeConsentId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereUpdatedById($value)
- * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsentLead whereDealId($value)
+ * @property-read \App\Models\PurposeConsentLead|null $lead
+ * @property-read \App\Models\PurposeConsentUser|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent query()
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PurposeConsent whereUpdatedAt($value)
  * @mixin \Eloquent
  */
-class PurposeConsentLead extends BaseModel
+class PurposeConsent extends BaseModel
 {
+    // Table name for this model
+    protected $table = 'purpose_consent';
 
-    protected $table = 'purpose_consent_leads';
+    // Fields that are mass assignable
+    protected $fillable = ['name', 'description'];
 
+    /**
+     * Get the related lead record for this consent.
+     *
+     * @return HasOne
+     */
+    public function lead(): HasOne
+    {
+        return $this->hasOne(PurposeConsentDeal::class, 'purpose_consent_id', 'id');
+    }
+
+    /**
+     * Get the related user record for this consent.
+     *
+     * @return HasOne
+     */
+    public function user(): HasOne
+    {
+        return $this->hasOne(PurposeConsentUser::class, 'purpose_consent_id', 'id');
+    }
 }

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * App\Models\InvoiceItems
+ * App\Models\OrderCart
  *
  * @property int $id
  * @property int $invoice_id
@@ -52,14 +52,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OrderCart extends BaseModel
 {
-
     protected $guarded = ['id'];
 
     protected $with = ['product'];
 
     public function product(): BelongsTo
     {
-        
         return $this->belongsTo(Product::class, 'product_id');
     }
 
@@ -67,5 +65,4 @@ class OrderCart extends BaseModel
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
-    
 }

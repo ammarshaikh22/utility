@@ -23,20 +23,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 class PermissionType extends BaseModel
 {
+    use HasFactory; // Enables Laravel factory support for testing/seeding
 
-    use HasFactory;
-
+    // Constants representing different permission types
     const ADDED = 1;
     const OWNED = 2;
     const BOTH = 3;
     const ALL = 4;
     const NONE = 5;
 
+    // Protects the 'id' field from mass assignment
     protected $guarded = ['id'];
 
+    /**
+     * Scope: filter permissions by a given type name
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeOfType($query, $type)
     {
         return $query->where('name', $type);
     }
-
 }

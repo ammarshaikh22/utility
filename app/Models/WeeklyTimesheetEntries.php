@@ -8,20 +8,25 @@ use App\Traits\HasCompany;
 
 class WeeklyTimesheetEntries extends BaseModel
 {
-    use HasFactory;
-    use HasCompany;
+    use HasFactory, HasCompany;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id']; // Protect primary key from mass assignment
 
     protected $casts = [
-        'date' => 'date:Y-m-d',
+        'date' => 'date:Y-m-d', // Cast date to formatted Y-m-d
     ];
 
+    /**
+     * Get the weekly timesheet this entry belongs to.
+     */
     public function weeklyTimesheet(): BelongsTo
     {
         return $this->belongsTo(WeeklyTimesheet::class);
     }
 
+    /**
+     * Get the task associated with this entry.
+     */
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);

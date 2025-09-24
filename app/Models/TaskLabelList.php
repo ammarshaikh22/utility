@@ -34,7 +34,6 @@ use App\Traits\HasCompany;
  */
 class TaskLabelList extends BaseModel
 {
-
     use HasCompany;
 
     protected $table = 'task_label_list';
@@ -46,5 +45,4 @@ class TaskLabelList extends BaseModel
     {
         return $this->color ?: '#3b0ae1';
     }
-
 }

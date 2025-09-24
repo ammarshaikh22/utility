@@ -8,15 +8,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 /**
  * App\Models\ProjectStatusSetting
  *
+ * This model represents the configurable statuses for projects in the system.
+ * It allows companies to manage project lifecycle stages (e.g., In Progress, On Hold).
+ *
  * @property int $id
- * @property int|null $company_id
- * @property string $status_name
- * @property string $color
- * @property string $status
- * @property string $default_status
+ * @property int|null $company_id      Company association (nullable for global use)
+ * @property string $status_name       Human-readable name of the project status
+ * @property string $color             Hex color code for UI representation
+ * @property string $status            Status record state (active/inactive)
+ * @property string $default_status    Marks if this is the default status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Company|null $company
+ *
+ * @property-read \App\Models\Company|null $company  Related company model
+ *
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting query()
@@ -28,24 +33,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting whereStatusName($value)
  * @method static \Illuminate\Database\Eloquent\Builder|ProjectStatusSetting whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class ProjectStatusSetting extends BaseModel
 {
-
     use HasFactory, HasCompany;
 
+    /** Record status constants */
     const ACTIVE = '1';
     const INACTIVE = '0';
 
+    /**
+     * Predefined status options with associated colors and default flags.
+     * These can be seeded into the database or used as defaults.
+     */
     const COLUMNS = [
         ['status_name' => 'in progress', 'color' => '#00b5ff', 'status' => 'active', 'default_status' => self::ACTIVE],
         ['status_name' => 'not started', 'color' => '#616e80', 'status' => 'active', 'default_status' => self::INACTIVE],
         ['status_name' => 'on hold', 'color' => '#f5c308', 'status' => 'active', 'default_status' => self::INACTIVE],
         ['status_name' => 'canceled', 'color' => '#d21010', 'status' => 'active', 'default_status' => self::INACTIVE],
-        ['status_name' => 'finished', 'color' => '#679c0d', 'status' => 'active', 'default_status' => self::INACTIVE]
+        ['status_name' => 'finished', 'color' => '#679c0d', 'status' => 'active', 'default_status' => self::INACTIVE],
     ];
 
+    /**
+     * Mass-assignable attributes for this model.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = ['status_name', 'color', 'status', 'default_status'];
-
 }

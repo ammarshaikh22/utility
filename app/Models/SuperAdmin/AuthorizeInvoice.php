@@ -4,9 +4,13 @@ namespace App\Models\SuperAdmin;
 
 use App\Models\Company;
 use App\Models\BaseModel;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * App\Models\SuperAdmin\AuthorizeInvoice
+ *
+ * Represents an authorization invoice record for a company and package, including transaction details.
  *
  * @property int $id
  * @property int $company_id
@@ -17,8 +21,10 @@ use App\Models\BaseModel;
  * @property Carbon|null $next_pay_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
  * @property-read Company $company
  * @property-read Package $package
+ *
  * @method static Builder|AuthorizeInvoice newModelQuery()
  * @method static Builder|AuthorizeInvoice newQuery()
  * @method static Builder|AuthorizeInvoice query()
@@ -31,29 +37,35 @@ use App\Models\BaseModel;
  * @method static Builder|AuthorizeInvoice wherePayDate($value)
  * @method static Builder|AuthorizeInvoice whereTransactionId($value)
  * @method static Builder|AuthorizeInvoice whereUpdatedAt($value)
- * @mixin Eloquent
+ * @mixin \Eloquent
  */
 class AuthorizeInvoice extends BaseModel
 {
-
+    // Automatically cast these columns to Carbon instances
     protected $dates = [
         'pay_date',
         'next_pay_date',
     ];
 
+    // Casts for datetime formatting
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * The company associated with this invoice.
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * The package associated with this invoice.
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

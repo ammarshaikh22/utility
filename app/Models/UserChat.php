@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * App\Models\UserChat
  *
+ * Represents a chat message between two users.
+ *
  * @property int $id
  * @property int $user_one
  * @property int $user_id
@@ -28,26 +30,10 @@ use Illuminate\Support\Facades\DB;
  * @property-read \App\Models\User|null $fromUser
  * @property-read mixed $icon
  * @property-read \App\Models\User|null $toUser
- * @method static Builder|UserChat lastPerGroup(?array $fields = null)
- * @method static Builder|UserChat newModelQuery()
- * @method static Builder|UserChat newQuery()
- * @method static Builder|UserChat query()
- * @method static Builder|UserChat whereCreatedAt($value)
- * @method static Builder|UserChat whereFrom($value)
- * @method static Builder|UserChat whereId($value)
- * @method static Builder|UserChat whereMessage($value)
- * @method static Builder|UserChat whereMessageSeen($value)
- * @method static Builder|UserChat whereTo($value)
- * @method static Builder|UserChat whereUpdatedAt($value)
- * @method static Builder|UserChat whereUserId($value)
- * @method static Builder|UserChat whereUserOne($value)
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\UserchatFile[] $files
  * @property-read int|null $files_count
- * @method static \Database\Factories\UserChatFactory factory(...$parameters)
  * @property int|null $company_id
  * @property-read \App\Models\Company|null $company
- * @method static Builder|UserChat whereCompanyId($value)
- * @method static Builder|UserChat whereNotificationSent($value)
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MentionUser> $mentionProject
  * @property-read int|null $mention_project_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentionUser
@@ -56,26 +42,36 @@ use Illuminate\Support\Facades\DB;
  */
 class UserChat extends BaseModel
 {
+    use HasCompany; // Adds company-related functionality
+    use HasFactory; // Enables factory support for testing/seeding
 
-    use HasCompany;
-    use HasFactory;
-
-    protected $table = 'users_chat';
+    protected $table = 'users_chat'; // Specify custom table name
 
     protected $guarded = [
-        'id'
+        'id' // Protect 'id' from mass assignment
     ];
 
+    /**
+     * Get the user who sent the message.
+     * Ignores the ActiveScope global scope.
+     */
     public function fromUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'from')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Get the user who received the message.
+     * Ignores the ActiveScope global scope.
+     */
     public function toUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'to')->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Get chat messages between two users ordered by creation date.
+     */
     public static function chatDetail($id, $userID)
     {
         return UserChat::with('fromUser', 'toUser', 'files')->where(function ($q) use ($id, $userID) {
@@ -88,21 +84,16 @@ class UserChat extends BaseModel
             ->orderBy('created_at', 'asc')->get();
     }
 
+    /**
+     * Update 'message_seen' status for messages received by the logged-in user.
+     */
     public static function messageSeenUpdate($loginUser, $toUser, $updateData)
     {
         return UserChat::where('from', $toUser)->where('to', $loginUser)->update($updateData);
     }
 
     /**
-     * Get the latest entry for each group.
-     *
-     * Each group is composed of one or more columns that make a unique combination to return the
-     * last entry for.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array|null $fields A list of fields that's considered as a unique entry by the query.
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope to get the latest entry for each unique group of fields.
      */
     public function scopeLastPerGroup(Builder $query, ?array $fields = null): Builder
     {
@@ -113,6 +104,9 @@ class UserChat extends BaseModel
         });
     }
 
+    /**
+     * Get list of users the current user has chatted with (latest per group).
+     */
     public static function userList()
     {
         return UserChat::with('toUser')->select('users_chat.*')
@@ -122,15 +116,14 @@ class UserChat extends BaseModel
             ->get();
     }
 
+    /**
+     * Get the latest chat IDs for a user, optionally filtered by a search term.
+     */
     public static function userListLatest($userID, $term)
     {
-
-        if ($term) {
-            $termCnd = 'and (users.name like \'%' . $term . '%\' or u.name like \'%' . $term . '%\')';
-        }
-        else {
-            $termCnd = '';
-        }
+        $termCnd = $term
+            ? 'and (users.name like \'%' . $term . '%\' or u.name like \'%' . $term . '%\')'
+            : '';
 
         return DB::select('
             SELECT t1.id
@@ -153,14 +146,20 @@ class UserChat extends BaseModel
                 t1.id = t2.max_id
                 WHERE (t1.user_one = ? OR t1.user_id = ?) ' . $termCnd . '
                 ORDER BY t1.created_at DESC
-            ', [$userID, $userID]);
+        ', [$userID, $userID]);
     }
 
+    /**
+     * Get all files attached to this chat message.
+     */
     public function files()
     {
         return $this->hasMany(UserchatFile::class, 'users_chat_id');
     }
 
+    /**
+     * Get chat details for a specific chat ID.
+     */
     public static function chatDetailViaId($chatId)
     {
         $userChat = UserChat::findOrFail($chatId);
@@ -179,17 +178,23 @@ class UserChat extends BaseModel
         }
 
         return null;
-
     }
 
+    /**
+     * Users mentioned in this chat message.
+     */
     public function mentionUser(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'mention_users')->withoutGlobalScope(ActiveScope::class)->using(MentionUser::class);
+        return $this->belongsToMany(User::class, 'mention_users')
+            ->withoutGlobalScope(ActiveScope::class)
+            ->using(MentionUser::class);
     }
 
+    /**
+     * Projects mentioned in this chat message.
+     */
     public function mentionProject(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'project_id');
     }
-
 }

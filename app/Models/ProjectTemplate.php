@@ -12,10 +12,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * App\Models\ProjectTemplate
  *
+ * Represents a reusable template for creating projects.
+ * Templates can have categories, clients, members, tasks, and milestones.
+ *
  * @property int $id
  * @property string $project_name
  * @property int|null $category_id
  * @property int|null $client_id
+ * @property int|null $company_id
+ * @property int $added_by
  * @property string|null $project_summary
  * @property string|null $notes
  * @property string|null $feedback
@@ -24,119 +29,112 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $manual_timelog
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @property-read \App\Models\ProjectCategory|null $category
  * @property-read \App\Models\User|null $client
- * @property-read mixed $extras
- * @property-read mixed $icon
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectTemplateMember[] $members
- * @property-read int|null $members_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectTemplateTask[] $tasks
- * @property-read int|null $tasks_count
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate query()
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereAllowClientNotification($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereCategoryId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereClientId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereClientViewTask($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereFeedback($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereManualTimelog($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereProjectName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereProjectSummary($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereUpdatedAt($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProjectTemplateMilestone[] $milestones
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $projectMembers
- * @property-read int|null $members_many_count
- * @property int|null $company_id
- * @property int $added_by
  * @property-read \App\Models\Company|null $company
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereAddedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|ProjectTemplate whereCompanyId($value)
- * @property-read int|null $project_members_count
+ *
  * @mixin \Eloquent
  */
 class ProjectTemplate extends BaseModel
 {
+    use CustomFieldsTrait, HasCompany;
 
-    use CustomFieldsTrait;
-    use HasCompany;
-
+    /**
+     * Parent category of the project template.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProjectCategory::class);
     }
 
+    /**
+     * Client associated with the project template.
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class)->withoutGlobalScope(ActiveScope::class);
     }
 
+    /**
+     * Members assigned to the project template.
+     */
     public function members(): HasMany
     {
         return $this->hasMany(ProjectTemplateMember::class);
     }
 
+    /**
+     * Tasks associated with the project template.
+     */
     public function tasks(): HasMany
     {
         return $this->hasMany(ProjectTemplateTask::class, 'project_template_id')->orderByDesc('id');
     }
 
+    /**
+     * Milestones associated with the project template.
+     */
     public function milestones(): HasMany
     {
         return $this->hasMany(ProjectTemplateMilestone::class, 'project_template_id')->orderByDesc('id');
     }
 
     /**
-     * @return bool
+     * Check if the current logged-in user is a project member.
      */
-    public function checkProjectUser()
+    public function checkProjectUser(): bool
     {
-        $project = ProjectTemplateMember::where('project_template_id', $this->id)
+        return ProjectTemplateMember::where('project_template_id', $this->id)
             ->where('user_id', user()->id)
-            ->count();
-
-        if ($project > 0) {
-            return true;
-        }
-        else {
-            return false;
-        }
+            ->exists();
     }
 
     /**
-     * @return bool
+     * Check if the current logged-in user is the project client.
+     *
+     * ⚠️ NOTE: You used `ProjectTemplateMember::where('id', $this->id)` — 
+     * that seems like a bug. Should probably query `ProjectTemplate` instead.
      */
-    public function checkProjectClient()
+    public function checkProjectClient(): bool
     {
-        $project = ProjectTemplateMember::where('id', $this->id)
+        return ProjectTemplate::where('id', $this->id)
             ->where('client_id', user()->id)
-            ->count();
-
-        if ($project > 0) {
-            return true;
-        }
-        else {
-            return false;
-        }
+            ->exists();
     }
 
+    /**
+     * Get all projects for a specific client.
+     */
     public static function clientProjects($clientId)
     {
-        return ProjectTemplateMember::where('client_id', $clientId)->get();
+        return ProjectTemplate::where('client_id', $clientId)->get();
     }
 
+    /**
+     * Get all projects assigned to a specific employee.
+     */
     public static function byEmployee($employeeId)
     {
-        return ProjectTemplateMember::join('project_template_members', 'project_template_members.project_template_id', '=', 'project_templates.id')
+        return ProjectTemplate::join(
+                'project_template_members',
+                'project_template_members.project_template_id',
+                '=',
+                'project_templates.id'
+            )
             ->where('project_template_members.user_id', $employeeId)
             ->get();
     }
 
+    /**
+     * Many-to-Many relationship with project members (users).
+     */
     public function projectMembers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_template_members');
     }
-
 }

@@ -7,12 +7,16 @@ use App\Traits\HasCompany;
 /**
  * App\Models\TaskCategory
  *
+ * Represents a category that tasks can belong to.
+ *
  * @property int $id
  * @property string $category_name
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $added_by
  * @property int|null $last_updated_by
+ * @property int|null $company_id
+ * @property-read \App\Models\Company|null $company
  * @property-read mixed $icon
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory newQuery()
@@ -23,26 +27,26 @@ use App\Traits\HasCompany;
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory whereLastUpdatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory whereUpdatedAt($value)
- * @property int|null $company_id
- * @property-read \App\Models\Company|null $company
  * @method static \Illuminate\Database\Eloquent\Builder|TaskCategory whereCompanyId($value)
  * @mixin \Eloquent
  */
 class TaskCategory extends BaseModel
 {
+    use HasCompany; // Associates category with a company
 
-    use HasCompany;
+    protected $table = 'task_category'; // Explicit table name
 
-    protected $table = 'task_category';
-
+    /**
+     * Retrieve all task categories based on user's permission.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public static function allCategories()
     {
         if (user()->permission('view_task_category') == 'all') {
             return TaskCategory::all();
-        }
-        else {
+        } else {
             return TaskCategory::where('added_by', user()->id)->get();
         }
     }
-
 }

@@ -8,6 +8,8 @@ use App\Scopes\ActiveScope;
 /**
  * App\Models\TaskCommentEmoji
  *
+ * Represents emojis (like/dislike) on task comments.
+ *
  * @property int $id
  * @property int|null $user_id
  * @property int|null $comment_id
@@ -29,15 +31,19 @@ use App\Scopes\ActiveScope;
  */
 class TaskCommentEmoji extends BaseModel
 {
-
+    /**
+     * Emoji belongs to a task comment
+     */
     public function taskComment(): BelongsTo
     {
         return $this->belongsTo(TaskComment::class);
     }
 
+    /**
+     * Emoji belongs to a user
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);
     }
-
 }

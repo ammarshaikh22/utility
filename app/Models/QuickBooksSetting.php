@@ -7,21 +7,23 @@ use App\Traits\HasCompany;
 /**
  * App\Models\QuickBooksSetting
  *
+ * Represents QuickBooks integration settings for a company.
+ *
  * @property int $id
- * @property int|null $company_id
- * @property string $sandbox_client_id
- * @property string $sandbox_client_secret
- * @property string $client_id
- * @property string $client_secret
- * @property string $access_token
- * @property string $refresh_token
- * @property string $realmid
- * @property string $sync_type
- * @property string $environment
- * @property int $status
+ * @property int|null $company_id The ID of the associated company.
+ * @property string $sandbox_client_id QuickBooks sandbox client ID.
+ * @property string $sandbox_client_secret QuickBooks sandbox client secret.
+ * @property string $client_id QuickBooks production client ID.
+ * @property string $client_secret QuickBooks production client secret.
+ * @property string $access_token Access token for QuickBooks API.
+ * @property string $refresh_token Refresh token for QuickBooks API.
+ * @property string $realmid QuickBooks company ID (realm ID).
+ * @property string $sync_type Type of sync with QuickBooks.
+ * @property string $environment Environment: 'sandbox' or 'production'.
+ * @property int $status Status of the QuickBooks integration.
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Company|null $company
+ * @property-read \App\Models\Company|null $company Associated company.
  * @method static \Illuminate\Database\Eloquent\Builder|QuickBooksSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|QuickBooksSetting newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|QuickBooksSetting query()
@@ -45,5 +47,6 @@ class QuickBooksSetting extends BaseModel
 {
     use HasCompany;
 
+    // Protect the 'id' field from mass assignment
     protected $guarded = ['id'];
 }

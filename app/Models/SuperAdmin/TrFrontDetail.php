@@ -73,17 +73,28 @@ use App\Models\BaseModel;
  */
 class TrFrontDetail extends BaseModel
 {
-
+    // Prevent mass assignment of the primary key
     protected $guarded = ['id'];
 
+    /**
+     * Get the full URL for the header image.
+     *
+     * @return string
+     */
     public function getImageUrlAttribute()
     {
-        return ($this->image) ? asset_url_local_s3('front/' . $this->image) : asset('saas/img/home/home-crm.png');
+        return ($this->image) 
+            ? asset_url_local_s3('front/' . $this->image) 
+            : asset('saas/img/home/home-crm.png');
     }
 
+    /**
+     * Define relationship with LanguageSetting
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function language()
     {
         return $this->belongsTo(LanguageSetting::class, 'language_setting_id');
     }
-
 }

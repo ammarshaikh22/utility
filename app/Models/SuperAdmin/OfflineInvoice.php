@@ -46,46 +46,73 @@ use App\Observers\SuperAdmin\OfflineInvoiceObserver;
  */
 class OfflineInvoice extends BaseModel
 {
-
+    // Folder path for storing offline invoice files
     const FILE_PATH = 'offline-invoice';
 
+    // Dates to be automatically cast to Carbon instances
     protected $dates = [
         'pay_date',
         'next_pay_date'
     ];
 
+    // Additional casting for datetime fields
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Boot method to register model events and global scopes.
+     */
     protected static function boot()
     {
         parent::boot();
 
+        // Observe model events (e.g., created, updated)
         static::observe(OfflineInvoiceObserver::class);
 
+        // Apply a global scope for company filtering
         static::addGlobalScope(new CompanyScope);
     }
 
+    /**
+     * Relationship to the company associated with this invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes(['active']);
     }
 
+    /**
+     * Relationship to the package associated with this invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function package()
     {
         return $this->belongsTo(Package::class, 'package_id');
     }
 
+    /**
+     * Relationship to the offline payment method used for this invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function offlinePaymentMethod()
     {
-        return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id')->whereNull('company_id');
+        return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id')
+                    ->whereNull('company_id');
     }
 
+    /**
+     * Relationship to the related offline plan change request (if any).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
     public function offlinePlanChangeRequest()
     {
         return $this->hasOne(OfflinePlanChange::class, 'invoice_id');
     }
-
 }

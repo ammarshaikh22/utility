@@ -30,12 +30,16 @@ use App\Models\BaseModel;
  */
 class Testimonials extends BaseModel
 {
-
+    // Prevent mass assignment of the primary key
     protected $guarded = ['id'];
 
+    /**
+     * Defines the relationship to LanguageSetting
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function language()
     {
         return $this->belongsTo(LanguageSetting::class, 'language_setting_id');
     }
-
 }

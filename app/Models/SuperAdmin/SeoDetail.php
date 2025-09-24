@@ -38,32 +38,43 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  */
 class SeoDetail extends BaseModel
 {
+    use HasMaskImage; // Trait for generating masked image URLs
 
-    use HasMaskImage;
-
+    // Prevent mass assignment on ID
     protected $guarded = ['id'];
 
+    // Append custom attribute to model JSON output
     protected $appends = ['og_image_url'];
 
+    /**
+     * Relationship: Each SEO detail belongs to a language
+     */
     public function language()
     {
         return $this->belongsTo(LanguageSetting::class, 'language_setting_id');
     }
 
+    /**
+     * Get the URL for the Open Graph image
+     */
     public function getOgImageUrlAttribute()
     {
-        return ($this->og_image) ? asset_url_local_s3('front/seo-detail/' . $this->og_image) : asset('saas/img/home/home-crm.png');
+        return ($this->og_image)
+            ? asset_url_local_s3('front/seo-detail/' . $this->og_image)
+            : asset('saas/img/home/home-crm.png');
     }
 
+    /**
+     * Get a masked version of the OG image URL
+     */
     public function maskedOgImageUrl(): Attribute
     {
         return Attribute::make(
             get: function () {
-                return ($this->og_image) ? $this->generateMaskedImageAppUrl('front/seo-detail/' . $this->og_image) : asset('saas/img/home/home-crm.png');
+                return ($this->og_image)
+                    ? $this->generateMaskedImageAppUrl('front/seo-detail/' . $this->og_image)
+                    : asset('saas/img/home/home-crm.png');
             },
         );
-
     }
-
-
 }

@@ -45,25 +45,31 @@ use App\Models\BaseModel;
  */
 class PayfastInvoice extends BaseModel
 {
-
+    // Automatically cast these columns to Carbon instances
     protected $dates = [
         'pay_date',
         'next_pay_date',
     ];
 
+    // Also ensures these are treated as datetime in Eloquent
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each PayfastInvoice belongs to a company
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship: Each PayfastInvoice belongs to a subscription package
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

@@ -8,67 +8,69 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * App\Models\TicketFile
  *
+ * Represents a file attached to a ticket reply.
+ *
  * @property int $id
- * @property int $user_id
- * @property int $ticket_reply_id
- * @property string $filename
- * @property string|null $description
- * @property string|null $google_url
- * @property string|null $hashname
- * @property string|null $size
- * @property string|null $dropbox_link
- * @property string|null $external_link
+ * @property int $user_id                  // The user who uploaded the file
+ * @property int $ticket_reply_id          // The ticket reply this file is attached to
+ * @property string $filename              // Original filename
+ * @property string|null $description      // Optional description for the file
+ * @property string|null $google_url       // Optional Google Drive link
+ * @property string|null $hashname         // Internal hashed filename
+ * @property string|null $size             // File size
+ * @property string|null $dropbox_link     // Optional Dropbox link
+ * @property string|null $external_link    // Optional external file URL
  * @property string|null $external_link_name
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read mixed $file_url
- * @property-read mixed $icon
- * @property-read \App\Models\TicketReply $reply
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile query()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereDropboxLink($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereExternalLink($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereExternalLinkName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereFilename($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereGoogleUrl($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereHashname($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereTicketReplyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketFile whereUserId($value)
- * @property-read mixed $file
+ *
+ * Relations:
+ * @property-read \App\Models\TicketReply $reply   // The ticket reply this file belongs to
+ *
+ * Appended attributes:
+ * @property-read mixed $file_url   // Full URL to access the file
+ * @property-read mixed $icon       // Icon based on file type
+ * @property-read mixed $file       // Path or external link
+ *
  * @mixin \Eloquent
  */
 class TicketFile extends BaseModel
 {
-
     use IconTrait;
 
+    // Base path where ticket files are stored
     const FILE_PATH = 'ticket-files';
 
+    // Attributes to automatically append to model's array and JSON
     protected $appends = ['file_url', 'icon', 'file'];
 
+    /**
+     * Get full file URL for this ticket file.
+     */
     public function getFileUrlAttribute()
     {
         if($this->external_link){
-            return str($this->external_link)->contains('http') ? $this->external_link : asset_url_local_s3($this->external_link);
+            return str($this->external_link)->contains('http') 
+                ? $this->external_link 
+                : asset_url_local_s3($this->external_link);
         }
 
         return asset_url_local_s3(TicketFile::FILE_PATH . '/' . $this->ticket_reply_id . '/' . $this->hashname);
     }
 
+    /**
+     * Get file path or external link.
+     */
     public function getFileAttribute()
     {
         return $this->external_link ?: (TicketFile::FILE_PATH . '/' . $this->ticket_reply_id . '/' . $this->hashname);
     }
 
+    /**
+     * Relation: Ticket reply this file belongs to.
+     */
     public function reply(): BelongsTo
     {
         return $this->belongsTo(TicketReply::class);
     }
-
 }

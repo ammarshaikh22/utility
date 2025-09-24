@@ -32,25 +32,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Pinned extends BaseModel
 {
+    use HasCompany; // Trait to associate model records with a company
 
-    use HasCompany;
-
+    // Database table associated with this model
     protected $table = 'pinned';
+
+    // Prevents 'id' from being mass assignable
     protected $guarded = ['id'];
 
+    /**
+     * Get the user who pinned the record.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Get the project associated with this pinned record.
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    /**
+     * Get the task associated with this pinned record.
+     */
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class, 'task_id');
     }
-
 }

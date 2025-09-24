@@ -6,6 +6,13 @@ use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * Class ProductSubCategory
+ *
+ * Represents a subcategory under a main product category.
+ * Each subcategory belongs to a single ProductCategory.
+ */
+
+/**
  * App\Models\ProductSubCategory
  *
  * @property int $id
@@ -30,14 +37,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ProductSubCategory extends BaseModel
 {
-
-    use HasCompany;
+    use HasCompany; // Trait to bind the model to a specific company
 
     protected $table = 'product_sub_category';
 
+    /**
+     * Relationship: Each subcategory belongs to one main category.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
-
 }

@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\ProposalSign
  *
+ * Represents a signature associated with a proposal.
+ *
  * @property int $id
  * @property int $proposal_id
  * @property string $full_name
@@ -27,10 +29,15 @@ namespace App\Models;
  */
 class ProposalSign extends BaseModel
 {
-
+    /**
+     * Accessor for the signature attribute
+     *
+     * Returns the full URL of the signature file if it exists, otherwise null.
+     */
     public function getSignatureAttribute()
     {
-        return !is_null($this->attributes['signature']) ? asset_url_local_s3('proposal/sign/' . $this->attributes['signature']) : null;
+        return !is_null($this->attributes['signature']) 
+            ? asset_url_local_s3('proposal/sign/' . $this->attributes['signature']) 
+            : null;
     }
-
 }

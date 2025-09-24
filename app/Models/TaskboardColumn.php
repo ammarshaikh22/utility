@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * App\Models\TaskboardColumn
  *
+ * Represents a column in a task board, including tasks and user-specific settings.
+ *
  * @property int $id
  * @property string $column_name
  * @property string|null $slug
@@ -16,7 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $priority
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read mixed $icon
+ * @property int|null $company_id
+ * @property-read \App\Models\Company|null $company
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Task[] $tasks
  * @property-read int|null $tasks_count
  * @method static \Illuminate\Database\Eloquent\Builder|TaskboardColumn newModelQuery()
@@ -29,38 +32,44 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @method static \Illuminate\Database\Eloquent\Builder|TaskboardColumn wherePriority($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskboardColumn whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskboardColumn whereUpdatedAt($value)
- * @property int|null $company_id
- * @property-read \App\Models\Company|null $company
  * @method static \Illuminate\Database\Eloquent\Builder|TaskboardColumn whereCompanyId($value)
  * @mixin \Eloquent
  */
 class TaskboardColumn extends BaseModel
 {
+    use HasCompany; // Associates column with a company
 
-    use HasCompany;
-
+    // Mass assignable attributes
     protected $fillable = ['column_name', 'slug', 'label_color', 'priority'];
 
+    // Relationship: All tasks in this column
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class, 'board_column_id')->orderBy('column_priority');
     }
 
+    // Relationship: Tasks assigned to the current user in this column
     public function membertasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'board_column_id')->where('user_id', user()->id)->orderBy('column_priority');
+        return $this->hasMany(Task::class, 'board_column_id')
+                    ->where('user_id', user()->id)
+                    ->orderBy('column_priority');
     }
 
+    // Relationship: User-specific settings for this column
     public function userSetting(): HasOne
     {
-        return $this->hasOne(UserTaskboardSetting::class, 'board_column_id')->where('user_id', user()->id);
+        return $this->hasOne(UserTaskboardSetting::class, 'board_column_id')
+                    ->where('user_id', user()->id);
     }
 
+    // Helper: Get the "Completed" column
     public static function completeColumn()
     {
         return TaskboardColumn::where('slug', 'completed')->first();
     }
 
+    // Helper: Get the "Waiting for Approval" column
     public static function waitingForApprovalColumn()
     {
         return TaskboardColumn::where('slug', 'waiting_approval')->first();

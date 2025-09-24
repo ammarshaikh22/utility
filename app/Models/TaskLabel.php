@@ -26,12 +26,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskLabel extends BaseModel
 {
-
     protected $guarded = ['id'];
 
     public function label(): BelongsTo
     {
         return $this->belongsTo(TaskLabelList::class, 'label_id');
     }
-
 }

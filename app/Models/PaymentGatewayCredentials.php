@@ -150,11 +150,11 @@ use App\Traits\HasCompany;
  */
 class PaymentGatewayCredentials extends BaseModel
 {
+    use HasCompany; // Trait to link record with a company
 
-    use HasCompany;
+    protected $guarded = ['id']; // Protect `id` from mass assignment
 
-    protected $guarded = ['id'];
-
+    // Sensitive fields are encrypted automatically by Eloquent casting
     protected $casts = [
         'live_stripe_secret' => 'encrypted',
         'live_razorpay_secret' => 'encrypted',
@@ -173,6 +173,10 @@ class PaymentGatewayCredentials extends BaseModel
         'test_payfast_merchant_key' => 'encrypted',
     ];
 
+    /**
+     * Accessor to check if any payment gateway is active.
+     * Returns true if at least one is active, else false.
+     */
     public function getShowPayAttribute()
     {
         return in_array('active', [
@@ -189,8 +193,8 @@ class PaymentGatewayCredentials extends BaseModel
     }
 
     /**
-     * @return bool
-     * This is to show message on dashboard to change the webhhok url
+     * Accessor to check if webhook warning should be displayed on dashboard.
+     * Returns true if at least one active gateway requires webhook setup.
      */
     public function getShowPayWebhookAttribute()
     {
@@ -204,5 +208,4 @@ class PaymentGatewayCredentials extends BaseModel
             $this->attributes['payfast_status']
         ]);
     }
-
 }

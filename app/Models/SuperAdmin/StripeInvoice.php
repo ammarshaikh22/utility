@@ -37,22 +37,28 @@ use App\Models\BaseModel;
  */
 class StripeInvoice extends BaseModel
 {
-
+    // Dates to be automatically cast to Carbon instances
     protected $dates = ['pay_date', 'next_pay_date'];
 
+    // Cast attributes to proper types
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each invoice belongs to a company
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship: Each invoice belongs to a package
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

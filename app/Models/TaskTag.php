@@ -16,12 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskTag extends BaseModel
 {
-
     protected $guarded = ['id'];
 
     public function tag(): BelongsTo
     {
         return $this->belongsTo(TaskTagList::class, 'tag_id');
     }
-
 }

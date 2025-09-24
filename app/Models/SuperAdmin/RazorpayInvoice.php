@@ -43,27 +43,36 @@ use App\Models\BaseModel;
  */
 class RazorpayInvoice extends BaseModel
 {
-
+    // Cast dates to Carbon instances
     protected $dates = ['pay_date', 'next_pay_date'];
 
+    // Explicit casting to datetime objects
     protected $casts = [
         'pay_date' => 'datetime',
         'next_pay_date' => 'datetime',
     ];
 
+    /**
+     * Relationship: Each invoice belongs to a company
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * Relationship: Each invoice may have a currency
+     */
     public function currency()
     {
         return $this->belongsTo(GlobalCurrency::class);
     }
 
+    /**
+     * Relationship: Each invoice belongs to a package
+     */
     public function package()
     {
         return $this->belongsTo(Package::class);
     }
-
 }

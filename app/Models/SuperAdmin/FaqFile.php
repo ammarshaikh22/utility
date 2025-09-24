@@ -43,14 +43,22 @@ use App\Models\BaseModel;
  */
 class FaqFile extends BaseModel
 {
-
+    // Add traits for file icons
     use IconTrait;
 
+    // Automatically append file_url attribute when model is converted to array or JSON
     protected $appends = ['file_url'];
 
+    /**
+     * Get the full URL of the file.
+     * If external_link exists, return it directly; otherwise, build the local S3 URL.
+     *
+     * @return string
+     */
     public function getFileUrlAttribute()
     {
-        return (!is_null($this->external_link)) ? $this->external_link : asset_url_local_s3('faq-files/' . $this->faq_id . '/' . $this->hashname);
+        return (!is_null($this->external_link)) 
+            ? $this->external_link 
+            : asset_url_local_s3('faq-files/' . $this->faq_id . '/' . $this->hashname);
     }
-
 }

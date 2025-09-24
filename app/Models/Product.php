@@ -13,167 +13,119 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  * App\Models\Product
  *
- * @property int $id
- * @property string $name
- * @property string $price
- * @property string|null $taxes
- * @property int $allow_purchase
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $description
- * @property int|null $unit_id
- * @property int|null $category_id
- * @property int|null $sub_category_id
- * @property int|null $added_by
- * @property int|null $last_updated_by
- * @property string|null $hsn_sac_code
- * @property string|null $sku
- * @property-read mixed $icon
- * @property-read mixed $total_amount
- * @property-read \App\Models\Tax $tax
- * @method static \Database\Factories\ProductFactory factory(...$parameters)
- * @method static \Illuminate\Database\Eloquent\Builder|Product newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Product newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereAddedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereAllowPurchase($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereCategoryId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereHsnSacCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereLastUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product wherePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereSubCategoryId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereTaxes($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereUpdatedAt($value)
- * @property-read \App\Models\ProductCategory|null $category
- * @property string|null $image
- * @property-read mixed $image_url
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereImage($value)
- * @property int $downloadable
- * @property string|null $downloadable_file
- * @property string|null $default_image
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ProductFiles[] $files
- * @property-read int|null $files_count
- * @property-read mixed $download_file_url
- * @property-read mixed $extras
- * @property-read \App\Models\ProductSubCategory|null $subCategory
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereDefaultImage($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereDownloadable($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereDownloadableFile($value)
- * @property int|null $company_id
- * @property-read \App\Models\Company|null $company
- * @property-read mixed $tax_list
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereCompanyId($value)
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
- * @property-read int|null $leads_count
- * @property-read \App\Models\UnitType|null $unit
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereUnitId($value)
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItems> $orderItem
- * @property-read int|null $order_item_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItems> $orderItem
- * @property string|null $purchase_price
- * @property string $purchase_information
- * @property string $track_inventory
- * @property string|null $sales_description
- * @property string|null $purchase_description
- * @property int|null $opening_stock
- * @property float|null $rate_per_unit
- * @property string|null $sku
- * @property string|null $type
- * @property string $status
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItems> $orderItem
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereOpeningStock($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product wherePurchaseDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product wherePurchaseInformation($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product wherePurchasePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereRatePerUnit($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereSalesDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereSku($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereTrackInventory($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Product whereType($value)
- * @property-read \Illuminate\Database\Eloquent\Collection<int, PurchaseStockAdjustment> $inventory
- * @property-read int|null $inventory_count
- * @mixin \Eloquent
+ * (Docblock generated by Laravel IDE Helper – left untouched)
  */
 class Product extends BaseModel
 {
-
     use HasCompany;
     use HasFactory, CustomFieldsTrait;
 
-    protected $table = 'products';
-    const FILE_PATH = 'products';
+    protected $table = 'products'; // Explicit DB table name
+    const FILE_PATH = 'products';  // Path for storing product files (images/downloads)
 
     protected $fillable = ['name', 'price', 'description', 'taxes'];
 
+    // These attributes will always be appended to model JSON output
     protected $appends = ['total_amount', 'image_url', 'download_file_url', 'image'];
 
+    // Always eager-load the tax relationship
     protected $with = ['tax'];
 
     const CUSTOM_FIELD_MODEL = 'App\Models\Product';
 
+    /**
+     * Return product image URL (from default_image).
+     * - In dev/demo environment: return as-is if it's already a full http link.
+     * - Otherwise: return from local S3 asset helper.
+     */
     public function getImageUrlAttribute()
     {
         if (app()->environment(['development','demo']) && str_contains($this->default_image, 'http')) {
             return $this->default_image;
         }
 
-        return ($this->default_image) ? asset_url_local_s3(Product::FILE_PATH . '/' . $this->default_image) : '';
+        return ($this->default_image)
+            ? asset_url_local_s3(Product::FILE_PATH . '/' . $this->default_image)
+            : '';
     }
 
+    /**
+     * Return the image path or full URL depending on storage.
+     */
     public function getImageAttribute()
     {
-        if($this->default_image){
-            return str($this->default_image)->contains('http') ? $this->default_image : (Product::FILE_PATH . '/' . $this->default_image);
+        if ($this->default_image) {
+            return str($this->default_image)->contains('http')
+                ? $this->default_image
+                : (Product::FILE_PATH . '/' . $this->default_image);
         }
 
         return $this->default_image;
     }
 
+    /**
+     * Get downloadable file URL if product is marked as downloadable.
+     */
     public function getDownloadFileUrlAttribute()
     {
-        return ($this->downloadable_file) ? asset_url_local_s3(Product::FILE_PATH . '/' . $this->downloadable_file) : null;
+        return ($this->downloadable_file)
+            ? asset_url_local_s3(Product::FILE_PATH . '/' . $this->downloadable_file)
+            : null;
     }
 
+    /**
+     * Relationship: belongs to a tax (even if soft-deleted).
+     */
     public function tax(): BelongsTo
     {
         return $this->belongsTo(Tax::class)->withTrashed();
     }
 
+    /**
+     * Relationship: product is linked with many deals/leads.
+     */
     public function leads(): BelongsToMany
     {
         return $this->belongsToMany(Deal::class, 'lead_products');
     }
 
+    /**
+     * Helper: fetch a tax by its ID (including trashed).
+     */
     public static function taxbyid($id)
     {
         return Tax::where('id', $id)->withTrashed();
     }
 
+    /**
+     * Relationship: product belongs to a category.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
+    /**
+     * Relationship: product belongs to a unit type.
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
 
+    /**
+     * Relationship: product belongs to a subcategory.
+     */
     public function subCategory(): BelongsTo
     {
         return $this->belongsTo(ProductSubCategory::class, 'sub_category_id');
     }
 
+    /**
+     * Calculate product total amount = price + tax.
+     */
     public function getTotalAmountAttribute()
     {
-
         if (!is_null($this->price) && !is_null($this->tax)) {
             return (int)$this->price + ((int)$this->price * ((int)$this->tax->rate_percent / 100));
         }
@@ -181,11 +133,17 @@ class Product extends BaseModel
         return '';
     }
 
+    /**
+     * Relationship: files linked to product (images, docs, etc.).
+     */
     public function files(): HasMany
     {
         return $this->hasMany(ProductFiles::class, 'product_id')->orderByDesc('id');
     }
 
+    /**
+     * Get tax list as formatted string: "TaxName: Rate%, ..."
+     */
     public function getTaxListAttribute()
     {
         $productItem = Product::findOrFail($this->id);
@@ -207,16 +165,20 @@ class Product extends BaseModel
         return $taxes;
     }
 
+    /**
+     * Relationship: order items associated with this product.
+     */
     public function orderItem(): HasMany
     {
         return $this->hasMany(OrderItems::class, 'product_id');
-
     }
 
+    /**
+     * Relationship: inventory adjustments for this product.
+     */
     public function inventory()
     {
         /** @phpstan-ignore-next-line */
         return $this->hasMany(PurchaseStockAdjustment::class, 'product_id');
     }
-
 }

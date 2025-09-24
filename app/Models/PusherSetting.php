@@ -5,6 +5,8 @@ namespace App\Models;
 /**
  * App\Models\PusherSetting
  *
+ * Represents the configuration settings for Pusher integration.
+ *
  * @property int $id
  * @property string|null $pusher_app_id
  * @property string|null $pusher_app_key
@@ -14,6 +16,8 @@ namespace App\Models;
  * @property int $status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $taskboard
+ * @property int $messages
  * @property-read mixed $icon
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting newQuery()
@@ -27,13 +31,12 @@ namespace App\Models;
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting wherePusherCluster($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting whereUpdatedAt($value)
- * @property int $taskboard
- * @property int $messages
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting whereMessages($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PusherSetting whereTaskboard($value)
  * @mixin \Eloquent
  */
 class PusherSetting extends BaseModel
 {
-
+    // This model currently does not define any additional properties or methods.
+    // All Pusher-related configuration is stored in the database.
 }

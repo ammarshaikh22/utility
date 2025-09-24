@@ -24,6 +24,7 @@ use App\Traits\IconTrait;
  * @property int|null $last_updated_by
  * @property-read mixed $file_url
  * @property-read mixed $icon
+ * @property-read mixed $file
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile query()
@@ -42,30 +43,35 @@ use App\Traits\IconTrait;
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile whereTaskId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|TaskFile whereUserId($value)
- * @property-read mixed $file
  * @mixin \Eloquent
  */
 class TaskFile extends BaseModel
 {
-
     use IconTrait;
 
     const FILE_PATH = 'task-files';
 
     protected $appends = ['file_url', 'icon', 'file'];
 
+    /**
+     * Get the URL of the file
+     */
     public function getFileUrlAttribute()
     {
-        if($this->external_link){
-            return str($this->external_link)->contains('http') ? $this->external_link : asset_url_local_s3($this->external_link);
+        if ($this->external_link) {
+            return str($this->external_link)->contains('http') 
+                ? $this->external_link 
+                : asset_url_local_s3($this->external_link);
         }
 
-        return asset_url_local_s3(TaskFile::FILE_PATH . '/' . $this->task_id . '/' . $this->hashname);
+        return asset_url_local_s3(self::FILE_PATH . '/' . $this->task_id . '/' . $this->hashname);
     }
 
+    /**
+     * Get the file path or external link
+     */
     public function getFileAttribute()
     {
-        return $this->external_link ?: (TaskFile::FILE_PATH . '/' . $this->task_id . '/' . $this->hashname);
+        return $this->external_link ?: (self::FILE_PATH . '/' . $this->task_id . '/' . $this->hashname);
     }
-
 }

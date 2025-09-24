@@ -7,29 +7,24 @@ use App\Traits\HasCompany;
 /**
  * App\Models\TicketReplyTemplate
  *
+ * Represents a template for ticket replies, used to standardize responses.
+ *
  * @property int $id
- * @property string $reply_heading
- * @property string $reply_text
+ * @property string $reply_heading               // Heading/title of the template
+ * @property string $reply_text                  // Body/content of the template
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read mixed $icon
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate query()
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereReplyHeading($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereReplyText($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereUpdatedAt($value)
- * @property int|null $company_id
+ * @property int|null $company_id                // Associated company, if multi-tenant
+ *
+ * Relations:
  * @property-read \App\Models\Company|null $company
- * @method static \Illuminate\Database\Eloquent\Builder|TicketReplyTemplate whereCompanyId($value)
+ * @property-read mixed $icon                    // Optional icon for display
+ *
  * @mixin \Eloquent
  */
 class TicketReplyTemplate extends BaseModel
 {
-
     use HasCompany;
 
-    //
+    // Currently, no additional methods or relations defined
 }
