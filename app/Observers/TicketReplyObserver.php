@@ -11,7 +11,7 @@ use App\Models\TicketFile;
 
 class TicketReplyObserver
 {
-
+    // Before saving a ticket reply, ensure ticket's added_by is set if no agent is assigned
     public function saving(TicketReply $ticketReply)
     {
         if (user() && is_null($ticketReply->ticket->agent_id)) {
@@ -21,14 +21,17 @@ class TicketReplyObserver
         }
     }
 
+    // After creating a ticket reply, log activity and send notifications
     public function created(TicketReply $ticketReply)
     {
+        // Update ticket's updated_at timestamp
         $ticketReply->ticket->touch();
 
         if (isRunningInConsoleOrSeeding()) {
             return true;
         }
 
+        // Determine users for notes
         if ($ticketReply->type == 'note') {
             $ticketReplyUsers = User::whereIn('id', request()->user_id)->get();
         }
@@ -37,28 +40,25 @@ class TicketReplyObserver
 
         if ($message != '') {
             if (count($ticketReply->ticket->reply) > 1) {
-
+                // Notify agent and client depending on reply type
                 if (!is_null($ticketReply->ticket->agent)) {
                     if ($ticketReply->type == 'note') {
                         event(new TicketReplyEvent($ticketReply, $ticketReply->ticket->agent, $ticketReplyUsers));
-                    }
-                    else {
+                    } else {
                         event(new TicketReplyEvent($ticketReply, $ticketReply->ticket->agent, null));
                     }
 
                     if ($ticketReply->type != 'note') {
                         event(new TicketReplyEvent($ticketReply, $ticketReply->ticket->client, null));
                     }
-                }
-                else if (is_null($ticketReply->ticket->agent)) {
+                } else if (is_null($ticketReply->ticket->agent)) {
                     event(new TicketReplyEvent($ticketReply, null, null));
-
                     event(new TicketReplyEvent($ticketReply, $ticketReply->ticket->client, null));
-                }
-                else {
+                } else {
                     event(new TicketReplyEvent($ticketReply, $ticketReply->ticket->client, null));
                 }
 
+                // Log ticket activity for this reply
                 $ticketActivity = new TicketActivity();
                 $ticketActivity->ticket_id = $ticketReply->ticket->id;
                 $ticketActivity->user_id = $ticketReply->user_id;
@@ -72,20 +72,17 @@ class TicketReplyObserver
                 $ticketActivity->save();
             }
         }
-
     }
 
+    // Before deleting a ticket reply, delete associated files and directories
     public function deleting(TicketReply $ticketReply)
     {
-
         $ticketReply->files()->each(function ($file) {
-
             Files::deleteFile($file->hashname, 'ticket-files/' . $file->ticket_reply_id);
             $file->delete();
-
         });
 
+        // Delete the reply's folder
         Files::deleteDirectory(TicketFile::FILE_PATH . '/' . $ticketReply->id);
-
     }
 }

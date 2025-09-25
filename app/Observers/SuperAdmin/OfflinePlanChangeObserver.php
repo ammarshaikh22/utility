@@ -8,7 +8,7 @@ use App\Events\SuperAdmin\OfflinePackageChangeConfirmationEvent;
 
 class OfflinePlanChangeObserver
 {
-
+    // After creating an OfflinePlanChange, trigger a package change request event
     public function created(OfflinePlanChange $offlinePlanChange)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -17,6 +17,7 @@ class OfflinePlanChangeObserver
         }
     }
 
+    // After updating an OfflinePlanChange, if the status changed, trigger a package change confirmation event
     public function updated(OfflinePlanChange $offlinePlanChange)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -25,5 +26,4 @@ class OfflinePlanChangeObserver
             }
         }
     }
-
 }

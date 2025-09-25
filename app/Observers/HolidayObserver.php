@@ -9,7 +9,10 @@ use App\Models\EmployeeShiftSchedule;
 
 class HolidayObserver
 {
-
+    /**
+     * Handle the "saving" event.
+     * Sets the user who last updated the holiday before saving.
+     */
     public function saving(Holiday $holiday)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -17,6 +20,10 @@ class HolidayObserver
         }
     }
 
+    /**
+     * Handle the "creating" event.
+     * Sets the user who added the holiday and associates it with the current company.
+     */
     public function creating(Holiday $holiday)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -28,42 +35,65 @@ class HolidayObserver
         }
     }
 
+    /**
+     * Handle the "created" event.
+     * Sends notifications to employees if required and removes any existing shift schedules for the holiday date.
+     */
     public function created(Holiday $holiday)
     {
+        // Notify employees if notifications are enabled
         if (request()->notification_sent == 'yes') {
             $users = User::join('employee_details', 'employee_details.user_id', '=', 'users.id')
                 ->leftJoin('designations', 'employee_details.designation_id', '=', 'designations.id')
-                ->select('users.id', 'users.company_id', 'users.name', 'users.email', 'users.created_at', 'users.image', 'designations.name as designation_name', 'users.email_notifications', 'users.mobile', 'users.country_id', 'users.status');
+                ->select(
+                    'users.id',
+                    'users.company_id',
+                    'users.name',
+                    'users.email',
+                    'users.created_at',
+                    'users.image',
+                    'designations.name as designation_name',
+                    'users.email_notifications',
+                    'users.mobile',
+                    'users.country_id',
+                    'users.status'
+                );
 
-            if ($holiday->department_id_json
-                && $holiday->department_id_json != null
-                && $holiday->department_id_json != '[]') {
+            // Filter by department if specified
+            if ($holiday->department_id_json && $holiday->department_id_json != '[]') {
                 $users->whereIn('employee_details.department_id', json_decode($holiday->department_id_json));
             }
 
-            if ($holiday->designation_id_json
-                && $holiday->designation_id_json != null
-                && $holiday->designation_id_json != '[]') {
+            // Filter by designation if specified
+            if ($holiday->designation_id_json && $holiday->designation_id_json != '[]') {
                 $users->whereIn('employee_details.designation_id', json_decode($holiday->designation_id_json));
             }
 
-            if ($holiday->employment_type_json
-                && $holiday->employment_type_json != null
-                && $holiday->employment_type_json != '[]') {
+            // Filter by employment type if specified
+            if ($holiday->employment_type_json && $holiday->employment_type_json != '[]') {
                 $users->whereIn('employee_details.employment_type', json_decode($holiday->employment_type_json));
             }
 
             $notifyUser = $users->groupBy('users.id')->get();
+
+            // Trigger holiday notification event
             event(new HolidayEvent($holiday, request()->date, request()->occassion, $notifyUser));
         }
 
-        EmployeeShiftSchedule::whereDate('date', $holiday->date)->where('company_id', $holiday->company_id)->delete();
+        // Delete any existing shift schedules for this holiday date
+        EmployeeShiftSchedule::whereDate('date', $holiday->date)
+            ->where('company_id', $holiday->company_id)
+            ->delete();
     }
 
-
+    /**
+     * Handle the "updated" event.
+     * Deletes any shift schedules for the updated holiday date to avoid conflicts.
+     */
     public function updated(Holiday $holiday)
     {
-        EmployeeShiftSchedule::whereDate('date', $holiday->date)->where('company_id', $holiday->company_id)->delete();
+        EmployeeShiftSchedule::whereDate('date', $holiday->date)
+            ->where('company_id', $holiday->company_id)
+            ->delete();
     }
-
 }

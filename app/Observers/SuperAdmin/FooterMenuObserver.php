@@ -6,23 +6,35 @@ use App\Models\SuperAdmin\FooterMenu;
 
 class FooterMenuObserver
 {
-
+    /**
+     * After creating a FooterMenu, create duplicates for other languages.
+     */
     public function created(FooterMenu $footerMenu)
     {
         $this->createDuplicateForOtherLanguage($footerMenu);
     }
 
+    /**
+     * Create duplicates of the footer menu for all other languages
+     * if they don't already exist.
+     */
     public function createDuplicateForOtherLanguage(FooterMenu $footerMenu)
     {
         foreach (language_setting() as $language) {
             if ($language->id != $footerMenu->language_setting_id) {
-                if (!FooterMenu::where('language_setting_id', $language->id)->where('slug', $footerMenu->slug)->exists()) {
+                if (!FooterMenu::where('language_setting_id', $language->id)
+                    ->where('slug', $footerMenu->slug)
+                    ->exists()) 
+                {
                     $this->createFooterMenu($footerMenu, $language->id);
                 }
             }
         }
     }
 
+    /**
+     * Create a new FooterMenu record for a specific language.
+     */
     public function createFooterMenu(FooterMenu $footerMenu, $languageId)
     {
         $newMenu = new FooterMenu();
@@ -41,9 +53,11 @@ class FooterMenuObserver
         $newMenu->saveQuietly();
     }
 
+    /**
+     * When deleting a FooterMenu, remove all menus with the same slug.
+     */
     public function deleting(FooterMenu $footerMenu)
     {
         FooterMenu::where('slug', $footerMenu->slug)->delete();
     }
-
 }

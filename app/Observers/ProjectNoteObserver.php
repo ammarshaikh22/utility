@@ -9,16 +9,11 @@ use App\Models\ProjectUserNote;
 use App\Models\ProjectNote;
 use App\Models\User;
 
-// use function GuzzleHttp\json_decode;
-
 class ProjectNoteObserver
 {
-
-    /**
-     * @param ProjectNote $ProjectNote
-     */
     public function saving(ProjectNote $ProjectNote)
     {
+        // Track who last updated
         if (!isRunningInConsoleOrSeeding()) {
             $ProjectNote->last_updated_by = user()->id;
         }
@@ -26,6 +21,7 @@ class ProjectNoteObserver
 
     public function creating(ProjectNote $ProjectNote)
     {
+        // Track who created
         if (!isRunningInConsoleOrSeeding()) {
             $ProjectNote->added_by = user()->id;
         }
@@ -35,48 +31,40 @@ class ProjectNoteObserver
     {
         $project = $projectNote->project;
 
+        // Handle mentions when creating a note
         if (request()->mention_user_id != null && request()->mention_user_id != '') {
-
             $projectNote->mentionUser()->sync(request()->mention_user_id);
 
             $projectUsers = json_decode($project->projectMembers->pluck('id'));
-
             $mentionIds = json_decode($projectNote->mentionNote->pluck('user_id'));
-
             $mentionUserId = array_intersect($mentionIds, $projectUsers);
 
             if ($mentionUserId != null && $mentionUserId != '') {
-
                 event(new ProjectNoteMentionEvent($project, $projectNote->created_at, $mentionUserId));
-
             }
 
             $unmentionIds = array_diff($projectUsers, $mentionIds);
-
             if ($unmentionIds != null && $unmentionIds != '') {
-
                 $projectNoteUsers = User::whereIn('id', $unmentionIds)->get();
                 event(new ProjectNoteEvent($project, $projectNote->created_at, $projectNoteUsers));
-
             }
-
-        }
-        else {
-
+        } else {
+            // If no mentions, notify based on note type
             if ($projectNote->type == 0) {
-                event(new ProjectNoteEvent($project, $projectNote->created_at, $projectNote->project->projectMembers));
+                event(new ProjectNoteEvent($project, $projectNote->created_at, $project->projectMembers));
             } else {
                 $projectNoteUsers = User::whereIn('id', request()?->user_id)->get();
                 event(new ProjectNoteEvent($project, $projectNote->created_at, $projectNoteUsers));
             }
-
         }
-
     }
 
     public function updating(ProjectNote $projectNote)
     {
-        $mentionedUser = ProjectUserNote::where('project_note_id', $projectNote->id)->pluck('user_id')->map(fn($id) => (string) $id)->toArray();
+        // Handle new mentions on update
+        $mentionedUser = ProjectUserNote::where('project_note_id', $projectNote->id)
+            ->pluck('user_id')->map(fn($id) => (string) $id)->toArray();
+
         $requestUserId = request()->user_id ?? [];
         $newMention = array_diff($requestUserId, $mentionedUser);
         $project = $projectNote->project;
@@ -85,7 +73,7 @@ class ProjectNoteObserver
             event(new ProjectNoteMentionEvent($project, $projectNote->created_at, $newMention));
         }
 
-        // Check for title or details changes
+        // Track title or detail changes
         $changes = [];
 
         if ($projectNote->isDirty('title')) {
@@ -102,16 +90,14 @@ class ProjectNoteObserver
             ];
         }
 
-        // If there are changes in title or details, send notification
+        // Notify users if important fields changed
         if (!empty($changes)) {
             $notifyUsers = collect();
 
             if ($projectNote->type == 0) {
-                // Public note - notify all project members
-                $notifyUsers = $project->projectMembers;
+                $notifyUsers = $project->projectMembers; // public note
             } else {
-                // Private note - notify only assigned users
-                $notifyUsers = User::whereIn('id', $requestUserId)->get();
+                $notifyUsers = User::whereIn('id', $requestUserId)->get(); // private note
             }
 
             if ($notifyUsers->isNotEmpty()) {
@@ -119,5 +105,4 @@ class ProjectNoteObserver
             }
         }
     }
-
 }

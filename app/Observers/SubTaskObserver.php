@@ -8,7 +8,13 @@ use App\Models\SubTask;
 
 class SubTaskObserver
 {
-
+    /**
+     * Handle the "saving" event.
+     *
+     * Before saving a SubTask (both create & update),
+     * assign the `last_updated_by` field to the
+     * currently authenticated user.
+     */
     public function saving(SubTask $task)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -16,6 +22,13 @@ class SubTaskObserver
         }
     }
 
+    /**
+     * Handle the "creating" event.
+     *
+     * Before inserting a new SubTask record,
+     * assign the `added_by` field to the
+     * currently authenticated user.
+     */
     public function creating(SubTask $task)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -23,6 +36,13 @@ class SubTaskObserver
         }
     }
 
+    /**
+     * Handle the "created" event.
+     *
+     * After a SubTask is created,
+     * trigger a `SubTaskCompletedEvent`
+     * with the action type "created".
+     */
     public function created(SubTask $subTask)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -30,6 +50,15 @@ class SubTaskObserver
         }
     }
 
+    /**
+     * Handle the "updated" event.
+     *
+     * After updating a SubTask:
+     * - If the `status` field changed
+     *   and the new status is "complete",
+     *   fire a `SubTaskCompletedEvent`
+     *   with the action type "completed".
+     */
     public function updated(SubTask $subTask)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -39,6 +68,13 @@ class SubTaskObserver
         }
     }
 
+    /**
+     * Handle the "deleting" event.
+     *
+     * Before a SubTask is deleted:
+     * - Remove all related notifications
+     *   (e.g., SubTaskCreated, SubTaskCompleted).
+     */
     public function deleting(SubTask $subTask)
     {
         $notifyData = [
@@ -47,7 +83,5 @@ class SubTaskObserver
         ];
 
         Notification::deleteNotification($notifyData, $subTask->id);
-
     }
-
 }
