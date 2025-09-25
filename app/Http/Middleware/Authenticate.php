@@ -20,6 +20,7 @@ class Authenticate extends Middleware
      */
     protected function redirectTo($request)
     {
+        // If the request is not expecting JSON, redirect to the login route
         if (!$request->expectsJson()) {
             return route('login');
         }
@@ -37,22 +38,26 @@ class Authenticate extends Middleware
      */
     public function handle($request, Closure $next, ...$guards)
     {
+        // Get the company hash from route parameters
         $companyHashId = $request->route('hash');
         $routeName = $request->route()->getName();
 
+        // Special check for QR login route
         if ($routeName === 'settings.qr-login') {
-
             $company = Company::where('hash', $companyHashId)->first();
 
+            // Check if QR login is enabled for this company
             $qrEnable = DB::table('attendance_settings')
                 ->where('company_id', $company->id)
                 ->value('qr_enable');
 
             if ($qrEnable == 0) {
+                // Abort if QR login is disabled
                 abort(403, __('messages.qrDisabled'));
             }
         }
 
+        // Check if the authenticated user is active
         if (user()) {
             $isActive = cache()->rememberForever('user_is_active_' . user()->id, function () {
                 return User::where('id', user()->id)
@@ -61,16 +66,17 @@ class Authenticate extends Middleware
             });
 
             if (!$isActive) {
+                // Logout and redirect inactive users
                 auth()->logout();
                 session()->flush();
-
                 return redirect()->route('login');
             }
         }
 
+        // Authenticate the request with the provided guards
         $this->authenticate($request, $guards);
 
-        // Update user's last activity time after successful authentication
+        // Update user's last activity timestamp after successful authentication
         if (Auth::check()) {
             $user = Auth::user();
             $user->update(['last_activity' => now()]);

@@ -14,6 +14,7 @@ class SignRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -24,17 +25,20 @@ class SignRequest extends FormRequest
      */
     public function rules()
     {
+        // Base rules for the signer information
         $rules = [
-            'first_name' => 'required',
-            'last_name' => 'required',
-            'place' => 'required',
-            'email' => 'required|email:rfc,strict',
+            'first_name' => 'required',               // First name is required
+            'last_name'  => 'required',               // Last name is required
+            'place'      => 'required',               // Place is required
+            'email'      => 'required|email:rfc,strict', // Email is required and must be valid
         ];
 
-        if(request('signature_type') == 'upload'){
+        // Conditional rules based on the type of signature
+        if (request('signature_type') == 'upload') {
+            // If the user uploads a signature image
             $rules['image'] = 'required';
-        }
-        else {
+        } else {
+            // If the signature is drawn or captured digitally
             $rules['signature'] = 'required';
         }
 

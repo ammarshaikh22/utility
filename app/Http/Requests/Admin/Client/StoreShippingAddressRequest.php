@@ -14,6 +14,7 @@ class StoreShippingAddressRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class StoreShippingAddressRequest extends CoreRequest
     public function rules()
     {
         return [
+            // The shipping address field is required
             'shipping_address' => 'required',
         ];
     }

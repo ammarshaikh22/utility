@@ -2,14 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\GlobalSetting;
 use Closure;
-use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\URL;
 
-class EmailVerified extends EnsureEmailIsVerified
+class DisableFrontend
 {
 
     /**
@@ -17,25 +12,23 @@ class EmailVerified extends EnsureEmailIsVerified
      *
      * @param \Illuminate\Http\Request $request
      * @param \Closure $next
+     * @return mixed
      */
-    public function handle($request, Closure $next, $redirectToRoute = null)
+    public function handle($request, Closure $next)
     {
-        $globalSetting = GlobalSetting::first();
+        // Get global settings
+        $global = global_setting();
 
-
-
-        if (!$request->user() || ($request->user() instanceof MustVerifyEmail && !$request->user()->hasVerifiedEmail() && $globalSetting->email_verification)) {
-            $message = 'Your email address is not verified.';
-
-            $user = auth()->user()->user;
-
-            if ($user?->is_superadmin) {
-                return $next($request);
-            }
-
-            return $request->expectsJson() ? abort(403, $message) : Redirect::guest(URL::route($redirectToRoute ?: 'verification.notice'));
+        // If frontend is disabled globally, and the route is not the signup page, and the request is not AJAX
+        if ($global->frontend_disable 
+            && request()->route()->getName() != 'front.signup.index' 
+            && !request()->ajax()
+        ) {
+            // Redirect users to login page
+            return redirect(route('login'));
         }
 
+        // Continue request processing if all checks pass
         return $next($request);
     }
 

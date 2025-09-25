@@ -17,6 +17,7 @@ class UpdateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // All authenticated users are authorized to update employee details
         return true;
     }
 
@@ -27,18 +28,20 @@ class UpdateRequest extends CoreRequest
      */
     public function rules()
     {
+        // Get the employee details record for the given employee ID
         $detailID = EmployeeDetails::where('user_id', $this->route('employee'))->first();
         $setting = company();
+
         $rules = [
-            'employee_id' => 'required|max:50|unique:employee_details,employee_id,'.$detailID->id.',id,company_id,' . company()->id,
-            'name'  => 'required|max:50',
+            'employee_id' => 'required|max:50|unique:employee_details,employee_id,' . ($detailID->id ?? 'NULL') . ',id,company_id,' . company()->id,
+            'name' => 'required|max:50',
             'hourly_rate' => 'nullable|numeric',
             'department' => 'required',
             'designation' => 'required',
             'company_address' => 'required',
             'joining_date' => 'required',
             'last_date' => 'nullable|required_if:status,deactive|date_format:"' . $setting->date_format . '"|after_or_equal:joining_date',
-            'date_of_birth' => 'nullable|date_format:"' . $setting->date_format . '"|before_or_equal:'.now($setting->timezone)->toDateString(),
+            'date_of_birth' => 'nullable|date_format:"' . $setting->date_format . '"|before_or_equal:' . now($setting->timezone)->toDateString(),
             'probation_end_date' => 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:joining_date',
             'notice_period_start_date' => 'nullable|required_with:notice_period_end_date|date_format:"' . $setting->date_format . '"',
             'notice_period_end_date' => 'nullable|required_with:notice_period_start_date|date_format:"' . $setting->date_format . '"|after_or_equal:notice_period_start_date',
@@ -46,37 +49,43 @@ class UpdateRequest extends CoreRequest
             'contract_end_date' => 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:joining_date',
         ];
 
+        // Email validation only for Worksuite
         if (isWorksuite()) {
-            $rules['email'] = 'required|max:100|email:rfc,strict|unique:users,email,'.$this->route('employee').',id,company_id,' . company()->id;
+            $rules['email'] = 'required|max:100|email:rfc,strict|unique:users,email,' . $this->route('employee') . ',id,company_id,' . company()->id;
         }
 
+        // Slack username validation based on existence of employee details
         if ($detailID) {
-            $rules['slack_username'] = 'nullable|unique:employee_details,slack_username,'.$detailID->id.',id,company_id,' . company()->id;
-        }
-        else {
+            $rules['slack_username'] = 'nullable|unique:employee_details,slack_username,' . $detailID->id . ',id,company_id,' . company()->id;
+        } else {
             $rules['slack_username'] = 'nullable|unique:employee_details,slack_username,null,id,company_id,' . company()->id;
         }
 
+        // Password validation if provided
         if (request()->password != '') {
             $rules['password'] = 'required|min:8|max:50';
         }
 
+        // Telegram user ID validation
         if (request()->telegram_user_id) {
-            $rules['telegram_user_id'] = 'nullable|unique:users,telegram_user_id,' . $detailID->user_id.',id,company_id,' . company()->id;
+            $rules['telegram_user_id'] = 'nullable|unique:users,telegram_user_id,' . ($detailID->user_id ?? 'NULL') . ',id,company_id,' . company()->id;
         }
 
+        // Merge in any custom field rules
         $rules = $this->customFieldRules($rules);
 
         return $rules;
     }
 
+    /**
+     * Custom attribute names for validation messages.
+     *
+     * @return array
+     */
     public function attributes()
     {
         $attributes = [];
-
         $attributes = $this->customFieldsAttributes($attributes);
-
         return $attributes;
     }
-
 }

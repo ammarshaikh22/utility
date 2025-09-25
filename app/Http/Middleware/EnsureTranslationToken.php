@@ -8,7 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureTranslationToken
 {
-
     /**
      * Handle an incoming request.
      *
@@ -17,14 +16,17 @@ class EnsureTranslationToken
     public function handle(Request $request, Closure $next): Response
     {
         if (isWorksuite()) {
-            //            abort_403(!(user()->permission('manage_language_setting') == 'all'));
+            // Worksuite: Check permissions for managing language settings
+            // abort_403(!(user()->permission('manage_language_setting') == 'all'));
         }
 
-        if (isWorksuiteSaas() ) {
+        if (isWorksuiteSaas()) {
+            // SaaS: Ensure the user object is set in the session
             if (!(user() instanceof \App\Models\User)) {
                 session(['user' => auth()->user()->user]);
             }
 
+            // Abort if the user does not have permission to manage superadmin language settings
             abort_403(!(user()->permission('manage_superadmin_language_settings') == 'all'));
         }
 

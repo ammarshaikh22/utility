@@ -14,6 +14,7 @@ class StoreRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -24,8 +25,11 @@ class StoreRequest extends CoreRequest
      */
     public function rules()
     {
+        // Validation rules for creating a new contract type
         return [
-            'name' => 'required|unique:contract_types,name,null,id,company_id,' . company()->id.'|max:100'
+            'name' => 'required|' . // Name is required
+                      'unique:contract_types,name,null,id,company_id,' . company()->id . '|' . // Must be unique for this company
+                      'max:100' // Maximum length of 100 characters
         ];
     }
 
