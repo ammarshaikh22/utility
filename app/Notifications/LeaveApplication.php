@@ -8,10 +8,10 @@ use Illuminate\Notifications\Messages\MailMessage;
 
 class LeaveApplication extends BaseNotification
 {
-
     /**
      * Create a new notification instance.
      *
+     * @param Leave $leave
      * @return void
      */
     private $leave;
@@ -19,9 +19,13 @@ class LeaveApplication extends BaseNotification
 
     public function __construct(Leave $leave)
     {
+        // Initialize the notification with leave data and company settings
         $this->leave = $leave;
         $this->company = $this->leave->company;
-        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)->where('slug', 'new-leave-application')->first();
+        // Fetch email notification settings for the company
+        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)
+            ->where('slug', 'new-leave-application')
+            ->first();
     }
 
     /**
@@ -32,8 +36,10 @@ class LeaveApplication extends BaseNotification
      */
     public function via($notifiable)
     {
+        // Default delivery channel is database
         $via = ['database'];
 
+        // Add mail channel if email notifications are enabled and user has an email
         if ($this->emailSetting->send_email == 'yes' && $notifiable->email_notifications && $notifiable->email != '') {
             array_push($via, 'mail');
         }
@@ -49,13 +55,19 @@ class LeaveApplication extends BaseNotification
      */
     public function toMail($notifiable): MailMessage
     {
+        // Build the base notification message
         $build = parent::build($notifiable);
+        // Generate the URL for the leave request
         $url = route('leaves.show', $this->leave->id);
         $url = getDomainSpecificUrl($url, $this->company);
 
-        $content = __('email.leave.applied') . ':- ' . '<br>' . __('app.date') . ': ' . $this->leave->leave_date->toDayDateTimeString() . '<br>' . __('app.status') . ': ' . $this->leave->status;
-        $content .= '<br>' . __('modules.leaves.reason') . ': ' . $this->leave->reason;
+        // Construct email content with leave details
+        $content = __('email.leave.applied') . ':- <br>' . 
+                   __('app.date') . ': ' . $this->leave->leave_date->toDayDateTimeString() . '<br>' . 
+                   __('app.status') . ': ' . $this->leave->status . '<br>' . 
+                   __('modules.leaves.reason') . ': ' . $this->leave->reason;
 
+        // Configure the mail message with subject and template data
         $build
             ->subject(__('email.leave.applied') . ' - ' . config('app.name'))
             ->markdown('mail.email', [
@@ -66,6 +78,7 @@ class LeaveApplication extends BaseNotification
                 'notifiableName' => $notifiable->name
             ]);
 
+        // Reset the locale after building the message
         parent::resetLocale();
 
         return $build;
@@ -77,10 +90,10 @@ class LeaveApplication extends BaseNotification
      * @param mixed $notifiable
      * @return array
      */
-    //phpcs:ignore
+    // phpcs:ignore
     public function toArray($notifiable)
     {
+        // Return leave data as an array
         return $this->leave->toArray();
     }
-
 }

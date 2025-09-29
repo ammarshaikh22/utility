@@ -15,17 +15,10 @@ use Illuminate\Support\Facades\Config;
 
 class BaseNotification extends Notification implements ShouldQueue
 {
-
     use Queueable, Dispatchable;
 
     protected $company = null;
     protected $slack = null;
-
-    /**
-     * Create a new notification instance.
-     *
-     * @return MailMessage
-     */
 
     /**
      * Build a mail message with proper configuration settings.
@@ -33,6 +26,7 @@ class BaseNotification extends Notification implements ShouldQueue
      * This method sets up the mail message according to the configured settings
      * for the company or global settings.
      *
+     * @param mixed|null $notifiable
      * @return \Illuminate\Notifications\Messages\MailMessage
      */
     public function build($notifiable = null)
@@ -41,13 +35,13 @@ class BaseNotification extends Notification implements ShouldQueue
         $company = $this->company;
         $globalSetting = GlobalSetting::first();
 
+        // Determine the locale, defaulting to 'en' if not set
         $locale = $notifiable->locale ?? 'en';
 
-        // Set the application locale based on the company's locale or global settings
+        // Set the application locale based on the notifiable's locale, company, or global settings
         if (isset($locale)) {
             App::setLocale($locale ?? (!is_null($company) ? $company->locale : 'en'));
-        }
-        else {
+        } else {
             App::setLocale(session('locale') ?: $globalSetting->locale);
         }
 
@@ -78,14 +72,19 @@ class BaseNotification extends Notification implements ShouldQueue
             Config::set('app.name', $replyName);
         }
 
-        // Ensure that the company email and name are used if mail verification is successful
+        // Ensure that the company email is used if mail verification is successful
         $companyEmail = config('mail.verified') === true ? $companyEmail : $replyEmail;
-//        $companyName = config('mail.verified') === true ? $companyName : $replyName;
 
         // Return the mail message with configured from and replyTo settings
         return $build->from($companyEmail, $replyName)->replyTo($replyEmail, $replyName);
     }
 
+    /**
+     * Modify the URL to be domain-specific.
+     *
+     * @param string $url
+     * @return string
+     */
     protected function modifyUrl($url)
     {
         return getDomainSpecificUrl($url, $this->company);
@@ -93,6 +92,9 @@ class BaseNotification extends Notification implements ShouldQueue
 
     /**
      * Build a Slack message for notification.
+     *
+     * @param mixed $notifiable
+     * @return \Illuminate\Notifications\Messages\SlackMessage
      */
     protected function slackBuild($notifiable): SlackMessage
     {
@@ -108,13 +110,18 @@ class BaseNotification extends Notification implements ShouldQueue
 
     /**
      * Create a Slack message for redirected notifications.
+     *
+     * @param string $subjectKey
+     * @param mixed $notifiable
+     * @return \Illuminate\Notifications\Messages\SlackMessage
      */
     protected function slackRedirectMessage($subjectKey, $notifiable)
     {
         try {
-            // Build a Slack message using the slackBuild function
+            // Build a Slack message for redirected notifications
             return $this->slackBuild($notifiable)
-                ->content('*' . __($subjectKey) . '*' . "\n" . 'This is a redirected notification. Add slack username for *' . $notifiable->name . '*');
+                ->content('*' . __($subjectKey) . '*' . "\n" . 
+                          'This is a redirected notification. Add slack username for *' . $notifiable->name . '*');
         } catch (\Exception $e) {
             // Catch and display any exceptions occurred
             echo $e->getMessage();
@@ -129,20 +136,27 @@ class BaseNotification extends Notification implements ShouldQueue
      */
     protected function slackUserNameCheck($notifiable): bool
     {
+        // Check if employeeDetail exists
         if (!isset($notifiable->employeeDetail)) {
             return false;
         }
 
+        // Check if employee is an array and not empty
         if (is_array($notifiable->employee)) {
             if (count($notifiable->employee) == 0) {
                 return false;
             }
         }
 
-        // Check if the notifiable a non-empty Slack username
+        // Check if the notifiable has a non-empty Slack username
         return (!is_null($notifiable->employeeDetail->slack_username) && ($notifiable->employeeDetail->slack_username != ''));
     }
 
+    /**
+     * Reset the application locale.
+     *
+     * @return void
+     */
     public function resetLocale()
     {
         // Set the company and global settings
@@ -152,10 +166,8 @@ class BaseNotification extends Notification implements ShouldQueue
         // Set the application locale based on the company's locale or global settings
         if (!is_null($company)) {
             App::setLocale($company->locale ?? 'en');
-        }
-        else {
+        } else {
             App::setLocale(session('locale') ?: $globalSetting->locale);
         }
     }
-
 }

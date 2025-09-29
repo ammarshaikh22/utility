@@ -9,10 +9,10 @@ use Illuminate\Notifications\Messages\MailMessage;
 
 class FileUpload extends BaseNotification
 {
-
     /**
      * Create a new notification instance.
      *
+     * @param ProjectFile $file
      * @return void
      */
     private $file;
@@ -21,10 +21,14 @@ class FileUpload extends BaseNotification
 
     public function __construct(ProjectFile $file)
     {
+        // Initialize the notification with file, project, and company settings
         $this->file = $file;
         $this->project = Project::findOrFail($this->file->project_id);
-        $this->company = $this->file->project->company;
-        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)->where('slug', 'employee-assign-to-project')->first();
+        $this->company = $this->project->company;
+        // Fetch email notification settings for the company
+        $this->emailSetting = EmailNotificationSetting::where('company_id', $this->company->id)
+            ->where('slug', 'employee-assign-to-project')
+            ->first();
     }
 
     /**
@@ -37,6 +41,7 @@ class FileUpload extends BaseNotification
     {
         $via = [];
 
+        // Add mail channel if email notifications are enabled and user has an email
         if ($this->emailSetting->send_email == 'yes' && $notifiable->email_notifications && $notifiable->email != '') {
             array_push($via, 'mail');
         }
@@ -52,12 +57,18 @@ class FileUpload extends BaseNotification
      */
     public function toMail($notifiable): MailMessage
     {
+        // Build the base notification message
         $build = parent::build($notifiable);
+        // Generate the URL for the project files tab
         $url = route('projects.show', [$this->project->id, 'tab' => 'files']);
         $url = getDomainSpecificUrl($url, $this->company);
 
-        $content = __('email.fileUpload.subject') . $this->project->project_name . '<br>' . __('modules.projects.fileName') . ' - ' . $this->file->filename . '<br>' . __('app.date') . ' - ' . $this->file->created_at->format($this->company->date_format);
+        // Construct email content with project and file details
+        $content = __('email.fileUpload.subject') . $this->project->project_name . '<br>' . 
+                   __('modules.projects.fileName') . ' - ' . $this->file->filename . '<br>' . 
+                   __('app.date') . ' - ' . $this->file->created_at->format($this->company->date_format);
 
+        // Configure the mail message with subject and template data
         $build
             ->subject(__('email.fileUpload.subject') . ' ' . $this->project->project_name . ' - ' . config('app.name'))
             ->markdown('mail.email', [
@@ -68,6 +79,7 @@ class FileUpload extends BaseNotification
                 'notifiableName' => $notifiable->name
             ]);
 
+        // Reset the locale after building the message
         parent::resetLocale();
 
         return $build;
@@ -79,12 +91,10 @@ class FileUpload extends BaseNotification
      * @param mixed $notifiable
      * @return array
      */
-    //phpcs:ignore
+    // phpcs:ignore
     public function toArray($notifiable)
     {
-        return [
-            //
-        ];
+        // Return an empty array
+        return [];
     }
-
 }
