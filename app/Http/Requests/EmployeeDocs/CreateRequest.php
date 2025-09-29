@@ -5,6 +5,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Class CreateRequest
+ * Handles validation when creating a new employee document.
  * @package App\Http\Requests\Admin\Employee
  */
 class CreateRequest extends FormRequest
@@ -14,10 +15,9 @@ class CreateRequest extends FormRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all users to make this request (no restriction applied here)
         return true;
     }
 
@@ -29,10 +29,12 @@ class CreateRequest extends FormRequest
     public function rules()
     {
         return [
+            // 'name' of the document is required
             'name'  => 'required',
+            
+            // The actual file is required for upload
             'file'  => 'required',
         ];
-
     }
 
 }

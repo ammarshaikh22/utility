@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreDiscussionRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -25,8 +24,8 @@ class StoreDiscussionRequest extends FormRequest
     public function rules()
     {
         return [
-            'message' => 'required'
+            // Ensure a discussion message is always provided
+            'message' => 'required',
         ];
     }
-
 }

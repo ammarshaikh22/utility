@@ -14,6 +14,7 @@ class UpdateRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request (no restriction applied here)
         return true;
     }
 
@@ -24,12 +25,18 @@ class UpdateRequest extends FormRequest
      */
     public function rules()
     {
+        // Apply rules only if the request contains a 'name' field
         if (request()->has('name')) {
             return [
-                'name' => 'required|unique:discussion_categories,name,' . $this->route('discussion_category').',id,company_id,' . company()->id,
+                // 'name' is required and must be unique in the discussion_categories table
+                // Excludes the current record (using route parameter 'discussion_category')
+                // Ensures uniqueness is also scoped to the current company
+                'name' => 'required|unique:discussion_categories,name,' 
+                    . $this->route('discussion_category') . ',id,company_id,' . company()->id,
             ];
         }
 
+        // If no 'name' is provided, return an empty rule set
         return [];
     }
 

@@ -14,6 +14,7 @@ class UpdateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request (no restriction here)
         return true;
     }
 
@@ -25,7 +26,10 @@ class UpdateRequest extends CoreRequest
     public function rules()
     {
         return [
-            'designation_name' => 'required|unique:designations,name,'.$this->route('designation').',id,company_id,' . company()->id
+            // 'designation_name' is required and must be unique in the 'designations' table
+            // It ignores the current designation ID (from route) so the existing record can be updated
+            // Uniqueness is also scoped to the company_id, ensuring no duplicates within the same company
+            'designation_name' => 'required|unique:designations,name,' . $this->route('designation') . ',id,company_id,' . company()->id
         ];
     }
 

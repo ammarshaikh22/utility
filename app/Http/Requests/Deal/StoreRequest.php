@@ -20,15 +20,15 @@ class StoreRequest extends CoreRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Validation rules for storing a new deal.
      *
-     * @return array
+     * @return array<string, string>
      */
-
     public function rules()
     {
-        $rules = array();
+        $rules = [];
 
+        // Required core fields
         $rules['lead_contact'] = 'required';
         $rules['name'] = 'required';
         $rules['pipeline'] = 'required';
@@ -36,21 +36,31 @@ class StoreRequest extends CoreRequest
         $rules['close_date'] = 'required';
         $rules['value'] = 'required';
 
+        // Merge in any custom field validation rules
         $rules = $this->customFieldRules($rules);
 
         return $rules;
     }
 
+    /**
+     * Custom attribute names for validation messages.
+     *
+     * Helps in displaying human-friendly field names
+     * instead of raw keys when validation fails.
+     *
+     * @return array<string, string>
+     */
     public function attributes()
     {
         $attributes = [];
 
+        // Merge custom field attributes for dynamic fields
         $attributes = $this->customFieldsAttributes($attributes);
 
+        // Human-friendly labels for validation messages
         $attributes['name'] = __('modules.deal.dealName');
         $attributes['stage_id'] = __('modules.deal.leadStages');
 
         return $attributes;
     }
-
 }

@@ -14,6 +14,7 @@ class StoreCurrencyExchangeKey extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users (can later be restricted by roles/permissions if required)
         return true;
     }
 
@@ -25,9 +26,11 @@ class StoreCurrencyExchangeKey extends CoreRequest
     public function rules()
     {
         return [
+            // API key for the currency converter (always required)
             'currency_converter_key' => 'required',
-            'dedicated_subdomain' => 'required_if:currency_key_version,dedicated',
+
+            // Required only if the currency key version is set to "dedicated"
+            'dedicated_subdomain'    => 'required_if:currency_key_version,dedicated',
         ];
     }
-
 }

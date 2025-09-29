@@ -20,34 +20,42 @@ class UpdateRequest extends CoreRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Validation rules for updating an existing deal.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
-        $rules = array();
+        $rules = [];
 
+        // Core required fields for update
         $rules['name'] = 'required';
         $rules['pipeline'] = 'required';
         $rules['stage_id'] = 'required';
         $rules['close_date'] = 'required';
         $rules['value'] = 'required';
 
+        // Merge in dynamic custom field validation rules
         $rules = $this->customFieldRules($rules);
 
         return $rules;
     }
 
+    /**
+     * Custom attribute names for validation messages.
+     *
+     * @return array<string, string>
+     */
     public function attributes()
     {
         $attributes = [];
 
+        // Add custom field attributes
         $attributes = $this->customFieldsAttributes($attributes);
 
-        $attributes['name'] = __('app.deal').' '.__('app.name');
+        // Human-friendly field name for "name"
+        $attributes['name'] = __('app.deal') . ' ' . __('app.name');
 
         return $attributes;
     }
-
 }

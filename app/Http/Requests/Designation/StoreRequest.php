@@ -14,6 +14,7 @@ class StoreRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request (no restriction here)
         return true;
     }
 
@@ -25,6 +26,8 @@ class StoreRequest extends CoreRequest
     public function rules()
     {
         return [
+            // 'name' field is required and must be unique in the 'designations' table
+            // Unique check is scoped by company_id to prevent duplicates within the same company
             'name' => 'required|unique:designations,name,null,id,company_id,' . company()->id
         ];
     }

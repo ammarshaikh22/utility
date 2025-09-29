@@ -8,8 +8,12 @@ use Illuminate\Foundation\Http\FormRequest;
 class StageChangeRequest extends FormRequest
 {
     use CustomFieldsRequestTrait;
+
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * Always returns true, meaning any authenticated user
+     * who reaches this request can attempt to change deal stages.
      */
     public function authorize()
     {
@@ -17,15 +21,15 @@ class StageChangeRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Validation rules for changing the deal stage.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules()
     {
         return [
-            'close_date' => 'required'
+            // A deal must always include a close date when changing stage
+            'close_date' => 'required',
         ];
     }
-
 }

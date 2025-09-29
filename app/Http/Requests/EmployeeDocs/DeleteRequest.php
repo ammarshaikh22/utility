@@ -3,6 +3,10 @@ namespace App\Http\Requests\EmployeeDocs;
 
 use Illuminate\Support\Facades\Request;
 
+/**
+ * Class DeleteRequest
+ * Handles validation for deleting an employee document.
+ */
 class DeleteRequest extends Request
 {
     /**
@@ -10,9 +14,9 @@ class DeleteRequest extends Request
      *
      * @return bool
      */
-
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -23,9 +27,9 @@ class DeleteRequest extends Request
      */
     public function rules()
     {
+        // No specific validation rules for deletion
         return [
             //
         ];
     }
-
 }

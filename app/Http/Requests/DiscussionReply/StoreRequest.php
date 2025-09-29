@@ -14,14 +14,19 @@ class StoreRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request (no restriction applied here)
         return true;
     }
 
+    /**
+     * Prepare the data for validation before rules are applied.
+     */
     public function prepareForValidation()
     {
-            $this->merge([
-                'description' => trim_editor($this->description)
-            ]);
+        // Clean up the 'description' field using a helper function (e.g., removing extra spaces or unwanted HTML)
+        $this->merge([
+            'description' => trim_editor($this->description)
+        ]);
     }
 
     /**
@@ -32,13 +37,20 @@ class StoreRequest extends FormRequest
     public function rules()
     {
         return [
+            // 'description' is required to submit a discussion reply
             'description' => 'required',
         ];
     }
 
+    /**
+     * Customize the attribute names for validation errors.
+     *
+     * @return array
+     */
     public function attributes()
     {
         return [
+            // Replace 'description' with a user-friendly label (localized as 'reply')
             'description' => __('app.reply'),
         ];
     }

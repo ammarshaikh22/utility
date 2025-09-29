@@ -4,8 +4,8 @@ namespace App\Http\Requests\EmployeeDocs;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Class UpdateRequest
+ * Handles validation for updating an employee document.
  */
 class UpdateRequest extends FormRequest
 {
@@ -14,10 +14,9 @@ class UpdateRequest extends FormRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all users to make this request
         return true;
     }
 
@@ -29,10 +28,11 @@ class UpdateRequest extends FormRequest
     public function rules()
     {
         return [
+            // The 'name' field is always required
             'name'  => 'required',
+
+            // The 'file' field is required only if 'file_delete' is set to 'yes'
             'file' => 'required_if:file_delete,yes'
         ];
-
     }
-
 }

@@ -11,7 +11,6 @@ class StoreAccount extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
         return true;
@@ -25,20 +24,18 @@ class StoreAccount extends CoreRequest
     public function rules()
     {
         $rules = [
-            'account_name' => 'required',
+            'account_name'    => 'required',
             'opening_balance' => 'required',
-            'status' => 'required',
-            'contact_number' => 'required',
-            'currency_id' => 'required',
+            'status'          => 'required',
+            'contact_number'  => 'required',
+            'currency_id'     => 'required',
         ];
 
-        if (request('type') == 'bank')
-        {
-            $rules['bank_name'] = 'required';
+        if (request('type') === 'bank') {
+            $rules['bank_name']     = 'required';
             $rules['account_number'] = 'required';
         }
 
         return $rules;
     }
-
 }

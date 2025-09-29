@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Http\Requests\ClientDocs;
 
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Client
+ * Class UpdateRequest
+ * Handles validation when updating a client document.
  */
 class UpdateRequest extends FormRequest
 {
@@ -14,26 +15,22 @@ class UpdateRequest extends FormRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all authorized users (adjust logic if needed)
         return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
-
         return [
-            'name'  => 'required',
-            'file' => 'required_if:file_delete,yes'
+            'name' => 'required',
+            'file' => 'required_if:file_delete,yes',
         ];
-
     }
-
 }

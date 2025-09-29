@@ -14,6 +14,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request (no restrictions applied)
         return true;
     }
 
@@ -25,7 +26,11 @@ class StoreRequest extends FormRequest
     public function rules()
     {
         return [
+            // The category name is required and must be unique
+            // within the discussion_categories table, scoped to the same company
             'category_name' => 'required|unique:discussion_categories,name,null,id,company_id,' . company()->id,
+
+            // The color field is required (used for category color coding)
             'color' => 'required'
         ];
     }

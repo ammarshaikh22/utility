@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class UpdateContact extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -25,10 +24,13 @@ class UpdateContact extends CoreRequest
     public function rules()
     {
         return [
+            // Contact name must always be present
             'contact_name' => 'required',
-            'email' => 'email:rfc|unique:client_contacts,email,' . $this->route('client_contact').',id,company_id,' . company()->id,
 
+            // Email must be valid and unique within the same company,
+            // but allow the current contact's email (ignore the current ID)
+            'email' => 'email:rfc|unique:client_contacts,email,' 
+                . $this->route('client_contact') . ',id,company_id,' . company()->id,
         ];
     }
-
 }

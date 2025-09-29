@@ -12,7 +12,6 @@ class StoreTransaction extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
         return true;
@@ -29,18 +28,20 @@ class StoreTransaction extends CoreRequest
             'amount' => 'required',
         ];
 
-        if (request('from_bank_account') != '') {
+        // Validate available balance if from_bank_account is provided
+        if (request('from_bank_account') !== '') {
             $bankBalance = BankAccount::findOrFail(request('from_bank_account'));
 
-            $rules = ['amount' => 'required|numeric|max:'.$bankBalance->bank_balance];
+            $rules = [
+                'amount' => 'required|numeric|max:' . $bankBalance->bank_balance,
+            ];
         }
 
-        if ($this->type == 'account')
-        {
+        // If transaction type is "account", ensure destination bank account is provided
+        if ($this->type === 'account') {
             $rules['to_bank_account'] = 'required';
         }
 
         return $rules;
     }
-
 }

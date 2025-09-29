@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreContact extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -25,9 +24,11 @@ class StoreContact extends CoreRequest
     public function rules()
     {
         return [
+            // Contact name is required
             'contact_name' => 'required',
-            'email' => 'email:rfc|unique:client_contacts,email,null,id,company_id,' . company()->id
+
+            // Email must be valid (RFC standard) and unique per company
+            'email' => 'email:rfc|unique:client_contacts,email,null,id,company_id,' . company()->id,
         ];
     }
-
 }

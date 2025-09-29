@@ -5,12 +5,12 @@ namespace App\Http\Requests\CreditNotes;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Class InvoiceFileStore
- * @package App\Http\Requests
+ * Class creditNoteFileStore
+ * Handles validation when uploading a file to attach with a credit note.
+ * @package App\Http\Requests\CreditNotes
  */
 class creditNoteFileStore extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -18,6 +18,7 @@ class creditNoteFileStore extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users (can be restricted later if needed by roles/permissions)
         return true;
     }
 
@@ -29,9 +30,11 @@ class creditNoteFileStore extends FormRequest
     public function rules()
     {
         return [
+            // A credit note ID must always be provided
             'credit_note_id' => 'required',
-            'file' => 'required|mimes:pdf,doc,docx,jpg,jpeg,png,webp,xls,xlsx'
+
+            // File is required and must be one of the allowed MIME types
+            'file' => 'required|mimes:pdf,doc,docx,jpg,jpeg,png,webp,xls,xlsx',
         ];
     }
-
 }
