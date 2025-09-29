@@ -6,13 +6,12 @@ use App\Http\Requests\CoreRequest;
 
 class StoreUser extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -20,18 +19,17 @@ class StoreUser extends CoreRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            'name' => 'required:max:50',
+            'name' => 'required|max:50', // fixed typo from "required:max:50"
             'email' => 'required|email:rfc,strict|unique:users,email,null,id,company_id,' . company()->id,
             'password' => 'required|min:6',
             'slack_username' => 'nullable|unique:employee_details,slack_username,null,id,company_id,' . company()->id,
             'hourly_rate' => 'nullable|numeric',
-            'joining_date' => 'required'
+            'joining_date' => 'required',
         ];
     }
-
 }

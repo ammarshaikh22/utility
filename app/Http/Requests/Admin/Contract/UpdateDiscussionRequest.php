@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateDiscussionRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class UpdateDiscussionRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -26,10 +26,12 @@ class UpdateDiscussionRequest extends FormRequest
     {
         return [
             'comment' => [
-                'required',
+                'required', // Comment is required
                 function ($attribute, $value, $fail) {
-                    $comment = trim_editor($value);;
+                    // Remove any HTML formatting or extra spaces
+                    $comment = trim_editor($value);
 
+                    // Fail validation if the comment is empty after trimming
                     if ($comment == '') {
                         $fail(__('validation.required'));
                     }
@@ -37,5 +39,4 @@ class UpdateDiscussionRequest extends FormRequest
             ]
         ];
     }
-
 }

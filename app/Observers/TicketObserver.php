@@ -17,6 +17,7 @@ class TicketObserver
 {
     use EmployeeActivityTrait;
 
+    // Before saving a ticket, set the last_updated_by field
     public function saving(Ticket $ticket)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -25,9 +26,9 @@ class TicketObserver
         }
     }
 
+    // Before creating a ticket, set company, added_by, agent assignment, and ticket number
     public function creating(Ticket $model)
     {
-
         if (company()) {
             $model->company_id = company()->id;
         }
@@ -36,13 +37,13 @@ class TicketObserver
             $userID = (!is_null(user())) ? user()->id : $model->user_id;
             $model->added_by = $userID;
 
+            // Set close date if status is closed
             if ($model->isDirty('status') && $model->status == 'closed') {
                 $model->close_date = now(company()->timezone)->format('Y-m-d');
             }
 
+            // Round Robin agent assignment if enabled
             $group_id = request()->assign_group ?: request()->group_id;
-
-            // start Round Robin
             $ticketSettings = LeadSetting::select('ticket_round_robin_status')->first();
 
             if ($ticketSettings && $ticketSettings->ticket_round_robin_status == 1) {
@@ -65,28 +66,25 @@ class TicketObserver
                 if (is_null(request()->agent_id)) {
                     if (!empty($diffAgent)) {
                         $model->agent_id = current($diffAgent);
-                    }
-                    else {
+                    } else {
                         $agentDuplicateCount = array_count_values($ticketData);
-
                         if (!empty($agentDuplicateCount)) {
                             $minVal = min($agentDuplicateCount);
                             $agent_id = array_search($minVal, $agentDuplicateCount);
                             $model->agent_id = $agent_id;
                         }
                     }
-                }
-                else {
+                } else {
                     $model->agent_id = request()->agent_id;
                 }
             }
-            // Round Robin End
         }
 
+        // Assign a unique ticket number
         $model->ticket_number = (int)Ticket::max('ticket_number') + 1;
-
     }
 
+    // After creating a ticket, log activity and send notifications
     public function created(Ticket $model)
     {
         $this->createActivity($model, 'create');
@@ -96,7 +94,7 @@ class TicketObserver
                 self::createEmployeeActivity(user()->id, 'ticket-created', $model->id, 'ticket');
             }
 
-            // Send admin notification
+            // Handle mentions for admin notification
             if (request()->mention_user_ids != '' || request()->mention_user_ids != null) {
                 $model->mentionUser()->sync(request()->mention_user_ids);
                 $mentionArray = explode(',', request()->mention_user_ids);
@@ -109,32 +107,29 @@ class TicketObserver
 
                 if ($unmentionIds != null && $unmentionIds != '' && $model->agent_id != '') {
                     event(new TicketEvent($model, User::whereIn('id', $unmentionIds)->get(), 'TicketAgent'));
-
                 }
-
-            }
-            else {
+            } else {
                 event(new TicketEvent($model, null, 'NewTicket'));
             }
 
+            // Notify requester if exists
             if ($model->requester) {
-
                 event(new TicketRequesterEvent($model, null, $model->requester));
             }
-
         }
     }
 
+    // Before updating a ticket, update close date if status changed to closed
     public function updating(Ticket $ticket)
     {
         if (!isRunningInConsoleOrSeeding()) {
             if ($ticket->isDirty('status') && $ticket->status == 'closed') {
                 $ticket->close_date = now(company()->timezone)->format('Y-m-d');
             }
-
         }
     }
 
+    // After updating a ticket, log activities and send notifications
     public function updated(Ticket $ticket)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -142,41 +137,24 @@ class TicketObserver
                 self::createEmployeeActivity(user()->id, 'ticket-updated', $ticket->id, 'ticket');
             }
 
+            // Handle changes in agent, group, priority, type, channel, status
             if ($ticket->isDirty('agent_id') && $ticket->agent_id != '') {
                 event(new TicketEvent($ticket, null, 'TicketAgent'));
-            }
-
-            if ($ticket->isDirty('agent_id')) {
                 $this->createActivity($ticket, 'assign');
             }
 
-            if ($ticket->isDirty('group_id')) {
-                $this->createActivity($ticket, 'group');
-            }
-
-            if ($ticket->isDirty('priority')) {
-                $this->createActivity($ticket, 'priority');
-            }
-
-            if ($ticket->isDirty('type_id')) {
-                $this->createActivity($ticket, 'type');
-            }
-
-            if ($ticket->isDirty('channel_id')) {
-                $this->createActivity($ticket, 'channel');
-            }
-
-            if ($ticket->isDirty('status')) {
-                $this->createActivity($ticket, 'status');
-            }
-
+            if ($ticket->isDirty('group_id')) $this->createActivity($ticket, 'group');
+            if ($ticket->isDirty('priority')) $this->createActivity($ticket, 'priority');
+            if ($ticket->isDirty('type_id')) $this->createActivity($ticket, 'type');
+            if ($ticket->isDirty('channel_id')) $this->createActivity($ticket, 'channel');
+            if ($ticket->isDirty('status')) $this->createActivity($ticket, 'status');
         }
     }
 
+    // Before deleting a ticket, remove related universal searches, notifications, and replies
     public function deleting(Ticket $ticket)
     {
         $universalSearches = UniversalSearch::where('searchable_id', $ticket->id)->where('module_type', 'ticket')->get();
-
         if ($universalSearches) {
             foreach ($universalSearches as $universalSearch) {
                 UniversalSearch::destroy($universalSearch->id);
@@ -184,24 +162,23 @@ class TicketObserver
         }
 
         $notifyData = ['App\Notifications\NewTicket', 'App\Notifications\NewTicketReply', 'App\Notifications\NewTicketRequester', 'App\Notifications\TicketAgent'];
-
         Notification::deleteNotification($notifyData, $ticket->id);
 
+        // Delete all replies associated with the ticket
         $ticket->reply()->each(function ($reply) {
             $reply->delete();
         });
-
     }
 
+    // After deleting a ticket, log employee activity
     public function deleted(Ticket $ticket)
     {
-
         if (user()) {
             self::createEmployeeActivity(user()->id, 'ticket-deleted');
-
         }
     }
 
+    // Helper function to create a ticket activity record
     public function createActivity($ticket, $type = 'create')
     {
         $ticketActivity = new TicketActivity();
@@ -216,5 +193,4 @@ class TicketObserver
         $ticketActivity->type = $type;
         $ticketActivity->save();
     }
-
 }

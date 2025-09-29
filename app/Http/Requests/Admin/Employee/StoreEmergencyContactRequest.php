@@ -14,6 +14,7 @@ class StoreEmergencyContactRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,11 +26,17 @@ class StoreEmergencyContactRequest extends CoreRequest
     public function rules()
     {
         $rules = [
+            // Emergency contact's name is required and cannot exceed 50 characters
             'name' => 'required|max:50',
+
+            // Mobile number is required
             'mobile' => 'required',
+
+            // Relationship with the employee is required
             'relationship' => 'required',
         ];
 
+        // If an email is provided, ensure it is valid
         if (request()->get('email')) {
             $rules['email'] = 'email:rfc';
         }

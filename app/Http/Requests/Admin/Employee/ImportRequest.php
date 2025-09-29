@@ -14,6 +14,7 @@ class ImportRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class ImportRequest extends FormRequest
     public function rules()
     {
         return [
+            // The import file is required and must be one of the allowed file types
             'import_file' => 'required|file|mimes:xls,xlsx,csv,txt',
         ];
     }

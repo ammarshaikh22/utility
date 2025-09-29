@@ -7,15 +7,15 @@ use App\Models\Team;
 
 class TeamObserver
 {
-
+    // Set the company_id when creating a Team
     public function creating(Team $model)
     {
         if (company()) {
             $model->company_id = company()->id;
         }
-
     }
 
+    // Add the new Team ID to the department field of all LeaveTypes
     public function created(Team $model)
     {
         if (company()) {
@@ -25,9 +25,8 @@ class TeamObserver
                 if (!is_null($leaveType->department)) {
                     $department = json_decode($leaveType->department);
                     array_push($department, $model->id);
-                }
-                else {
-                    $department = array($model->id);
+                } else {
+                    $department = [$model->id];
                 }
 
                 $leaveType->department = json_encode($department);
@@ -36,29 +35,24 @@ class TeamObserver
         }
     }
 
+    // Remove the deleted Team ID from the department field of all LeaveTypes
     public function deleted(Team $model)
     {
         if (company()) {
             $leaveTypes = LeaveType::all();
 
             foreach ($leaveTypes as $leaveType) {
-
                 if (!is_null($leaveType->department)) {
                     $department = json_decode($leaveType->department);
 
-                    // Search value and delete
                     if (($key = array_search($model->id, $department)) !== false) {
                         unset($department[$key]);
                     }
 
-                    $departmentValues = array_values($department);
-
-                    $leaveType->department = json_encode($departmentValues);
+                    $leaveType->department = json_encode(array_values($department));
                     $leaveType->save();
                 }
-
             }
         }
     }
-
 }

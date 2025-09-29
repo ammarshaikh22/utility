@@ -14,6 +14,7 @@ class UpdateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -24,8 +25,12 @@ class UpdateRequest extends CoreRequest
      */
     public function rules()
     {
+        // Validation rules for updating an existing contract type
         return [
-            'name' => 'required|max:100|unique:contract_types,name,'.$this->route('type').',id,company_id,' . company()->id
+            'name' => 'required|' . // Name is required
+                      'max:100|' . // Maximum length of 100 characters
+                      'unique:contract_types,name,' . $this->route('type') . ',id,company_id,' . company()->id
+                      // Must be unique for this company, ignoring the current contract type being updated
         ];
     }
 

@@ -10,7 +10,12 @@ use Illuminate\Support\Facades\DB;
 
 class CustomFieldsObserver
 {
-
+    /**
+     * Handle the "creating" event.
+     *
+     * Automatically assigns the company_id when a new custom field is created,
+     * ensuring that the field belongs to the active company context.
+     */
     public function creating(CustomField $model)
     {
         if (company()) {
@@ -18,12 +23,22 @@ class CustomFieldsObserver
         }
     }
 
+    /**
+     * Handle the "created" event.
+     *
+     * After a custom field is created, check if it belongs to either the
+     * "Lead" group or the "Ticket" group. If so, automatically create
+     * corresponding form entries for that group.
+     */
     public function created(CustomField $customField)
     {
         $this->lead($customField);
         $this->ticket($customField);
     }
 
+    /**
+     * Create a LeadCustomForm record if the field belongs to the "Lead" group.
+     */
     private function lead($customField)
     {
         $lead = CustomFieldGroup::where('name', 'Lead')->first();
@@ -41,6 +56,9 @@ class CustomFieldsObserver
         $leadField->save();
     }
 
+    /**
+     * Create a TicketCustomForm record if the field belongs to the "Ticket" group.
+     */
     private function ticket($customField)
     {
         $ticket = CustomFieldGroup::where('name', 'Ticket')->first();
@@ -59,11 +77,17 @@ class CustomFieldsObserver
         $ticketField->save();
     }
 
+    /**
+     * Handle the "updated" event.
+     *
+     * Syncs updates made to CustomField with related LeadCustomForm or
+     * TicketCustomForm. Also ensures that deleted select options are
+     * removed from existing custom_fields_data entries.
+     */
     public function updated(CustomField $customField)
     {
+        // Sync with LeadCustomForm
         $lead = CustomFieldGroup::where('name', 'Lead')->first();
-
-
         if ($customField->custom_field_group_id == $lead->id) {
             $id = $customField->id;
             $leadField = LeadCustomForm::firstWhere('custom_fields_id', $id);
@@ -73,8 +97,8 @@ class CustomFieldsObserver
             $leadField->save();
         }
 
+        // Sync with TicketCustomForm
         $ticket = CustomFieldGroup::where('name', 'Ticket')->first();
-
         if ($customField->custom_field_group_id === $ticket->id) {
             $id = $customField->id;
             $ticketField = TicketCustomForm::firstWhere('custom_fields_id', $id);
@@ -87,15 +111,15 @@ class CustomFieldsObserver
             $ticketField->save();
         }
 
-        // remove select values that is deleted from custom field
+        // Clean up invalid select values
         if ($customField->type == 'select') {
             $valuesIndexCount = count(json_decode($customField->values)) - 1;
 
-            // delete values that is greater than the index count
-            DB::table('custom_fields_data')->where('custom_field_id', $customField->id)->where('value', '>', $valuesIndexCount)->delete();
+            // Delete old values with indexes greater than available options
+            DB::table('custom_fields_data')
+                ->where('custom_field_id', $customField->id)
+                ->where('value', '>', $valuesIndexCount)
+                ->delete();
         }
-
     }
-
 }
-

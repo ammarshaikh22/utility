@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class AutoTranslateRequest extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class AutoTranslateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all authenticated users to make this request
         return true;
     }
 
@@ -25,8 +25,8 @@ class AutoTranslateRequest extends CoreRequest
     public function rules()
     {
         return [
+            // The Google API key is required for auto-translation
             'google_key' => 'required',
         ];
     }
-
 }

@@ -59,26 +59,37 @@ use App\Scopes\CompanyScope;
 
 class CompanyObserver
 {
-
     use StoreHeaders;
 
+    /**
+     * Triggered when a new company is being created
+     */
     public function creating(Company $company)
     {
+        // Copy values from global settings into the company record
         $this->copyFromGlobalSettings($company);
+
+        // Set date formats
         $this->dateFormats($company);
+
+        // Store headers (custom trait)
         $this->storeHeaders($company);
 
+        // Default leave setting
         $company->leaves_start_from = 'year_start';
 
-
-        // WORKSUITESAAS
+        // Add default package for the company (SAAS setup)
         $this->packageInsert($company);
 
+        // If approval is required and user is not superadmin, mark company as unapproved
         if (global_setting()->company_need_approval && !user()?->is_superadmin) {
             $company->approved = 0;
         }
     }
 
+    /**
+     * Copy system-wide global settings to the new company
+     */
     private function copyFromGlobalSettings($company)
     {
         $globalSetting = global_setting();
@@ -89,11 +100,10 @@ class CompanyObserver
         $company->sidebar_logo_style = $globalSetting->sidebar_logo_style;
         $company->auth_theme = $globalSetting->auth_theme;
         $company->auth_theme_text = $globalSetting->auth_theme_text;
-        //        $company->light_logo = $globalSetting->light_logo;
         $company->favicon = $globalSetting->favicon;
         $company->datatable_row_limit = $globalSetting->datatable_row_limit;
 
-        // When company is added from superadmin panel
+        // If company is added from SuperAdmin panel (no user logged in)
         if (!user()) {
             $company->timezone = $globalSetting->timezone;
             $company->locale = $globalSetting->locale;
@@ -105,28 +115,34 @@ class CompanyObserver
         return $company;
     }
 
+    /**
+     * Triggered when saving company (both create & update)
+     */
     public function saving(Company $company)
     {
-
         $user = user();
 
+        // Save last updated by
         if ($user) {
             $company->last_updated_by = $user->id;
         }
 
-
+        // If approval status changed, set approved_by user
         if ($company->isDirty('approved')) {
             $company->approved_by = $user->id;
         }
 
+        // If date format changed, reconfigure date formats
         if ($company->isDirty('date_format')) {
             $this->dateFormats($company);
         }
 
+        // If currency changed, update exchange rates
         if ($company->isDirty('currency_id')) {
             (new CurrencySettingController())->updateExchangeRates();
         }
 
+        // Clear client sessions if currency changed (except in console/seeders)
         if (!isRunningInConsoleOrSeeding() && $company->isDirty('currency_id') && !is_null(user())) {
             $allClients = User::allClients();
             $clientsArray = $allClients->pluck('id')->toArray();
@@ -135,8 +151,7 @@ class CompanyObserver
             $appSettings->deleteSessions($clientsArray);
         }
 
-        // IsRunningInConsoleOrSeeding is added to prevent running seeder
-        // for the case of running company migration before having global_settings table
+        // Sync company #1 with global settings (only for Worksuite)
         if ($company->id === 1 && isWorksuite() && !isRunningInConsoleOrSeeding()) {
             $global = GlobalSetting::first();
             $global->email = $company->company_email;
@@ -155,16 +170,21 @@ class CompanyObserver
             $global->saveQuietly();
         }
 
-        // WORKSUITESAAS
+        // SAAS saving logic
         $this->saasSaving($company);
+
+        // Forget cached user activity
         cache()->forget('user_' . $company->id . '_is_active');
 
+        // Forget session cache
         session()->forget(['company', 'company.*', 'company.currency', 'company.paymentGatewayCredentials']);
         cache()->forget('global_setting');
-
     }
 
-    //phpcs:ignore
+    /**
+     * Triggered after company is created
+     * - Seeds default company data (roles, shifts, currencies, etc.)
+     */
     public function created(Company $company)
     {
         $this->currencies($company);
@@ -191,6 +211,7 @@ class CompanyObserver
         $this->taskBoard($company);
         $this->projectStatusSettings($company);
 
+        // Create default related records
         $company->paymentGatewayCredentials()->create();
         $company->taskSetting()->create();
         $company->leaveSetting()->create();
@@ -202,27 +223,35 @@ class CompanyObserver
         $this->unitType($company);
         $this->leadStages($company);
 
-        // WORKSUITESAAS
+        // Update subscription for SAAS
         $this->updateSubscription($company, $company->package);
 
-        // Will be used in various module
+        // Fire new company created event
         event(new NewCompanyCreatedEvent($company));
-
-
     }
 
+    /**
+     * Triggered before deleting company
+     * - Removes related files and notifications
+     */
     public function deleting(Company $company)
     {
+        // Delete stored files
         if ($company->fileStorage->isNotEmpty()) {
             foreach ($company->fileStorage as $files) {
                 Files::deleteFile($files->filename, $files->path);
             }
         }
 
+        // Delete pending notifications
         $this->deleteNotification($company);
     }
 
-    public function deleteNotification($company){
+    /**
+     * Delete pending notifications related to company registration/users
+     */
+    public function deleteNotification($company)
+    {
         Notification::whereIn('type', ['App\Notifications\SuperAdmin\NewCompanyRegister', 'App\Notifications\NewUser'])
             ->whereNull('read_at')
             ->where(function ($q) use ($company) {
@@ -231,9 +260,12 @@ class CompanyObserver
             })->delete();
     }
 
-
+    /**
+     * Triggered after company is deleted
+     */
     public function deleted()
     {
+        // Clean up user auth entries without users
         UserAuth::doesntHave('users')->delete();
     }
 

@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Log;
 class RemovalRequestLeadObserver
 {
 
+    /**
+         * Handle the "created" event.
+         * When a new RemovalRequestLead is created, notify admins 
+         * by firing the RemovalRequestAdminLeadEvent.
+     */
     public function created(RemovalRequestLead $removalRequestLead)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -18,6 +23,12 @@ class RemovalRequestLeadObserver
         }
     }
 
+     /**
+         * Handle the "updated" event.
+         * When a RemovalRequestLead is updated:
+         *   - If the related lead exists, trigger RemovalRequestApprovedRejectLeadEvent.
+         *   - Any exceptions are logged for debugging instead of breaking the app.
+     */
     public function updated(RemovalRequestLead $removal)
     {
         if (!isRunningInConsoleOrSeeding()) {

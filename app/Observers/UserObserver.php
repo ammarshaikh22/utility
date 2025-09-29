@@ -14,14 +14,19 @@ use App\Scopes\CompanyScope;
 
 class UserObserver
 {
-
     use StoreHeaders;
 
+    /**
+     * Handle actions before a User is saved (both creating and updating).
+     * 
+     * - If the user status is changed to 'deactive', remove them from TicketAgentGroups.
+     * - Clear session data and cached company package validity.
+     */
     public function saving(User $user)
     {
         if (!isRunningInConsoleOrSeeding()) {
             if ($user->isDirty('status') && $user->status == 'deactive') {
-                // Remove as ticket agent
+                // Remove user as ticket agent
                 TicketAgentGroups::whereAgentId($user->id)->delete();
             }
         }
@@ -30,6 +35,12 @@ class UserObserver
         clearCompanyValidPackageCache($user->company_id);
     }
 
+    /**
+     * Handle actions after a User is created.
+     * 
+     * - Sends a NewUserEvent email if applicable.
+     * - Clears session password data.
+     */
     public function created(User $user)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -47,6 +58,12 @@ class UserObserver
         }
     }
 
+    /**
+     * Handle actions before a User is created.
+     * 
+     * - Assigns company_id based on current company context.
+     * - Stores request headers into the model.
+     */
     public function creating(User $model)
     {
         if (company()) {
@@ -54,9 +71,13 @@ class UserObserver
         }
 
         $this->storeHeaders($model);
-
     }
 
+    /**
+     * Handle actions before a User is deleted.
+     * 
+     * - Deletes unread notifications of type NewUser related to the user.
+     */
     public function deleting(User $user)
     {
         Notification::where('type', 'App\Notifications\NewUser')
@@ -66,16 +87,22 @@ class UserObserver
             })->delete();
     }
 
+    /**
+     * Handle actions after a User is deleted.
+     * 
+     * - Deletes the associated UserAuth record if no other users exist for it.
+     * - Clears cached company package validity.
+     */
     public function deleted(User $user)
     {
-        $userCount = User::withoutGlobalScopes([CompanyScope::class, ActiveScope::class])->where('user_auth_id', $user->user_auth_id)->count();
+        $userCount = User::withoutGlobalScopes([CompanyScope::class, ActiveScope::class])
+            ->where('user_auth_id', $user->user_auth_id)
+            ->count();
 
-        // If deleted user has no other account then delete it from user_auth table also
         if ($userCount == 0) {
             UserAuth::destroy($user->user_auth_id);
         }
 
         clearCompanyValidPackageCache($user->company_id);
     }
-
 }

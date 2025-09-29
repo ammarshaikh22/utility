@@ -6,7 +6,7 @@ use App\Models\TicketAgentGroups;
 
 class TicketAgentGroupsObserver
 {
-
+    // Set company_id when creating a TicketAgentGroups record
     public function creating(TicketAgentGroups $model)
     {
         if (company()) {
@@ -14,6 +14,7 @@ class TicketAgentGroupsObserver
         }
     }
 
+    // Set last_updated_by when saving a TicketAgentGroups record
     public function saving(TicketAgentGroups $model)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -21,11 +22,11 @@ class TicketAgentGroupsObserver
         }
     }
 
+    // Set last_updated_by when updating a TicketAgentGroups record
     public function updating(TicketAgentGroups $model)
     {
         if (!isRunningInConsoleOrSeeding()) {
             $model->last_updated_by = user()->id;
         }
     }
-
 }

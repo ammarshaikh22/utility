@@ -14,6 +14,7 @@ class StoreDiscussionRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -26,10 +27,12 @@ class StoreDiscussionRequest extends FormRequest
     {
         return [
             'comment' => [
-                'required',
+                'required', // Comment is required
                 function ($attribute, $value, $fail) {
-                    $comment = trim_editor($value);;
+                    // Trim the editor content to remove whitespace or HTML tags
+                    $comment = trim_editor($value);
 
+                    // Fail validation if the trimmed comment is empty
                     if ($comment == '') {
                         $fail(__('validation.required'));
                     }

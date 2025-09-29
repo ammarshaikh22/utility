@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class UpdateRequest extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class UpdateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all authenticated users to make this request
         return true;
     }
 
@@ -25,12 +25,20 @@ class UpdateRequest extends CoreRequest
     public function rules()
     {
         return [
-            'language_name' => 'required|max:30|unique:language_settings,language_name,'.$this->route('id').',id',
-            'language_code'  => 'required|alpha_dash|max:10|unique:language_settings,language_code,'.$this->route('id').',id',
-            'status'  => 'required',
+            // Language name is required, max 30 characters, and unique except for the current ID
+            'language_name' => 'required|max:30|unique:language_settings,language_name,' . $this->route('id') . ',id',
+
+            // Language code is required, only alpha-numeric/dash/underscore, max 10 chars, unique except current
+            'language_code' => 'required|alpha_dash|max:10|unique:language_settings,language_code,' . $this->route('id') . ',id',
+
+            // Status is required
+            'status' => 'required',
+
+            // Flag image or icon is required
             'flag' => 'required',
+
+            // Right-to-left setting is required
             'is_rtl' => 'required',
         ];
     }
-
 }

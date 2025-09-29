@@ -16,15 +16,18 @@ class AutoLogout
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Check if a user is logged in and belongs to a company
         if (user() && user()->company_id) {
 
+            // If the company is inactive, log the user out
             if (checkActiveCompany(user()->company_id)) {
-                auth()->logout();
-                session()->flush();
-                return redirect()->route('login');
+                auth()->logout();  // Logout the user
+                session()->flush(); // Clear session data
+                return redirect()->route('login'); // Redirect to login page
             }
         }
 
+        // Proceed with the request if no logout is triggered
         return $next($request);
     }
 

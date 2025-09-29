@@ -11,32 +11,42 @@ use App\Traits\UnitTypeSaveTrait;
 
 class InvoiceRecurringObserver
 {
-
     use UnitTypeSaveTrait;
 
+    /**
+     * Handle the "saving" event.
+     * This runs before the invoice is saved (both creating and updating).
+     */
     public function saving(RecurringInvoice $invoice)
     {
-
         if (!isRunningInConsoleOrSeeding()) {
+            // Track the user who last updated the invoice
             $invoice->last_updated_by = user()->id;
         }
 
+        // Set whether tax should be calculated
         if (request()->has('calculate_tax')) {
             $invoice->calculate_tax = request()->calculate_tax;
         }
-
     }
 
+    /**
+     * Handle the "creating" event.
+     * This runs before a new invoice is created.
+     */
     public function creating(RecurringInvoice $invoice)
     {
         if (!isRunningInConsoleOrSeeding()) {
+            // Track the user who added the invoice
             $invoice->added_by = user()->id;
         }
 
+        // Assign the invoice to the current company
         if (company()) {
             $invoice->company_id = company()->id;
         }
 
+        // Determine the next invoice date based on rotation
         $days = match ($invoice->rotation) {
             'daily' => $invoice->issue_date->addDay(),
             'weekly' => $invoice->issue_date->addWeek(),
@@ -51,10 +61,13 @@ class InvoiceRecurringObserver
         $invoice->next_invoice_date = $days->format('Y-m-d');
     }
 
+    /**
+     * Handle the "created" event.
+     * This runs after a new invoice has been created.
+     */
     public function created(RecurringInvoice $invoice)
     {
         if (!isRunningInConsoleOrSeeding()) {
-
             if (!empty(request()->item_name)) {
 
                 $itemsSummary = request()->item_summary;
@@ -68,55 +81,62 @@ class InvoiceRecurringObserver
                 $invoice_item_image = request()->invoice_item_image;
                 $invoice_item_image_url = request()->invoice_item_image_url;
 
+                // Loop through each item and save it
                 foreach (request()->item_name as $key => $item) :
                     if (!is_null($item)) {
-                        $recurringInvoiceItem = RecurringInvoiceItems::create(
-                            [
-                                'invoice_recurring_id' => $invoice->id,
-                                'item_name' => $item,
-                                'item_summary' => $itemsSummary[$key] ?: '',
-                                'type' => 'item',
-                                'hsn_sac_code' => (isset($hsn_sac_code[$key]) && !is_null($hsn_sac_code[$key])) ? $hsn_sac_code[$key] : null,
-                                'quantity' => $quantity[$key],
-                                'unit_id' => (isset($unitId[$key]) && !is_null($unitId[$key])) ? $unitId[$key] : null,
-                                'product_id' => (isset($product[$key]) && !is_null($product[$key])) ? $product[$key] : null,
-                                'unit_price' => round($cost_per_item[$key], 2),
-                                'amount' => round($amount[$key], 2),
-                                'taxes' => ($tax ? (array_key_exists($key, $tax) ? json_encode($tax[$key]) : null) : null)
-                            ]
-                        );
+                        $recurringInvoiceItem = RecurringInvoiceItems::create([
+                            'invoice_recurring_id' => $invoice->id,
+                            'item_name' => $item,
+                            'item_summary' => $itemsSummary[$key] ?: '',
+                            'type' => 'item',
+                            'hsn_sac_code' => $hsn_sac_code[$key] ?? null,
+                            'quantity' => $quantity[$key],
+                            'unit_id' => $unitId[$key] ?? null,
+                            'product_id' => $product[$key] ?? null,
+                            'unit_price' => round($cost_per_item[$key], 2),
+                            'amount' => round($amount[$key], 2),
+                            'taxes' => ($tax[$key] ?? null) ? json_encode($tax[$key]) : null
+                        ]);
                     }
 
-                    /* Invoice file save here */
+                    // Handle invoice item images
                     if ((isset($invoice_item_image[$key]) || isset($invoice_item_image_url[$key])) && isset($recurringInvoiceItem)) {
 
                         $filename = '';
 
+                        // Upload local or S3 file if exists
                         if (isset($invoice_item_image[$key])) {
-                            $filename = Files::uploadLocalOrS3($invoice_item_image[$key], RecurringInvoiceItemImage::FILE_PATH . '/' . $recurringInvoiceItem->id);
+                            $filename = Files::uploadLocalOrS3(
+                                $invoice_item_image[$key],
+                                RecurringInvoiceItemImage::FILE_PATH . '/' . $recurringInvoiceItem->id
+                            );
                         }
 
-                        RecurringInvoiceItemImage::create(
-                            [
-                                'invoice_recurring_item_id' => $recurringInvoiceItem->id,
-                                'filename' => !isset($invoice_item_image_url[$key]) ? $invoice_item_image[$key]->getClientOriginalName() : '',
-                                'hashname' => !isset($invoice_item_image_url[$key]) ? $filename : '',
-                                'size' => !isset($invoice_item_image_url[$key]) ? $invoice_item_image[$key]->getSize() : '',
-                                'external_link' => $invoice_item_image_url[$key] ?? ''
-                            ]
-                        );
+                        RecurringInvoiceItemImage::create([
+                            'invoice_recurring_item_id' => $recurringInvoiceItem->id,
+                            'filename' => $invoice_item_image[$key]->getClientOriginalName() ?? '',
+                            'hashname' => $filename ?? '',
+                            'size' => $invoice_item_image[$key]->getSize() ?? '',
+                            'external_link' => $invoice_item_image_url[$key] ?? ''
+                        ]);
                     }
 
                 endforeach;
             }
-
         }
     }
 
+    /**
+     * Handle the "deleting" event.
+     * This runs before a recurring invoice is deleted.
+     */
     public function deleting(RecurringInvoice $invoice)
     {
-        $notifyData = ['App\Notifications\InvoiceRecurringStatus', 'App\Notifications\NewRecurringInvoice',];
+        // Remove notifications related to this recurring invoice
+        $notifyData = [
+            'App\Notifications\InvoiceRecurringStatus',
+            'App\Notifications\NewRecurringInvoice',
+        ];
         Notification::deleteNotification($notifyData, $invoice->id);
     }
-
 }

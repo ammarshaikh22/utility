@@ -7,13 +7,12 @@ use App\Http\Requests\CoreRequest;
 
 class UpdateEmployee extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -21,17 +20,17 @@ class UpdateEmployee extends CoreRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         $detailID = EmployeeDetails::where('user_id', $this->route('employee'))->first();
+
         return [
-            'email' => 'required|max:100|unique:users,email,'.$this->route('employee').',id,company_id,' . company()->id,
-            'slack_username' => 'nullable|max:100|unique:employee_details,slack_username,'.$detailID->id.',id,company_id,' . company()->id,
-            'name'  => 'required|max:100',
+            'email' => 'required|max:100|email:rfc,strict|unique:users,email,' . $this->route('employee') . ',id,company_id,' . company()->id,
+            'slack_username' => 'nullable|max:100|unique:employee_details,slack_username,' . ($detailID?->id ?? 'null') . ',id,company_id,' . company()->id,
+            'name' => 'required|max:100',
             'hourly_rate' => 'nullable|numeric',
         ];
     }
-
 }

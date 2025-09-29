@@ -17,31 +17,33 @@ class MultiCompanySelect
      */
     public function handle(Request $request, Closure $next)
     {
-
+        // If the user has access to multiple companies and hasn't selected one yet,
+        // redirect them to the workspace selection page.
         if (session()->get('user_company_count') > 1 && !session()->has('multi_company_selected')) {
             return redirect(route('superadmin.superadmin.workspaces'));
         }
 
-        //        if (!session()->has('impersonate') && !session()->has('stop_impersonate')) {
-        //
-        //
-        //            try {
-        //                if (auth()->check()) {
-        //                    auth()->user()->user->update(['last_login' => now()]);
-        //                }
-        //
-        //
-        //                if (company()) {
-        //                    $company = company();
-        //                    $company->last_login = now();
-        //                    /* @phpstan-ignore-line */
-        //                    $company->saveQuietly();
-        //                }
-        //            } catch (\Exception $e) {
-        //
-        //            }
+        // Optional code for updating last login time for user and company
+        // Currently commented out
+        /*
+        if (!session()->has('impersonate') && !session()->has('stop_impersonate')) {
+            try {
+                if (auth()->check()) {
+                    // Update user's last login timestamp
+                    auth()->user()->user->update(['last_login' => now()]);
+                }
 
-        //        }
+                if (company()) {
+                    // Update company's last login timestamp
+                    $company = company();
+                    $company->last_login = now();
+                    $company->saveQuietly();
+                }
+            } catch (\Exception $e) {
+                // Ignore errors silently
+            }
+        }
+        */
 
         return $next($request);
     }

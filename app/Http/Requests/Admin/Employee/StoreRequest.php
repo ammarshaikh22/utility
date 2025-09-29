@@ -16,6 +16,7 @@ class StoreRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -26,6 +27,7 @@ class StoreRequest extends CoreRequest
      */
     public function rules()
     {
+        // Custom validation rule to check that the email does not belong to a superadmin
         \Illuminate\Support\Facades\Validator::extend('check_superadmin', function ($attribute, $value, $parameters, $validator) {
             return !\App\Models\User::withoutGlobalScopes([\App\Scopes\ActiveScope::class, \App\Scopes\CompanyScope::class])
                 ->where('email', $value)
@@ -34,15 +36,16 @@ class StoreRequest extends CoreRequest
         });
 
         $setting = company();
+
         $rules = [
-            'employee_id' => 'required|unique:employee_details,employee_id,null,id,company_id,' . company()->id.'|max:100',
+            'employee_id' => 'required|unique:employee_details,employee_id,null,id,company_id,' . company()->id . '|max:100',
             'name' => 'required|max:50',
-            'email' => 'required|email:rfc,strict|unique:users,email,null,id,company_id,' . company()->id.'|max:100|check_superadmin',
-            'slack_username' => 'nullable|unique:employee_details,slack_username,null,id,company_id,' . company()->id.'|max:30',
+            'email' => 'required|email:rfc,strict|unique:users,email,null,id,company_id,' . company()->id . '|max:100|check_superadmin',
+            'slack_username' => 'nullable|unique:employee_details,slack_username,null,id,company_id,' . company()->id . '|max:30',
             'hourly_rate' => 'nullable|numeric',
             'joining_date' => 'required',
             'last_date' => 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:joining_date',
-            'date_of_birth' => 'nullable|date_format:"' . $setting->date_format . '"|before_or_equal:'.now($setting->timezone)->toDateString(),
+            'date_of_birth' => 'nullable|date_format:"' . $setting->date_format . '"|before_or_equal:' . now($setting->timezone)->toDateString(),
             'department' => 'required',
             'designation' => 'required',
             'company_address' => 'required',
@@ -53,29 +56,41 @@ class StoreRequest extends CoreRequest
             'contract_end_date' => 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:joining_date',
         ];
 
+        // Optional Telegram user ID validation
         if (request()->telegram_user_id) {
             $rules['telegram_user_id'] = 'nullable|unique:users,telegram_user_id,null,id,company_id,' . company()->id;
         }
 
+        // Merge custom field rules
         $rules = $this->customFieldRules($rules);
 
         return $rules;
     }
 
+    /**
+     * Custom attribute names for error messages.
+     *
+     * @return array
+     */
     public function attributes()
     {
         $attributes = [];
 
+        // Merge custom field attributes
         $attributes = $this->customFieldsAttributes($attributes);
 
         return $attributes;
     }
 
+    /**
+     * Custom error messages for validation rules.
+     *
+     * @return array
+     */
     public function messages()
     {
         return [
-            'email.check_superadmin' => __('superadmin.emailAlreadyExist'),
+            'email.check_superadmin' => __('superadmin.emailAlreadyExist'), // Error if the email belongs to a superadmin
         ];
     }
-
 }

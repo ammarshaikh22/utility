@@ -6,16 +6,14 @@ use App\Models\ProjectCategory;
 
 class ProjectCategoryObserver
 {
-
-    /**
-     * @param ProjectCategory $item
-     */
     public function saving(ProjectCategory $item)
     {
+        // Track user who last updated
         if (!isRunningInConsoleOrSeeding()) {
             $item->last_updated_by = user()->id;
         }
 
+        // Assign category to the current company
         if (company()) {
             $item->company_id = company()->id;
         }
@@ -23,9 +21,9 @@ class ProjectCategoryObserver
 
     public function creating(ProjectCategory $item)
     {
+        // Track user who created the category
         if (!isRunningInConsoleOrSeeding()) {
             $item->added_by = user()->id;
         }
     }
-
 }

@@ -14,6 +14,7 @@ class ImportProcessRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,16 +26,21 @@ class ImportProcessRequest extends FormRequest
     public function rules()
     {
         return [
-            'file' => 'required',
-            'has_heading' => 'nullable|boolean',
-            'columns' => ['required', 'array', 'min:1'],
+            'file' => 'required', // File to be imported is required
+            'has_heading' => 'nullable|boolean', // Optional boolean indicating if the file has headings
+            'columns' => ['required', 'array', 'min:1'], // Columns must be an array with at least one element
         ];
     }
 
+    /**
+     * Custom attribute names for error messages.
+     *
+     * @return array
+     */
     public function attributes()
     {
         return [
-            'columns.*' => 'column',
+            'columns.*' => 'column', // Each item in columns array is referred to as "column" in errors
         ];
     }
 

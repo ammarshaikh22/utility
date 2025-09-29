@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreClientCategory extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class StoreClientCategory extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,8 +25,8 @@ class StoreClientCategory extends CoreRequest
     public function rules()
     {
         return [
+            // Validate that category_name is required and has a maximum length of 100 characters
             'category_name' => 'required|max:100'
         ];
     }
-
 }

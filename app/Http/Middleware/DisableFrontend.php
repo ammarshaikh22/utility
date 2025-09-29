@@ -16,12 +16,19 @@ class DisableFrontend
      */
     public function handle($request, Closure $next)
     {
+        // Get global settings
         $global = global_setting();
 
-        if ($global->frontend_disable && request()->route()->getName() != 'front.signup.index' && !request()->ajax()) {
+        // If frontend is disabled globally, and the route is not the signup page, and the request is not AJAX
+        if ($global->frontend_disable 
+            && request()->route()->getName() != 'front.signup.index' 
+            && !request()->ajax()
+        ) {
+            // Redirect users to login page
             return redirect(route('login'));
         }
 
+        // Continue request processing if all checks pass
         return $next($request);
     }
 

@@ -6,7 +6,6 @@ use Closure;
 
 class AdminOrSuperAdmin
 {
-
     /**
      * Handle an incoming request.
      *
@@ -16,11 +15,13 @@ class AdminOrSuperAdmin
      */
     public function handle($request, Closure $next)
     {
-
+        // Get the authenticated user
         $user = auth()->user()->user;
+
+        // Abort the request with 403 Forbidden if the user is neither superadmin nor has the 'admin' role
         abort_403((!$user->is_superadmin && !$user->hasRole('admin')));
 
+        // Continue processing the request
         return $next($request);
     }
-
 }

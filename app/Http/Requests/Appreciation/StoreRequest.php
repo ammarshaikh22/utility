@@ -6,13 +6,12 @@ use App\Http\Requests\CoreRequest;
 
 class StoreRequest extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -20,15 +19,14 @@ class StoreRequest extends CoreRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'award_date' => 'required',
             'given_to' => 'required',
-            'award' => 'required'
+            'award' => 'required',
         ];
     }
-
 }

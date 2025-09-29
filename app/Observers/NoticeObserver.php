@@ -11,7 +11,7 @@ use App\Models\User;
 
 class NoticeObserver
 {
-
+    // Before saving a Notice, set last_updated_by and send update notification if it's an edit
     public function saving(Notice $notice)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -23,6 +23,7 @@ class NoticeObserver
         }
     }
 
+    // Before creating a Notice, set added_by and company_id
     public function creating(Notice $notice)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -34,6 +35,7 @@ class NoticeObserver
         }
     }
 
+    // After a Notice is created, send create notification
     public function created(Notice $notice)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -41,9 +43,12 @@ class NoticeObserver
         }
     }
 
+    // When deleting a Notice, remove related universal searches and notifications
     public function deleting(Notice $notice)
     {
-        $universalSearches = UniversalSearch::where('searchable_id', $notice->id)->where('module_type', 'notice')->get();
+        $universalSearches = UniversalSearch::where('searchable_id', $notice->id)
+            ->where('module_type', 'notice')
+            ->get();
 
         if ($universalSearches) {
             foreach ($universalSearches as $universalSearch) {
@@ -53,20 +58,20 @@ class NoticeObserver
 
         $notifyData = ['App\Notifications\NewNotice', 'App\Notifications\NoticeUpdate'];
         Notification::deleteNotification($notifyData, $notice->id);
-
     }
 
+    // Send notifications to employees or clients and track notice views
     public function sendNotification($notice, $action = 'create')
     {
         if ($notice->to == 'employee') {
             $empIds = request()->employees;
-            $users = $users = User::whereIn('id', $empIds)->where('status', 'active')->get();
+            $users = User::whereIn('id', $empIds)->where('status', 'active')->get();
 
             foreach ($users as $userData) {
-                NoticeView::updateOrCreate(array(
+                NoticeView::updateOrCreate([
                     'user_id' => $userData->id,
                     'notice_id' => $notice->id
-                ));
+                ]);
             }
 
             event(new NewNoticeEvent($notice, $users, $action));
@@ -74,18 +79,16 @@ class NoticeObserver
 
         if ($notice->to == 'client') {
             $clientIds = request()->clients;
-            $users = $users = User::whereIn('id', $clientIds)->where('status', 'active')->get();
+            $users = User::whereIn('id', $clientIds)->where('status', 'active')->get();
 
             foreach ($users as $userData) {
-                NoticeView::updateOrCreate(array(
+                NoticeView::updateOrCreate([
                     'user_id' => $userData->id,
                     'notice_id' => $notice->id
-                ));
+                ]);
             }
 
             event(new NewNoticeEvent($notice, $users, $action));
         }
-
     }
-
 }

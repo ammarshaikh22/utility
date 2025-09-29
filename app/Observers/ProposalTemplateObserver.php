@@ -10,9 +10,12 @@ use App\Traits\UnitTypeSaveTrait;
 
 class ProposalTemplateObserver
 {
-
     use UnitTypeSaveTrait;
 
+    /**
+     * Triggered when a new ProposalTemplate is being created.
+     * Automatically assigns the company_id from the current logged-in company.
+     */
     public function creating(ProposalTemplate $proposal)
     {
         if (company()) {
@@ -20,10 +23,15 @@ class ProposalTemplateObserver
         }
     }
 
+    /**
+     * Triggered after a ProposalTemplate is created.
+     * Handles insertion of related items and their images from the request.
+     */
     public function created(ProposalTemplate $proposal)
     {
         if (!isRunningInConsoleOrSeeding()) {
 
+            // Check if request contains item data
             if (!empty(request()->item_name)) {
                 $itemsSummary = request()->item_summary;
                 $cost_per_item = request()->cost_per_item;
@@ -38,61 +46,65 @@ class ProposalTemplateObserver
 
                 foreach (request()->item_name as $key => $item) {
                     if (!is_null($item)) {
-                        $proposalTemplateItem = ProposalTemplateItem::create(
-                            [
-                                'proposal_template_id' => $proposal->id,
-                                'company_id' => $proposal->company_id,
-                                'item_name' => $item,
-                                'item_summary' => $itemsSummary[$key],
-                                'type' => 'item',
-                                'unit_id' => (isset($unitId[$key]) && !is_null($unitId[$key])) ? $unitId[$key] : null,
-                                'product_id' => (isset($product[$key]) && !is_null($product[$key])) ? $product[$key] : null,
-                                'hsn_sac_code' => (isset($hsn_sac_code[$key])) ? $hsn_sac_code[$key] : null,
-                                'quantity' => $quantity[$key],
-                                'unit_price' => round($cost_per_item[$key], 2),
-                                'amount' => round($amount[$key], 2),
-                                'taxes' => ($tax ? (array_key_exists($key, $tax) ? json_encode($tax[$key]) : null) : null)
-                            ]
-                        );
+                        // Create proposal item for each request item
+                        $proposalTemplateItem = ProposalTemplateItem::create([
+                            'proposal_template_id' => $proposal->id,
+                            'company_id' => $proposal->company_id,
+                            'item_name' => $item,
+                            'item_summary' => $itemsSummary[$key],
+                            'type' => 'item',
+                            'unit_id' => (isset($unitId[$key]) && !is_null($unitId[$key])) ? $unitId[$key] : null,
+                            'product_id' => (isset($product[$key]) && !is_null($product[$key])) ? $product[$key] : null,
+                            'hsn_sac_code' => (isset($hsn_sac_code[$key])) ? $hsn_sac_code[$key] : null,
+                            'quantity' => $quantity[$key],
+                            'unit_price' => round($cost_per_item[$key], 2),
+                            'amount' => round($amount[$key], 2),
+                            'taxes' => ($tax ? (array_key_exists($key, $tax) ? json_encode($tax[$key]) : null) : null),
+                        ]);
                     }
 
-                    /* Invoice file save here */
+                    // Handle associated invoice item images
                     if (isset($proposalTemplateItem) && (isset($invoice_item_image[$key]) || isset($invoice_item_image_url[$key]))) {
-
                         $proposalTemplateItemImage = new ProposalTemplateItemImage();
                         $proposalTemplateItemImage->proposal_template_item_id = $proposalTemplateItem->id;
                         $proposalTemplateItemImage->company_id = $proposalTemplateItem->company_id;
 
+                        // If image uploaded, save file locally or to S3
                         if (isset($invoice_item_image[$key])) {
-                            $filename = Files::uploadLocalOrS3($invoice_item_image[$key], ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/');
+                            $filename = Files::uploadLocalOrS3(
+                                $invoice_item_image[$key],
+                                ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/'
+                            );
+
                             $proposalTemplateItemImage->filename = $invoice_item_image[$key]->getClientOriginalName();
                             $proposalTemplateItemImage->hashname = $filename;
                             $proposalTemplateItemImage->size = $invoice_item_image[$key]->getSize();
                         }
 
-                        $proposalTemplateItemImage->external_link = isset($invoice_item_image[$key]) ? null : (isset($invoice_item_image_url[$key]) ? $invoice_item_image_url[$key] : null);
+                        // If external image link provided, set it
+                        $proposalTemplateItemImage->external_link = isset($invoice_item_image[$key]) 
+                            ? null 
+                            : ($invoice_item_image_url[$key] ?? null);
+
                         $proposalTemplateItemImage->save();
                     }
-
                 }
             }
-
         }
     }
 
     /**
-     * @throws RelatedResourceNotFoundException
+     * Triggered when a ProposalTemplate is updated.
+     * Handles synchronization of items and their images with the request.
+     *
+     * Process:
+     * Step 1 - Delete items not present in the request
+     * Step 2 - Update existing items, update images if changed
+     * Step 3 - Insert new items with images
      */
     public function updated(ProposalTemplate $proposal)
     {
         if (!isRunningInConsoleOrSeeding()) {
-
-            /*
-                Step1 - Delete all invoice items which are not avaialable
-                Step2 - Find old invoices items, update it and check if images are newer or older
-                Step3 - Insert new invoices items with images
-            */
-
             $request = request();
 
             $items = $request->item_name;
@@ -105,25 +117,22 @@ class ProposalTemplateObserver
             $proposal_item_image = $request->invoice_item_image;
             $proposal_item_image_url = $request->invoice_item_image_url;
             $item_ids = $request->item_ids;
-            $unitId = request()->unit_id;
-            $productId = request()->product_id;
+            $unitId = $request->unit_id;
+            $productId = $request->product_id;
 
-
-            if (!empty($request->item_name) && is_array($request->item_name)) {
-                // Step1 - Delete all invoice items which are not avaialable
+            if (!empty($items) && is_array($items)) {
+                // Step 1: Delete removed items
                 if (!empty($item_ids)) {
-                    ProposalTemplateItem::whereNotIn('id', $item_ids)->where('proposal_template_id', $proposal->id)->delete();
+                    ProposalTemplateItem::whereNotIn('id', $item_ids)
+                        ->where('proposal_template_id', $proposal->id)
+                        ->delete();
                 }
 
-                // Step2&3 - Find old invoices items, update it and check if images are newer or older
+                // Step 2 & 3: Update existing items or create new ones
                 foreach ($items as $key => $item) {
                     $invoice_item_id = $item_ids[$key] ?? 0;
 
-                    $proposalTemplateItem = ProposalTemplateItem::find($invoice_item_id);
-
-                    if ($proposalTemplateItem === null) {
-                        $proposalTemplateItem = new ProposalTemplateItem();
-                    }
+                    $proposalTemplateItem = ProposalTemplateItem::find($invoice_item_id) ?? new ProposalTemplateItem();
 
                     $proposalTemplateItem->proposal_template_id = $proposal->id;
                     $proposalTemplateItem->company_id = $proposal->company_id;
@@ -139,36 +148,39 @@ class ProposalTemplateObserver
                     $proposalTemplateItem->taxes = ($tax ? (array_key_exists($key, $tax) ? json_encode($tax[$key]) : null) : null);
                     $proposalTemplateItem->save();
 
-
-                    /* Invoice file save here */
-                    // phpcs:ignore
+                    // Handle item images
                     if ((isset($proposal_item_image[$key]) && $request->hasFile('invoice_item_image.' . $key)) || isset($proposal_item_image_url[$key])) {
-
                         $proposalTemplateItemImage = ProposalTemplateItemImage::where('proposal_template_item_id', $proposalTemplateItem->id)->firstOrNew();
 
                         $proposalTemplateItemImage->proposal_template_item_id = $proposalTemplateItem->id;
                         $proposalTemplateItemImage->company_id = $proposalTemplateItem->company_id;
 
-                        /* Delete previous uploaded file if it not a product (because product images cannot be deleted) */
-                        if (!isset($proposal_item_image_url[$key]) && $proposalTemplateItem && $proposalTemplateItem->proposalTemplateItemImage) {
-                            Files::deleteFile($proposalTemplateItem->proposalTemplateItemImage->hashname, ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/');
+                        // Delete old image if a new one is uploaded (but keep product images)
+                        if (!isset($proposal_item_image_url[$key]) && $proposalTemplateItem->proposalTemplateItemImage) {
+                            Files::deleteFile(
+                                $proposalTemplateItem->proposalTemplateItemImage->hashname,
+                                ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/'
+                            );
                         }
 
+                        // Save new uploaded file
                         if (isset($proposal_item_image[$key])) {
-                            $filename = Files::uploadLocalOrS3($proposal_item_image[$key], ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/');
-                            $proposalTemplateItemImage->filename = isset($proposal_item_image[$key]) ? $proposal_item_image[$key]->getClientOriginalName() : null;
-                            $proposalTemplateItemImage->hashname = isset($proposal_item_image[$key]) ? $filename : null;
-                            $proposalTemplateItemImage->size = isset($proposal_item_image[$key]) ? $proposal_item_image[$key]->getSize() : null;
+                            $filename = Files::uploadLocalOrS3(
+                                $proposal_item_image[$key],
+                                ProposalTemplateItemImage::FILE_PATH . '/' . $proposalTemplateItem->id . '/'
+                            );
+
+                            $proposalTemplateItemImage->filename = $proposal_item_image[$key]->getClientOriginalName();
+                            $proposalTemplateItemImage->hashname = $filename;
+                            $proposalTemplateItemImage->size = $proposal_item_image[$key]->getSize();
                         }
 
+                        // If external link provided, use it instead of file
                         $proposalTemplateItemImage->external_link = isset($proposal_item_image[$key]) ? null : ($proposal_item_image_url[$key] ?? null);
                         $proposalTemplateItemImage->save();
-
                     }
                 }
             }
         }
-
     }
-
 }

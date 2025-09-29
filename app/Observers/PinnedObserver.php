@@ -10,7 +10,7 @@ class PinnedObserver
 
     public function saving(Pinned $pinned)
     {
-        // Cannot put in creating, because saving is fired before creating. And we need company id for check bellow
+        // Before saving, assign the current logged-in user's ID using UserService
         if (user()) {
             $pinned->user_id = UserService::getUserId();
         }
@@ -18,6 +18,7 @@ class PinnedObserver
 
     public function creating(Pinned $pinned)
     {
+        // When creating a new pinned record, assign the current company ID
         if (company()) {
             $pinned->company_id = company()->id;
         }

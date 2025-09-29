@@ -14,6 +14,7 @@ class StoreClientSubcategory extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +26,10 @@ class StoreClientSubcategory extends CoreRequest
     public function rules()
     {
         return [
+            // The parent category ID is required
             'category_id' => 'required',
+
+            // The subcategory name is required
             'category_name' => 'required',
         ];
     }
