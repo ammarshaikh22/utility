@@ -18,18 +18,30 @@ use Illuminate\Support\Facades\DB;
 
 class ImportAttendanceJob implements ShouldQueue
 {
-
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     use ExcelImportable;
 
+    /**
+     * @var array The row data to process
+     */
     private $row;
+
+    /**
+     * @var array The column headers
+     */
     private $columns;
+
+    /**
+     * @var \App\Models\Company|null The company instance
+     */
     private $company;
 
     /**
      * Create a new job instance.
      *
-     * @return void
+     * @param array $row The row data from the import
+     * @param array $columns The column headers
+     * @param \App\Models\Company|null $company The company instance (optional)
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -39,23 +51,19 @@ class ImportAttendanceJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
-     *
-     * @return void
+     * Execute the job to import attendance data.
      */
     public function handle()
     {
         if ($this->isColumnExists('clock_in_time') && $this->isColumnExists('email') && $this->isEmailValid($this->getColumnValue('email'))) {
-
-            // user that have employee role
+            // Find user with employee role
             $user = User::where('email', $this->getColumnValue('email'))->whereHas('roles', function ($q) {
                 $q->where('name', 'employee');
             })->first();
 
             if (!$user) {
                 $this->failJobWithMessage(__('messages.employeeNotFound'));
-            }
-            else {
+            } else {
                 DB::beginTransaction();
                 try {
                     Attendance::create([
@@ -79,10 +87,8 @@ class ImportAttendanceJob implements ShouldQueue
                     $this->failJobWithMessage($e->getMessage());
                 }
             }
-        }
-        else {
+        } else {
             $this->failJob(__('messages.invalidData'));
         }
     }
-
 }

@@ -17,19 +17,28 @@ class DealReportExport implements FromCollection, WithMapping, WithHeadings, Wit
     public $pipeline;
     public $category;
 
-
+    /**
+     * Initialize the export class with parameters for year, pipeline, and category.
+     *
+     * @param int $year The year for the deal report
+     * @param int $pipeline The pipeline ID for filtering deals
+     * @param string|null $category The category ID for filtering deals, or 'null' for no category filter
+     */
     public function __construct($year, $pipeline, $category)
     {
-
         $this->year = $year;
         $this->pipeline = $pipeline;
         $this->category = $category;
-
     }
 
+    /**
+     * Collect and process deal data for the specified year, pipeline, and category, grouped by month.
+     *
+     * @return \Illuminate\Support\Collection A collection of deal data for each month
+     */
     public function collection()
     {
-    // Fetch data from the database
+        // Fetch data from the database
         $query = DB::table('deals')
         ->select(
             DB::raw('MONTH(close_date) as month'),
@@ -98,27 +107,33 @@ class DealReportExport implements FromCollection, WithMapping, WithHeadings, Wit
         $deals = $query->groupBy(DB::raw('MONTH(close_date)'))->get();
 
         $deals = collect($deals)->map(function ($item) {
-        return (object) $item;
+            return (object) $item;
         });
 
         $months = collect(range(1, 12))->map(function ($month) use ($deals) {
-        $deal = $deals->firstWhere('month', $month);
-        return [
-            'month' => $month,
-            'deals_closed' => $deal ? $deal->deals_closed : 0,
-            'total_deal_amount' => $deal ? round($deal->total_deal_amount, 2) : 0,
-            'average_deal_amount' => $deal ? round($deal->average_deal_amount, 2) : 0,
-            'won_deals' => $deal ? $deal->won_deals : 0,
-            'deals_won_amount' => $deal ? round($deal->deals_won_amount, 2) : 0,
-            'lost_deals' => $deal ? $deal->lost_deals : 0,
-            'deals_lost_amount' => $deal ? round($deal->deals_lost_amount, 2) : 0,
-            'deals_other_stages' => $deal ? $deal->deals_other_stages : 0,
-            'deals_other_stages_value' => $deal ? round($deal->deals_other_stages_value, 2) : 0,
+            $deal = $deals->firstWhere('month', $month);
+            return [
+                'month' => $month,
+                'deals_closed' => $deal ? $deal->deals_closed : 0,
+                'total_deal_amount' => $deal ? round($deal->total_deal_amount, 2) : 0,
+                'average_deal_amount' => $deal ? round($deal->average_deal_amount, 2) : 0,
+                'won_deals' => $deal ? $deal->won_deals : 0,
+                'deals_won_amount' => $deal ? round($deal->deals_won_amount, 2) : 0,
+                'lost_deals' => $deal ? $deal->lost_deals : 0,
+                'deals_lost_amount' => $deal ? round($deal->deals_lost_amount, 2) : 0,
+                'deals_other_stages' => $deal ? $deal->deals_other_stages : 0,
+                'deals_other_stages_value' => $deal ? round($deal->deals_other_stages_value, 2) : 0,
             ];
         });
         return $months;
     }
 
+    /**
+     * Map the deal data to the format required for the Excel export, including currency formatting.
+     *
+     * @param mixed $deal The deal data for a specific month
+     * @return array The mapped data for a single row in the Excel file
+     */
     public function map($deal): array
     {
         if (is_array($deal)) {
@@ -138,11 +153,13 @@ class DealReportExport implements FromCollection, WithMapping, WithHeadings, Wit
             $deal->deals_other_stages != 0 ? $deal->deals_other_stages : '0',
             $deal->deals_other_stages_value != 0 ? $currencySymbol.round($deal->deals_other_stages_value, 2) : '0',
         ];
-
-
     }
 
-
+    /**
+     * Define the column headings for the Excel export.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         return [
@@ -159,6 +176,11 @@ class DealReportExport implements FromCollection, WithMapping, WithHeadings, Wit
         ];
     }
 
+    /**
+     * Register events for the Excel export, applying styling to headers and numeric formatting to cells.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [

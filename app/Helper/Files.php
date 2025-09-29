@@ -14,18 +14,18 @@ use PhpOffice\PhpSpreadsheet\Calculation\MathTrig\Exp;
 
 class Files
 {
-
     const UPLOAD_FOLDER = 'user-uploads';
     const IMPORT_FOLDER = 'import-files';
-
     const REQUIRED_FILE_UPLOAD_SIZE = 20;
 
     /**
-     * @param mixed $image
-     * @param string $dir
-     * @param null $width
-     * @param int $height
-     * @return string
+     * Upload a file to the specified directory, optionally resizing images.
+     *
+     * @param mixed $image The uploaded file
+     * @param string $dir The target directory for the file
+     * @param null|int $width The desired width for image resizing (optional)
+     * @param int $height The desired height for image resizing (default: 800)
+     * @return string The new filename
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      * @throws \Exception
      */
@@ -43,7 +43,7 @@ class Files
 
         $tempPath = public_path(self::UPLOAD_FOLDER . '/temp/' . $newName);
 
-        /** Check if folder exits or not. If not then create the folder */
+        /** Check if folder exists or not. If not then create the folder */
         self::createDirectoryIfNotExist($folder);
 
         $newPath = $folder . '/' . $newName;
@@ -64,12 +64,14 @@ class Files
         // Deleting temp file
         File::delete($tempPath);
 
-
         return $newName;
     }
 
     /**
-     * @throws ApiException
+     * Validate the uploaded file for security and size constraints.
+     *
+     * @param mixed $uploadedFile The uploaded file
+     * @throws ApiException If the file is invalid or violates constraints
      */
     public static function validateUploadedFile($uploadedFile)
     {
@@ -80,73 +82,20 @@ class Files
 
         // Disallow dangerous extensions and mime types
         $forbiddenExtensions = [
-            'php',
-            'php3',
-            'php4',
-            'php5',
-            'phtml',
-            'phar',
-            'sh',
-            'htaccess',
-            'pl',
-            'cgi',
-            'exe',
-            'bat',
-            'cmd',
-            'com',
-            'scr',
-            'dll',
-            'js',
-            'jsp',
-            'asp',
-            'aspx',
-            'cer',
-            'csr',
-            'jsp',
-            'jspx',
-            'war',
-            'jar',
-            'vb',
-            'vbs',
-            'wsf',
-            'ps1',
-            'ps2',
-            'xml'
+            'php', 'php3', 'php4', 'php5', 'phtml', 'phar', 'sh', 'htaccess', 'pl', 'cgi', 'exe', 'bat',
+            'cmd', 'com', 'scr', 'dll', 'js', 'jsp', 'asp', 'aspx', 'cer', 'csr', 'jsp', 'jspx', 'war',
+            'jar', 'vb', 'vbs', 'wsf', 'ps1', 'ps2', 'xml'
         ];
 
         $forbiddenMimeTypes = [
-            'text/x-php',
-            'application/x-php',
-            'application/x-sh',
-            'text/x-shellscript',
-            'application/x-msdownload',
-            'application/x-msdos-program',
-            'application/x-executable',
-            'application/x-csh',
-            'application/x-bat',
-            'application/x-msdos-windows',
-            'application/x-javascript',
-            'text/javascript',
-            'application/javascript',
-            'application/x-msdownload',
-            'application/x-ms-installer',
-            'application/x-dosexec',
-            'application/x-cgi',
-            'application/x-perl',
-            'text/x-perl',
-            'application/x-python',
-            'text/x-python',
-            'application/x-msdos-program',
-            'application/x-msdos-windows',
-            'application/x-msdos-batch',
-            'application/x-msdos-cmd',
-            'application/x-msdos-com',
-            'application/x-msdos-scr',
-            'application/x-msdos-dll',
-            'application/x-msdos-js',
-            'application/x-msdos-vbs',
-            'application/x-msdos-ps1',
-            'application/xml',
+            'text/x-php', 'application/x-php', 'application/x-sh', 'text/x-shellscript', 'application/x-msdownload',
+            'application/x-msdos-program', 'application/x-executable', 'application/x-csh', 'application/x-bat',
+            'application/x-msdos-windows', 'application/x-javascript', 'text/javascript', 'application/javascript',
+            'application/x-ms-installer', 'application/x-dosexec', 'application/x-cgi', 'application/x-perl',
+            'text/x-perl', 'application/x-python', 'text/x-python', 'application/x-msdos-program',
+            'application/x-msdos-windows', 'application/x-msdos-batch', 'application/x-msdos-cmd',
+            'application/x-msdos-com', 'application/x-msdos-scr', 'application/x-msdos-dll',
+            'application/x-msdos-js', 'application/x-msdos-vbs', 'application/x-msdos-ps1', 'application/xml',
             'text/xml'
         ];
 
@@ -155,9 +104,8 @@ class Files
         $originalName = strtolower($uploadedFile->getClientOriginalName());
 
         // Prevent double extensions (e.g. file.php.jpg)
-       // Prevent double extensions (e.g. file.php.jpg)
-       if (preg_match('/\.(php[0-9]?|phtml|phar|sh|pl|cgi|exe|bat|cmd|com|scr|dll|js|jsp|asp|aspx|cer|csr|jspx|war|jar|vb|vbs|wsf|ps1|ps2|xml)(\..+)?$/i', $originalName)) {
-        throw new Exception('You are not allowed to upload files with dangerous extensions');
+        if (preg_match('/\.(php[0-9]?|phtml|phar|sh|pl|cgi|exe|bat|cmd|com|scr|dll|js|jsp|asp|aspx|cer|csr|jspx|war|jar|vb|vbs|wsf|ps1|ps2|xml)(\..+)?$/i', $originalName)) {
+            throw new Exception('You are not allowed to upload files with dangerous extensions');
         }
 
         if (in_array($extension, $forbiddenExtensions)) {
@@ -203,6 +151,13 @@ class Files
         }
     }
 
+    /**
+     * Convert a storage unit to bytes.
+     *
+     * @param string $unit The storage unit (e.g., 'kb', 'mb', 'gb', 'tb', 'pb')
+     * @param int $size The size to convert (default: 1)
+     * @return int The size in bytes
+     */
     public static function storageUnitToBytes($unit, $size = 1)
     {
         $unit = strtolower($unit);
@@ -218,6 +173,12 @@ class Files
         return $bytes * $size;
     }
 
+    /**
+     * Generate a new unique filename for the uploaded file.
+     *
+     * @param string $currentFileName The original filename
+     * @return string The new filename
+     */
     public static function generateNewFileName($currentFileName)
     {
         $ext = strtolower(File::extension($currentFileName));
@@ -227,6 +188,13 @@ class Files
     }
 
     /**
+     * Upload a file to local storage or S3-compatible storage, optionally resizing images.
+     *
+     * @param mixed $uploadedFile The uploaded file
+     * @param string $dir The target directory
+     * @param null|int $width The desired width for image resizing (optional)
+     * @param int $height The desired height for image resizing (default: 400)
+     * @return string The new filename
      * @throws \Exception
      */
     public static function uploadLocalOrS3($uploadedFile, $dir, $width = null, int $height = 400)
@@ -260,6 +228,14 @@ class Files
         }
     }
 
+    /**
+     * Store file information in the database and return the new filename.
+     *
+     * @param mixed $file The uploaded file
+     * @param string $folder The target folder
+     * @param string $generateNewName Optional new filename (if empty, one is generated)
+     * @return string The new filename
+     */
     public static function fileStore($file, $folder, $generateNewName = '')
     {
         // Generate a new name if $generateNewName is empty
@@ -281,6 +257,13 @@ class Files
         return $newName;
     }
 
+    /**
+     * Delete a file from storage and its database record.
+     *
+     * @param string $filename The name of the file
+     * @param string $folder The folder containing the file
+     * @return bool True if deletion is successful or file doesn't exist
+     */
     public static function deleteFile($filename, $folder)
     {
         $dir = trim($folder, '/');
@@ -321,7 +304,12 @@ class Files
         return true;
     }
 
-
+    /**
+     * Delete a directory from storage.
+     *
+     * @param string $folder The folder to delete
+     * @return bool True if deletion is successful or directory doesn't exist
+     */
     public static function deleteDirectory($folder)
     {
         $dir = trim($folder);
@@ -331,15 +319,25 @@ class Files
             return true;
         }
 
-
         return true;
     }
 
+    /**
+     * Copy a file from one location to another in storage.
+     *
+     * @param string $from The source file path
+     * @param string $to The destination file path
+     */
     public static function copy($from, $to)
     {
         Storage::disk(config('filesystems.default'))->copy($from, $to);
     }
 
+    /**
+     * Create a directory if it does not exist.
+     *
+     * @param string $folder The folder path to create
+     */
     public static function createDirectoryIfNotExist($folder)
     {
         $directoryPath = public_path(self::UPLOAD_FOLDER . '/' . $folder);
@@ -349,13 +347,22 @@ class Files
         }
     }
 
+    /**
+     * Upload an image file with optional resizing and store it in the specified folder.
+     *
+     * @param mixed $uploadedFile The uploaded image file
+     * @param string $folder The target folder
+     * @param null|int $width The desired width for resizing (optional)
+     * @param int $height The desired height for resizing (default: 800)
+     * @return string The new filename
+     */
     public static function uploadImage($uploadedFile, string $folder, $width = null, int $height = 800)
     {
         $newName = self::generateNewFileName($uploadedFile->getClientOriginalName());
 
         $tempPath = public_path(self::UPLOAD_FOLDER . '/temp/' . $newName);
 
-        /** Check if folder exits or not. If not then create the folder */
+        /** Check if folder exists or not. If not then create the folder */
         self::createDirectoryIfNotExist($folder);
 
         $newPath = $folder . '/' . $newName;
@@ -384,6 +391,13 @@ class Files
         return $newName;
     }
 
+    /**
+     * Upload a local file to storage and save its information in the database.
+     *
+     * @param string $fileName The name of the file
+     * @param string $path The file path
+     * @param null|int $companyId The company ID (optional)
+     */
     public static function uploadLocalFile($fileName, $path, $companyId = null): void
     {
         if (!File::exists(public_path(Files::UPLOAD_FOLDER . '/' . $path . '/' . $fileName))) {
@@ -394,6 +408,13 @@ class Files
         self::storeLocalFileOnCloud($fileName, $path);
     }
 
+    /**
+     * Save file information in the database.
+     *
+     * @param string $fileName The name of the file
+     * @param string $path The file path
+     * @param null|int $companyId The company ID (optional)
+     */
     public static function saveFileInfo($fileName, $path, $companyId = null)
     {
         $filePath = public_path(Files::UPLOAD_FOLDER . '/' . $path . '/' . $fileName);
@@ -408,6 +429,13 @@ class Files
         $fileStorage->save();
     }
 
+    /**
+     * Store a local file on cloud storage if applicable.
+     *
+     * @param string $fileName The name of the file
+     * @param string $path The file path
+     * @return bool True if stored successfully, false otherwise
+     */
     public static function storeLocalFileOnCloud($fileName, $path)
     {
         if (config('filesystems.default') != 'local') {
@@ -427,22 +455,21 @@ class Files
     }
 
     /**
-     * fixLocalUploadFiles is used to fix the local upload files
+     * Fix local upload files by updating their database records and moving to cloud storage.
      *
-     * Example of $model
+     * Example of $model:
      * $model = Company::class;
      *
-     * Example of $columns
+     * Example of $columns:
      * $columns = [
      *     [
-     *        'name' => 'logo',
-     *       'path' => 'company'
-     *    ]
+     *         'name' => 'logo',
+     *         'path' => 'company'
+     *     ]
      * ];
      *
-     * @param mixed $model
-     * @param array $columns
-     * @return void
+     * @param mixed $model The model class
+     * @param array $columns The columns and paths to process
      */
     public static function fixLocalUploadFiles($model, array $columns)
     {
@@ -470,6 +497,12 @@ class Files
         }
     }
 
+    /**
+     * Get the formatted size and status of a PHP configuration setting (e.g., upload_max_filesize).
+     *
+     * @param string $maxSizeKey The PHP configuration key
+     * @return array The formatted size and whether it meets the required threshold
+     */
     public static function getFormattedSizeAndStatus($maxSizeKey)
     {
         try {
@@ -515,17 +548,32 @@ class Files
         }
     }
 
+    /**
+     * Get the formatted upload_max_filesize value.
+     *
+     * @return array The formatted size and status
+     */
     public static function getUploadMaxFilesize()
     {
         return self::getFormattedSizeAndStatus('upload_max_filesize');
     }
 
+    /**
+     * Get the formatted post_max_size value.
+     *
+     * @return array The formatted size and status
+     */
     public static function getPostMaxSize()
     {
         return self::getFormattedSizeAndStatus('post_max_size');
     }
 
-    // Helper function to convert human-readable size to bytes
+    /**
+     * Convert a human-readable size string to bytes.
+     *
+     * @param string $val The size string (e.g., '2M', '1G')
+     * @return int The size in bytes
+     */
     public static function returnBytes($val)
     {
         $val = trim($val);

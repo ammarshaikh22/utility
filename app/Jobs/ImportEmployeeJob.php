@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Jobs;
 
@@ -31,9 +31,14 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
     private $company;
 
     /**
-     * Create a new job instance.
+     * Constructor function for the ImportEmployeeJob.
+     * 
+     * - Initializes the job with row data, column mapping, and optional company info.
+     * - Stores the provided row, columns, and company into private class variables.
      *
-     * @return void
+     * @param array $row    A single row of employee data from Excel.
+     * @param array $columns Column mapping from Excel file.
+     * @param mixed $company (optional) Company model instance for multi-tenant systems.
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -43,27 +48,36 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
     }
 
     /**
-     * Execute the job.
+     * Handle function that executes the employee import logic.
      *
+     * - Validates required fields like `name` and `email`.
+     * - Checks if the company can add more employees (based on plan/limits).
+     * - Prevents duplicate users by checking existing email and employee ID.
+     * - Creates a new User and EmployeeDetails entry inside a database transaction.
+     * - Assigns the "employee" role and permissions to the new user.
+     * - Handles invalid data (email, duplicate entries, invalid dates) with graceful failure.
+     * 
      * @return void
      */
     public function handle()
     {
         if ($this->isColumnExists('name') && $this->isColumnExists('email') && $this->isEmailValid($this->getColumnValue('email'))) {
 
+            // Check if company can add more employees
             if (!checkCompanyCanAddMoreEmployees($this->company?->id)) {
                 $this->job->fail(__('superadmin.updatePlanNote'));
                 return;
             }
 
+            // Check for duplicate user by email
             $user = User::where('email', $this->getColumnValue('email'))->first();
 
             if ($user) {
                 $this->failJobWithMessage(__('messages.duplicateEntryForEmail') . $this->getColumnValue('email'));
-
                 return;
             }
 
+            // Check for duplicate employee by employee_id
             $employeeDetails = EmployeeDetails::where('employee_id', $this->getColumnValue('employee_id'))->first();
 
             if ($employeeDetails) {
@@ -73,6 +87,7 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
             else {
                 DB::beginTransaction();
                 try {
+                    // Create new User
                     $user = new User();
                     $user->company_id = $this->company?->id;
                     $user->name = $this->getColumnValue('name');
@@ -83,6 +98,8 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
                     }
                     $user->mobile = $this->isColumnExists('mobile') ? $this->getColumnValue('mobile') : null;
                     $user->gender = $this->isColumnExists('gender') ? strtolower($this->getColumnValue('gender')) : null;
+
+                    // Create user authentication credentials if Worksuite SaaS
                     if (isWorksuiteSaas())
                     {
                         $userAuth = UserAuth::createUserAuthCredentials($this->row[array_keys($this->columns, 'email')[0]], 123456);
@@ -91,6 +108,7 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
 
                     $user->save();
 
+                    // If user is saved, create EmployeeDetails
                     if ($user->id) {
                         $employee = new EmployeeDetails();
                         $employee->company_id = $this->company?->id;
@@ -102,10 +120,14 @@ class ImportEmployeeJob implements ShouldQueue, ShouldBeUnique
                         $employee->save();
                     }
 
+                    // Assign "employee" role and permissions
                     $employeeRole = Role::where('name', 'employee')->first();
                     $user->attachRole($employeeRole);
                     $user->assignUserRolePermission($employeeRole->id);
+
+                    // Log entry for search functionality
                     $this->logSearchEntry($user->id, $user->name, 'employees.show', 'employee');
+
                     DB::commit();
                 } catch (InvalidFormatException $e) {
                     DB::rollBack();

@@ -6,24 +6,38 @@ use Maatwebsite\Excel\Concerns\ToArray;
 
 class ProjectImport implements ToArray
 {
-    use \Illuminate\Support\Traits\Macroable; // Optional
+    use \Illuminate\Support\Traits\Macroable;
 
+    /**
+     * @var array Stores the processed data from the import
+     */
     protected array $processedData = [];
 
+    /**
+     * Define the fields for project import.
+     *
+     * @return array The array of field definitions
+     */
     public static function fields(): array
     {
-        return array(
-            array('id' => 'project_name', 'name' => __('modules.projects.projectName'), 'required' => 'Yes'),
-            array('id' => 'project_summary', 'name' => __('modules.projects.projectSummary'), 'required' => 'No'),
-            array('id' => 'start_date', 'name' => __('modules.projects.startDate'), 'required' => 'Yes'),
-            array('id' => 'deadline', 'name' => __('modules.projects.deadline'), 'required' => 'No'),
-            array('id' => 'client_email', 'name' => __('app.client') . ' ' . __('app.email'), 'required' => 'No'),
-            array('id' => 'project_budget', 'name' => __('modules.projects.projectBudget'), 'required' => 'No'),
-            array('id' => 'status', 'name' => __('app.status'), 'required' => 'No'),
-            array('id' => 'notes', 'name' => __('modules.projects.note'), 'required' => 'No'),
-        );
+        return [
+            ['id' => 'project_name', 'name' => __('modules.projects.projectName'), 'required' => 'Yes'],
+            ['id' => 'project_summary', 'name' => __('modules.projects.projectSummary'), 'required' => 'No'],
+            ['id' => 'start_date', 'name' => __('modules.projects.startDate'), 'required' => 'Yes'],
+            ['id' => 'deadline', 'name' => __('modules.projects.deadline'), 'required' => 'No'],
+            ['id' => 'client_email', 'name' => __('app.client') . ' ' . __('app.email'), 'required' => 'No'],
+            ['id' => 'project_budget', 'name' => __('modules.projects.projectBudget'), 'required' => 'No'],
+            ['id' => 'status', 'name' => __('app.status'), 'required' => 'No'],
+            ['id' => 'notes', 'name' => __('modules.projects.note'), 'required' => 'No'],
+        ];
     }
 
+    /**
+     * Process the imported array, converting Excel date values to string format.
+     *
+     * @param array $array The imported data array
+     * @return array The input array
+     */
     public function array(array $array): array
     {
         $header = $array[0];
@@ -46,11 +60,22 @@ class ProjectImport implements ToArray
         return $array;
     }
 
+    /**
+     * Retrieve the processed data.
+     *
+     * @return array The processed data array
+     */
     public function getProcessedData(): array
     {
         return $this->processedData;
     }
 
+    /**
+     * Convert Excel date values to Y-m-d string format.
+     *
+     * @param mixed $value The input value
+     * @return string The formatted date or original value if not a date
+     */
     private function convertExcelDateToString($value)
     {
         if (is_numeric($value)) {
@@ -63,5 +88,4 @@ class ProjectImport implements ToArray
 
         return $value;
     }
-
 }

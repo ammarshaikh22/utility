@@ -22,6 +22,14 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
     private $rowCount = 1;
     private $mergeCells = [];
 
+    /**
+     * Initialize the export class with parameters for date range, employee ID, and project ID.
+     *
+     * @param string $startDate The start date for the timelog report
+     * @param string $endDate The end date for the timelog report
+     * @param string $employeeId The employee ID or 'all' for all employees
+     * @param string $projectId The project ID or 'all' for all projects
+     */
     public function __construct($startDate, $endDate, $employeeId, $projectId)
     {
         $this->startDate = $startDate;
@@ -30,6 +38,11 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
         $this->projectId = $projectId;
     }
 
+    /**
+     * Collect and process timelog data for employees and projects within the specified date range.
+     *
+     * @return \Illuminate\Support\Collection The processed timelog data grouped by user ID
+     */
     public function collection()
     {
         $query = ProjectTimeLog::with(['user', 'project', 'task', 'breaks', 'activeBreak'])
@@ -66,6 +79,12 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
             ->groupBy('user_id');
     }
 
+    /**
+     * Map the timelog data to the format required for the Excel export, grouping by project and employee.
+     *
+     * @param \Illuminate\Support\Collection $timelogs The timelog data for a specific employee
+     * @return array The mapped data for the Excel file
+     */
     public function map($timelogs): array
     {
         $mappedData = [];
@@ -107,8 +126,6 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
             $minutes = $projectData['total_minutes'] % 60;
             $formattedTime = sprintf('%02dh %02dm', $hours, $minutes);
 
-            $formattedTime = sprintf('%02dh %02dm', $hours, $minutes);
-
             // Add status tags
             if ($projectData['has_active']) {
                 $formattedTime .= ' ('. __('app.active'). ')';
@@ -118,7 +135,6 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
             }
 
             $breakTime = CarbonInterval::formatHuman($projectData['break_minutes']);
-
 
             $employeeName = $timelogs->first()->user->name;
 
@@ -142,6 +158,12 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
         return $mappedData;
     }
 
+    /**
+     * Format the total time for a timelog, accounting for active status and breaks.
+     *
+     * @param mixed $timelog The timelog record
+     * @return string The formatted time (hours and minutes)
+     */
     protected function formatTime($timelog)
     {
         $isActive = is_null($timelog->end_time);
@@ -153,12 +175,23 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
         return sprintf('%02dh %02dm', $hours, $minutes);
     }
 
+    /**
+     * Format the total break time for a timelog.
+     *
+     * @param \Illuminate\Support\Collection $breaks The collection of break records
+     * @return string The formatted break time
+     */
     protected function formatBreakTime($breaks)
     {
         $totalMinutes = $breaks->sum('total_minutes');
         return CarbonInterval::formatHuman($totalMinutes);
     }
 
+    /**
+     * Define the column headings for the Excel export.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         return [
@@ -169,6 +202,12 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
         ];
     }
 
+    /**
+     * Apply styles to the Excel worksheet, including column widths and cell merging.
+     *
+     * @param Worksheet $sheet The worksheet to style
+     * @return array The style configuration
+     */
     public function styles(Worksheet $sheet)
     {
         $sheet->getStyle('A1:D1')->getFont()->setBold(true);
@@ -186,6 +225,11 @@ class ProjectwiseTimeLogExport implements FromCollection, WithMapping, WithHeadi
         return [];
     }
 
+    /**
+     * Define the starting cell for the Excel export.
+     *
+     * @return string The starting cell (A1)
+     */
     public function startCell(): string
     {
         return 'A1';

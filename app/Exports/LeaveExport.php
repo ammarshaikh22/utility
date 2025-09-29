@@ -27,6 +27,13 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
     private $viewLeavePermission;
     private $reportingPermission;
 
+    /**
+     * Initialize the export class with parameters for date range and export scope.
+     *
+     * @param string $startdate The start date for the leave report
+     * @param string $enddate The end date for the leave report
+     * @param bool $exportAll Whether to export all leaves or filter by date
+     */
     public function __construct($startdate, $enddate, $exportAll)
     {
         $this->startdate = $startdate;
@@ -36,6 +43,11 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
         $this->reportingPermission = LeaveSetting::value('manager_permission');
     }
 
+    /**
+     * Register events for the Excel export, specifically handling post-sheet creation tasks.
+     *
+     * @return array An array of event listeners
+     */
     public function registerEvents(): array
     {
         return [
@@ -43,6 +55,11 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
         ];
     }
 
+    /**
+     * Add comments and align cells in the Excel sheet after it is generated.
+     *
+     * @param AfterSheet $event The event object for post-sheet processing
+     */
     public static function afterSheet(AfterSheet $event)
     {
         $emp_status = self::$sum;
@@ -75,6 +92,11 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 
+    /**
+     * Define the column headings for the Excel export.
+     *
+     * @return array An array of headings for the Excel file
+     */
     public function headings(): array
     {
         $arr = array();
@@ -93,6 +115,11 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
         return $arr;
     }
 
+    /**
+     * Collect and process leave data based on permissions, date range, and search filters.
+     *
+     * @return Collection The processed leave data
+     */
     public function collection()
     {
         $leavesList = Leave::with('user', 'user.employeeDetail', 'user.employeeDetail.designation', 'user.session', 'type')
@@ -209,6 +236,12 @@ class LeaveExport implements FromCollection, WithHeadings, WithEvents
         return $leavedata;
     }
 
+    /**
+     * Map the leave data to the format required for the Excel export.
+     *
+     * @param array $leavedata The leave data for a specific employee
+     * @return array The mapped data for a single row in the Excel file
+     */
     public function map($leavedata): array
     {
         $data = array();

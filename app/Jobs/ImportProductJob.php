@@ -22,17 +22,16 @@ use App\Traits\ExcelImportable;
 
 class ImportProductJob implements ShouldQueue
 {
+    // Traits for queue handling, serialization, logging, and reusable helpers
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels, UniversalSearchTrait, EmployeeActivityTrait;
     use ExcelImportable;
 
-    private $row;
-    private $columns;
-    private $company;
+    private $row;      // Single row of data from the import file
+    private $columns;  // Column mapping from the import file
+    private $company;  // Current company context (optional)
 
     /**
-     * Create a new job instance.
-     *
-     * @return void
+     * Initialize the job with import row, column mapping, and optional company
      */
     public function __construct($row, $columns, $company = null)
     {
@@ -42,16 +41,19 @@ class ImportProductJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
+     * Execute the job to import a single product.
      *
      * @return void
      */
     public function handle()
     {
+        // Validate mandatory columns: product_name and price
         if ($this->isColumnExists('product_name') && $this->isColumnExists('price')) {
 
+            // Clean up price by removing unwanted characters
             $cleanedPrice = preg_replace('/[^\d.]/', '', $this->getColumnValue('price'));
 
+            // Ensure price is numeric
             if (!is_numeric($cleanedPrice)) {
                 $this->failJob(__('messages.invalidData'));
                 return;
@@ -59,55 +61,59 @@ class ImportProductJob implements ShouldQueue
 
             DB::beginTransaction();
             try {
+                // Create and populate Product instance
                 $product = new Product();
                 $product->company_id = $this->company?->id;
                 $product->name = $this->getColumnValue('product_name');
-
                 $product->price = $cleanedPrice;
-
                 $product->description = $this->isColumnExists('description') ? $this->getColumnValue('description') : null;
                 $product->sku = $this->isColumnExists('sku') ? $this->getColumnValue('sku') : null;
                 $product->allow_purchase = true;
 
-                // Check if unit type exists
+                /**
+                 * Assign Unit Type
+                 * - If unit_type column exists, try to match from DB
+                 * - Otherwise, fall back to default unit type
+                 */
                 if ($this->isColumnExists('unit_type')) {
                     $unitTypeName = $this->getColumnValue('unit_type');
                     $unitType = DB::table('unit_types')->where('unit_type', $unitTypeName)->first();
 
                     if ($unitType) {
                         $product->unit_id = $unitType->id;
-                    }
-                    else {
+                    } else {
                         $defaultUnitType = DB::table('unit_types')->where('default', true)->first();
                         $product->unit_id = $defaultUnitType ? $defaultUnitType->id : null;
                     }
-                }
-                else {
+                } else {
                     $defaultUnitType = DB::table('unit_types')->where('default', true)->first();
                     $product->unit_id = $defaultUnitType ? $defaultUnitType->id : null;
                 }
 
-                // Check if category and sub category exists
+                /**
+                 * Assign Product Category
+                 */
                 if ($this->isColumnExists('product_category')) {
                     $categoryName = $this->getColumnValue('product_category');
                     $category = DB::table('product_category')->where('category_name', $categoryName)->first();
                     $product->category_id = $category ? $category->id : null;
-                }
-                else {
+                } else {
                     $product->category_id = null;
                 }
 
+                /**
+                 * Assign Product Sub-category
+                 * - Only assign if it belongs to the selected category
+                 */
                 if ($this->isColumnExists('product_sub_category')) {
                     $subCategoryName = $this->getColumnValue('product_sub_category');
                     $subCategory = DB::table('product_sub_category')->where('category_name', $subCategoryName)->first();
 
                     if ($subCategory) {
-                        // Check if the sub-category's parent category matches the selected category
                         if ($subCategory->category_id == $product->category_id) {
                             $product->sub_category_id = $subCategory->id;
-                        }
-                        else {
-                            // Handle the mismatch case, e.g., set to null or throw an exception
+                        } else {
+                            // Sub-category doesn’t belong to category → reset
                             $product->sub_category_id = null;
                         }
                     } else {
@@ -117,12 +123,15 @@ class ImportProductJob implements ShouldQueue
                     $product->sub_category_id = null;
                 }
 
+                // Track which user added the product
                 $product->added_by = user() ? user()->id : null;
 
+                // Save product
                 $product->save();
 
-                // Create activity
+                // Log employee activity for auditing
                 self::createEmployeeActivity(user()->id, 'product-created', $product->id, 'product');
+
                 DB::commit();
             } catch (InvalidFormatException $e) {
                 DB::rollBack();
@@ -133,8 +142,8 @@ class ImportProductJob implements ShouldQueue
             }
 
         } else {
+            // Mandatory columns missing → fail the job
             $this->failJob(__('messages.invalidData'));
         }
     }
-
 }
