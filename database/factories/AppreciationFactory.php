@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+/**
+ * Namespace for Database Factories - contains classes for generating fake data for models
+ */
+
 use App\Models\Appreciation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,9 +25,9 @@ class AppreciationFactory extends Factory
      */
     public function definition()
     {
-
+        // Generate fake data for Appreciation model
         return [
-            'summary' => fake()->realText(),
+            'summary' => fake()->realText(), // Creates realistic random text for the summary field
         ];
     }
 
