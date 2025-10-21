@@ -14,6 +14,7 @@ class EstimateAcceptRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,14 +26,21 @@ class EstimateAcceptRequest extends FormRequest
     public function rules()
     {
         $rules = [
+            // First name is required
             'first_name' => 'required',
+
+            // Last name is required
             'last_name' => 'required',
+
+            // Email is required and must be valid
             'email' => 'required|email:rfc,strict',
         ];
 
+        // If signature type is upload, image is required
         if(request('signature_type') == 'upload'){
             $rules['image'] = 'required';
         }
+        // Otherwise, the signature input is required
         else {
             $rules['signature'] = 'required';
         }

@@ -14,6 +14,7 @@ class UpdateUser extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +26,10 @@ class UpdateUser extends CoreRequest
     public function rules()
     {
         return [
-            'email' => 'required|unique:users,email,'.$this->route('client').',id,company_id,' . company()->id,
+            // Email is required and must be unique within the company, excluding the current client
+            'email' => 'required|unique:users,email,' . $this->route('client') . ',id,company_id,' . company()->id,
+
+            // Name is required
             'name'  => 'required',
         ];
     }

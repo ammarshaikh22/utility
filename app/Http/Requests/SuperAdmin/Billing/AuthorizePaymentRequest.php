@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class AuthorizePaymentRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class AuthorizePaymentRequest extends FormRequest
      */
     public function authorize()
     {
+        // Any authorized user can make this request
         return true;
     }
 
@@ -25,10 +25,9 @@ class AuthorizePaymentRequest extends FormRequest
     public function rules()
     {
         return [
-            'owner' => 'required',
-            'cvv' => 'required',
-            'card_number' => 'required',
+            'owner'       => 'required', // Card owner name must be provided
+            'cvv'         => 'required', // CVV must be provided
+            'card_number' => 'required', // Card number must be provided
         ];
     }
-
 }

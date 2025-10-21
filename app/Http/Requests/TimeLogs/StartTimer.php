@@ -14,6 +14,7 @@ class StartTimer extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,14 +26,23 @@ class StartTimer extends CoreRequest
     public function rules()
     {
         return [
+            // 'task_id' is required if 'create_task' is not provided
             'task_id' => 'required_without:create_task',
+
+            // 'memo' is required if 'task_id' is not provided
             'memo' => 'required_without:task_id'
         ];
     }
 
+    /**
+     * Custom validation messages.
+     *
+     * @return array
+     */
     public function messages()
     {
         return [
+            // Message for missing task_id field
             'task_id.required_without' => __('messages.fieldBlank'),
         ];
     }

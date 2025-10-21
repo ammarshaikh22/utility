@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class FrontUpdateRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -20,15 +19,14 @@ class FrontUpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
         return [
             'title' => 'required',
             'description' => 'required',
-            'language' => 'required'
+            'language' => 'required',
         ];
     }
-
 }

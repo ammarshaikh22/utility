@@ -14,6 +14,7 @@ class UpdateTemplate extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +26,10 @@ class UpdateTemplate extends CoreRequest
     public function rules()
     {
         return [
+            // 'reply_heading' is required
             'reply_heading' => 'required',
+
+            // 'description' is required
             'description' => 'required'
         ];
     }

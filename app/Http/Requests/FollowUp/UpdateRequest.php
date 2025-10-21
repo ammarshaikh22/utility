@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class UpdateRequest extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,8 @@ class UpdateRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this update request.
+        // You can later add logic here to restrict access based on roles or permissions.
         return true;
     }
 
@@ -25,8 +26,8 @@ class UpdateRequest extends CoreRequest
     public function rules()
     {
         return [
+            // Ensure that the next follow-up date field is provided.
             'next_follow_up_date' => 'required',
         ];
     }
-
 }

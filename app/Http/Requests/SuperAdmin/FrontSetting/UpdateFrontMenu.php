@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateFrontMenu extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -20,7 +19,7 @@ class UpdateFrontMenu extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
@@ -34,5 +33,4 @@ class UpdateFrontMenu extends FormRequest
             'contact_submit' => 'required',
         ];
     }
-
 }

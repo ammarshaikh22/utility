@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreTaskComment extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class StoreTaskComment extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -24,8 +24,9 @@ class StoreTaskComment extends CoreRequest
      */
     public function rules()
     {
+        // Define validation rules for storing a task comment
         return [
-            'comment' => 'required'
+            'comment' => 'required' // 'comment' field must be provided
         ];
     }
 

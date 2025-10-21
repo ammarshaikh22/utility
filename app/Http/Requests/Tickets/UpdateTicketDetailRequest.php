@@ -14,6 +14,7 @@ class UpdateTicketDetailRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,10 +26,11 @@ class UpdateTicketDetailRequest extends CoreRequest
     public function rules()
     {
         $rules = [
+            // Ticket subject is required
             'subject' => 'required',
         ];
 
-        // Only validate description if it's present
+        // Only validate description if it's present in the request
         if ($this->has('description')) {
             $rules['description'] = 'required';
         }

@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -20,7 +19,7 @@ class UpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
@@ -29,26 +28,20 @@ class UpdateRequest extends FormRequest
             'language' => 'required'
         ];
 
-        if(request('type') == 'icon')
-        {
+        // Conditional validation based on feature type
+        if (request('type') == 'icon') {
             $rules['icon'] = 'required';
-        }
-        elseif(request('type') == 'image' || request('type') == 'apps'){
-            
-            if (request('image_delete') == 'yes')
-            {
+        } elseif (request('type') == 'image' || request('type') == 'apps') {
+            if (request('image_delete') == 'yes') {
                 $rules['image'] = 'required';
             }
         }
 
-
-
-        if(request('type') != 'apps')
-        {
+        // Description is required for all types except 'apps'
+        if (request('type') != 'apps') {
             $rules['description'] = 'required';
         }
 
         return $rules;
     }
-
 }

@@ -8,10 +8,9 @@ class UpdateVisaRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
+     * 
+     * @return bool Returns true to allow all users to make this request.
      */
-
     public function authorize()
     {
         return true;
@@ -19,8 +18,12 @@ class UpdateVisaRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
+     * 
+     * @return array<string, mixed> Returns an array of validation rules for the request inputs:
+     * - 'visa_number': required and must be unique for the company, ignoring the current visa ID.
+     * - 'issue_date': required field.
+     * - 'expiry_date': required, must match the company's date format, and must be on or after the issue date.
+     * - 'country': required field.
      */
     public function rules()
     {

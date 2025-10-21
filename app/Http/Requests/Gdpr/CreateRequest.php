@@ -5,7 +5,7 @@ use App\Http\Requests\CoreRequest;
 
 /**
  * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Handles validation for creating a new GDPR record.
  */
 class CreateRequest extends CoreRequest
 {
@@ -14,10 +14,10 @@ class CreateRequest extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all users (or admins) to perform this create request.
+        // You can later modify this to check specific user permissions.
         return true;
     }
 
@@ -29,10 +29,11 @@ class CreateRequest extends CoreRequest
     public function rules()
     {
         return [
-            'name'  => 'required',
-            'description'  => 'required',
+            // The 'name' field is mandatory for GDPR record creation.
+            'name' => 'required',
+
+            // The 'description' field must also be provided.
+            'description' => 'required',
         ];
-
     }
-
 }

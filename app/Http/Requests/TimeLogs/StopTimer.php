@@ -8,10 +8,12 @@ class StopTimer extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
-
     public function authorize(): bool
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -23,6 +25,7 @@ class StopTimer extends FormRequest
     public function rules(): array
     {
         return [
+            // 'memo' field is required when stopping a timer
             'memo' => 'required'
         ];
     }

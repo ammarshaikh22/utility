@@ -8,7 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSubTask extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -16,6 +15,7 @@ class StoreSubTask extends FormRequest
      */
     public function authorize()
     {
+        // Any authorized user can create a subtask
         return true;
     }
 
@@ -26,32 +26,39 @@ class StoreSubTask extends FormRequest
      */
     public function rules()
     {
-
-
-        $setting = company();
+        $setting = company(); // Get company settings, including date format
         $task = Task::findOrFail(request()->task_id);
-        $startDate = $task->start_date->format($setting->date_format);
-        $dueDate = !is_null($task->due_date) ? $task->due_date->format($setting->date_format) : '';
 
+        $startDate = $task->start_date->format($setting->date_format);
+        $dueDate = $task->due_date ? $task->due_date->format($setting->date_format) : null;
+
+        // Base rules
         $rules = [
-            'title' => 'required',
+            'title' => 'required', // Subtask title is required
         ];
 
-        $dueDateRule = 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:' . $startDate;
+        // Start date validation
+        $startDateRule = 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:' . $startDate;
 
-        !is_null($task->due_date) ? $dueDateRule . '|before_or_equal:' . $task->due_date : $dueDateRule;
-
-        if ($task->due_date) {
-
-            $dueDate = $task->due_date->format($setting->date_format);
-            $dueDateRule .= '|before_or_equal:' . $dueDate;
+        if ($dueDate) {
+            $startDateRule .= '|before_or_equal:' . $dueDate;
         }
 
-        $rules['start_date'] = $dueDateRule;
+        $rules['start_date'] = $startDateRule;
 
-        $rules['due_date'] = !is_null(request()->start_date) ? ($dueDateRule . '|after_or_equal:' . Carbon::createFromFormat($setting->date_format, request()->start_date)->format($setting->date_format)) : $dueDateRule;
+        // Due date validation
+        $rules['due_date'] = 'nullable|date_format:"' . $setting->date_format . '"|after_or_equal:' . $startDate;
+
+        if ($dueDate) {
+            $rules['due_date'] .= '|before_or_equal:' . $dueDate;
+        }
+
+        // If a specific start_date is provided, due_date cannot be before it
+        if (request()->start_date) {
+            $startInput = Carbon::createFromFormat($setting->date_format, request()->start_date)->format($setting->date_format);
+            $rules['due_date'] .= '|after_or_equal:' . $startInput;
+        }
 
         return $rules;
     }
-
 }

@@ -25,7 +25,9 @@ class UpdateInvoiceSetting extends CoreRequest
     public function rules()
     {
         return [
+            // Template selection is required
             'template' => 'required',
+            // Invoice terms are required
             'invoice_terms' => 'required'
         ];
     }

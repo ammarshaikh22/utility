@@ -14,6 +14,7 @@ class StoreTicketType extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class StoreTicketType extends CoreRequest
     public function rules()
     {
         return [
+            // 'type' is required and must be unique for the current company
             'type' => 'required|unique:ticket_types,type,null,id,company_id,' . company()->id
         ];
     }

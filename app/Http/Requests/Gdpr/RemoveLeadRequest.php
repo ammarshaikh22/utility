@@ -4,8 +4,8 @@ namespace App\Http\Requests\Gdpr;
 use App\Http\Requests\CoreRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Class RemoveLeadRequest
+ * Handles validation for removing a lead under GDPR policies.
  */
 class RemoveLeadRequest extends CoreRequest
 {
@@ -14,10 +14,10 @@ class RemoveLeadRequest extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all users (or admins) to perform this request.
+        // Can be updated later to include role-based authorization.
         return true;
     }
 
@@ -29,9 +29,8 @@ class RemoveLeadRequest extends CoreRequest
     public function rules()
     {
         return [
-            'description'  => 'required',
+            // A 'description' is required to justify the removal of the lead.
+            'description' => 'required',
         ];
-
     }
-
 }

@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class ActionTask extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class ActionTask extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +25,7 @@ class ActionTask extends CoreRequest
     public function rules()
     {
         return [
+            // 'reason' field is required
             'reason' => 'required'
         ];
     }

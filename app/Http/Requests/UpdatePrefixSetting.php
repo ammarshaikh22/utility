@@ -9,8 +9,8 @@ class UpdatePrefixSetting extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
+     * 
+     * @return bool Returns true to allow all users to make this request.
      */
     public function authorize()
     {
@@ -19,8 +19,12 @@ class UpdatePrefixSetting extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
+     * 
+     * @return array<string, mixed> Returns an array of validation rules for the request inputs:
+     * - Invoice-related fields: required if 'invoices' module is enabled, digits must be integer between 0 and 10 or nullable.
+     * - Estimate-related fields: required if 'estimates' module is enabled, digits must be integer between 0 and 10 or nullable.
+     * - Order-related fields: required if 'orders' module is enabled, digits must be integer between 0 and 10 or nullable.
+     * - Proposal fields: always required, digits must be integer between 0 and 10 or nullable.
      */
     public function rules()
     {

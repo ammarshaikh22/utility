@@ -14,6 +14,7 @@ class UpdateTimeLog extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -26,6 +27,7 @@ class UpdateTimeLog extends CoreRequest
     {
         $data = [];
 
+        // If timelog report is enabled, 'daily_report_roles' field is required
         if($this->has('timelog_report') && $this->timelog_report == 1)
         {
             $data['daily_report_roles'] = 'required';

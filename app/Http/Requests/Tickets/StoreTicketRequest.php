@@ -14,6 +14,7 @@ class StoreTicketRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +26,10 @@ class StoreTicketRequest extends CoreRequest
     public function rules()
     {
         return [
+            // Ticket subject is required
             'subject' => 'required',
+
+            // Ticket description is required
             'description' => 'required'
         ];
     }

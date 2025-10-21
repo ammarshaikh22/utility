@@ -14,6 +14,7 @@ class StoreBusinessAddress extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +26,9 @@ class StoreBusinessAddress extends FormRequest
     public function rules()
     {
         return [
+            // Location field is required
             'location' => 'required',
+            // Address field is required
             'address' => 'required'
         ];
     }

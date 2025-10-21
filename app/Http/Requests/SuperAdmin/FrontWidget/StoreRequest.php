@@ -24,18 +24,18 @@ class StoreRequest extends FormRequest
      */
     public function rules()
     {
-       
+        // Base rule: name is required
         $rules = [
-            'name'    => 'required',
+            'name' => 'required',
         ];
 
-        if(is_null($this->header_script) && is_null($this->footer_script)) {
+        // If both header_script and footer_script are null, make them required
+        if (is_null($this->header_script) && is_null($this->footer_script)) {
             $rules['header_script'] = 'required';
             $rules['footer_script'] = 'required';
         }
 
         return $rules;
-        
     }
-    
+
 }

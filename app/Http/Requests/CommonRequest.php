@@ -12,6 +12,7 @@ class CommonRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -22,6 +23,7 @@ class CommonRequest extends CoreRequest
      */
     public function rules()
     {
+        // No specific validation rules for this common request
         return [
             //
         ];

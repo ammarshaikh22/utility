@@ -8,16 +8,25 @@ use Illuminate\Validation\Rule;
 
 class UpdateRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function rules()
     {
+        // Regex for subdomain validation
         $regex = '/^[a-zA-Z0-9\-]+$/';
-
         if (!$this->domain) {
             $regex = '/^([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,8})$/';
         }
@@ -32,23 +41,22 @@ class UpdateRequest extends FormRequest
                 'max:75',
                 'regex:' . $regex,
                 Rule::unique('companies')->where(function ($query) {
-                    return $query->where('sub_domain', $this->sub_domain)->orWhere('sub_domain', $this->sub_domain . $this->domain);
+                    return $query->where('sub_domain', $this->sub_domain)
+                                 ->orWhere('sub_domain', $this->sub_domain . $this->domain);
                 })->ignore($this->route('company')),
-                ] : '',
+            ] : '',
             'address' => 'required',
-            'status' => 'required'
+            'status' => 'required',
         ];
 
-
-        if (request()->get('custom_fields_data')) {
-            $fields = request()->get('custom_fields_data');
-
-            foreach ($fields as $key => $value) {
+        // Custom fields validation
+        if ($this->get('custom_fields_data')) {
+            foreach ($this->get('custom_fields_data') as $key => $value) {
                 $idArray = explode('_', $key);
                 $id = end($idArray);
                 $customField = CustomField::findOrFail($id);
 
-                if ($customField->required == 'yes' && (is_null($value) || $value == '')) {
+                if ($customField->required === 'yes' && (is_null($value) || $value === '')) {
                     $rules['custom_fields_data[' . $key . ']'] = 'required';
                 }
             }
@@ -57,21 +65,24 @@ class UpdateRequest extends FormRequest
         return $rules;
     }
 
+    /**
+     * Custom attribute names for validation errors
+     *
+     * @return array<string, string>
+     */
     public function attributes()
     {
         $attributes = [
             'sub_domain' => __('subdomain::app.core.domain'),
         ];
 
-        if (request()->get('custom_fields_data')) {
-            $fields = request()->get('custom_fields_data');
-
-            foreach ($fields as $key => $value) {
-                $idarray = explode('_', $key);
-                $id = end($idarray);
+        if ($this->get('custom_fields_data')) {
+            foreach ($this->get('custom_fields_data') as $key => $value) {
+                $idArray = explode('_', $key);
+                $id = end($idArray);
                 $customField = CustomField::findOrFail($id);
 
-                if ($customField->required == 'yes') {
+                if ($customField->required === 'yes') {
                     $attributes['custom_fields_data[' . $key . ']'] = $customField->label;
                 }
             }
@@ -79,5 +90,4 @@ class UpdateRequest extends FormRequest
 
         return $attributes;
     }
-
 }

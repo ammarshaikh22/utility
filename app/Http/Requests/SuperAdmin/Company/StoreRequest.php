@@ -12,7 +12,6 @@ use Illuminate\Validation\Rule;
 
 class StoreRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -26,10 +25,11 @@ class StoreRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function rules()
     {
+        // Custom validator to check that superadmin email doesn't already exist
         Validator::extend('check_superadmin', function ($attribute, $value, $parameters, $validator) {
             return !User::withoutGlobalScopes([ActiveScope::class, CompanyScope::class])
                 ->where('email', $value)
@@ -37,8 +37,8 @@ class StoreRequest extends FormRequest
                 ->exists();
         });
 
+        // Regex for subdomain validation
         $regex = '/^[a-zA-Z0-9\-]+$/';
-
         if (!$this->domain) {
             $regex = '/^([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,8})$/';
         }
@@ -54,37 +54,38 @@ class StoreRequest extends FormRequest
                 'regex:' . $regex,
                 Rule::unique('companies')->where(function ($query) {
                     return $query->where('sub_domain', $this->sub_domain)
-                        ->orWhere('sub_domain', $this->sub_domain . $this->domain);
+                                 ->orWhere('sub_domain', $this->sub_domain . $this->domain);
                 }),
             ] : '',
             'status' => 'required',
             'email' => 'required|email:rfc,strict|check_superadmin',
             'name' => 'required|min:2',
-
         ];
 
-        if (request()->get('website')) {
+        // Optional website validation
+        if ($this->get('website')) {
             $rules['website'] = 'required|url';
         }
 
-        if (request()->get('custom_fields_data')) {
-            $fields = request()->get('custom_fields_data');
-
-            foreach ($fields as $key => $value) {
+        // Custom fields validation
+        if ($this->get('custom_fields_data')) {
+            foreach ($this->get('custom_fields_data') as $key => $value) {
                 $idarray = explode('_', $key);
                 $id = end($idarray);
                 $customField = CustomField::findOrFail($id);
 
-                if ($customField->required == 'yes' && (is_null($value) || $value == '')) {
+                if ($customField->required === 'yes' && (is_null($value) || $value === '')) {
                     $rules['custom_fields_data[' . $key . ']'] = 'required';
                 }
             }
         }
 
         return $rules;
-
     }
 
+    /**
+     * Custom messages for validation
+     */
     public function messages()
     {
         return [
@@ -92,21 +93,22 @@ class StoreRequest extends FormRequest
         ];
     }
 
+    /**
+     * Custom attribute names for validation errors
+     */
     public function attributes()
     {
         $attributes = [
             'sub_domain' => __('subdomain::app.core.domain'),
         ];
 
-        if (request()->get('custom_fields_data')) {
-            $fields = request()->get('custom_fields_data');
-
-            foreach ($fields as $key => $value) {
+        if ($this->get('custom_fields_data')) {
+            foreach ($this->get('custom_fields_data') as $key => $value) {
                 $idarray = explode('_', $key);
                 $id = end($idarray);
                 $customField = CustomField::findOrFail($id);
 
-                if ($customField->required == 'yes') {
+                if ($customField->required === 'yes') {
                     $attributes['custom_fields_data[' . $key . ']'] = $customField->label;
                 }
             }
@@ -114,5 +116,4 @@ class StoreRequest extends FormRequest
 
         return $attributes;
     }
-
 }

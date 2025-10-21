@@ -14,6 +14,7 @@ class UpdateTicketType extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,8 @@ class UpdateTicketType extends CoreRequest
     public function rules()
     {
         return [
+            // 'type' is required and must be unique for the current company,
+            // excluding the current ticket type being updated
             'type' => 'required|unique:ticket_types,type,'.$this->route('ticketType').',id,company_id,' . company()->id,
         ];
     }
