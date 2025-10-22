@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file PaystackController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -12,18 +20,34 @@ use App\Models\GlobalSetting;
 use App\Traits\MakeOrderInvoiceTrait;
 use Unicodeveloper\Paystack\Paystack;
 use GuzzleHttp\Exception\ClientException;
-use App\Traits\PaymentGatewayTrait;
+use App\Traits\PaymentGatewayTrait;/**
+ * Class PaystackController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class PaystackController extends Controller
 {
 
-    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;
+    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;/**
+ * __construct.
+ * @return mixed
+ */
+
 
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = __('app.paystack');
-    }
+    }/**
+ * paymentWithPaystackPublic.
+ *
+ * @param mixed $request  
+ * @param mixed $id  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function paymentWithPaystackPublic(Request $request, $id, $companyHash)
     {
@@ -79,7 +103,15 @@ class PaystackController extends Controller
         } catch (\Throwable $th) {
             return Reply::error($th->getMessage());
         }
-    }
+    }/**
+ * handleGatewayCallback.
+ *
+ * @param mixed $id  
+ * @param mixed $type  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function handleGatewayCallback($id, $type, $companyHash)
     {
@@ -108,7 +140,13 @@ class PaystackController extends Controller
         default:
             return redirect()->route('dashboard');
         }
-    }
+    }/**
+ * handleGatewayWebhook.
+ *
+ * @param mixed $request  
+ * @return mixed
+ */
+
 
     public function handleGatewayWebhook(Request $request)
     {

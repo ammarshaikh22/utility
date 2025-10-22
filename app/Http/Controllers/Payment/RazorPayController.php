@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file RazorPayController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -13,7 +21,11 @@ use App\Models\GlobalSetting;
 use App\Traits\MakeOrderInvoiceTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
-use App\Models\PaymentGatewayCredentials;
+use App\Models\PaymentGatewayCredentials;/**
+ * Class RazorPayController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class RazorPayController extends Controller
 {
@@ -22,7 +34,11 @@ class RazorPayController extends Controller
 
     private $apiKey;
     private $secretKey;
-    private $webhookSecret;
+    private $webhookSecret;/**
+ * __construct.
+ * @return mixed
+ */
+
 
     public function __construct()
     {
@@ -31,7 +47,13 @@ class RazorPayController extends Controller
         $this->pageTitle = 'Razorpay';
 
 
-    }
+    }/**
+ * setKeys.
+ *
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function setKeys($companyHash)
     {
@@ -46,7 +68,13 @@ class RazorPayController extends Controller
         $this->apiKey = $credential->razorpay_mode == 'test' ? $credential->test_razorpay_key : $credential->live_razorpay_key;
 
         $this->secretKey = $credential->razorpay_mode == 'test' ? $credential->test_razorpay_secret : $credential->live_razorpay_secret;
-    }
+    }/**
+ * payWithRazorPay.
+ *
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function payWithRazorPay($companyHash)
     {
@@ -136,7 +164,14 @@ class RazorPayController extends Controller
         }
 
         return Reply::error('Transaction Failed');
-    }
+    }/**
+ * handleGatewayWebhook.
+ *
+ * @param mixed $request  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function handleGatewayWebhook(Request $request, $companyHash)
     {

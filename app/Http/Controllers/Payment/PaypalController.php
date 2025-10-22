@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file PaypalController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -26,7 +34,11 @@ use PayPal\Api\PaymentExecution;
 use PayPal\Api\RedirectUrls;
 use PayPal\Api\Transaction;
 use PayPal\Auth\OAuthTokenCredential;
-use PayPal\Rest\ApiContext;
+use PayPal\Rest\ApiContext;/**
+ * Class PaypalController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class PaypalController extends Controller
 {
@@ -44,7 +56,13 @@ class PaypalController extends Controller
     {
         parent::__construct();
         $this->pageTitle = 'Paypal';
-    }
+    }/**
+ * setKeys.
+ *
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function setKeys($companyHash)
     {
@@ -94,7 +112,14 @@ class PaypalController extends Controller
         $redirectRoute = url()->temporarySignedRoute($redirectRoute, now()->addDays(GlobalSetting::SIGNED_ROUTE_EXPIRY), $id);
 
         return $this->makePaypalPayment($id, $redirectRoute, $request->type);
-    }
+    }/**
+ * paymentWithpaypalPublic.
+ *
+ * @param mixed $request  
+ * @param mixed $invoiceId  
+ * @return mixed
+ */
+
 
     public function paymentWithpaypalPublic(Request $request, $invoiceId)
     {
@@ -105,7 +130,15 @@ class PaypalController extends Controller
         $redirectRoute = url()->temporarySignedRoute($redirectRoute, now()->addDays(GlobalSetting::SIGNED_ROUTE_EXPIRY), $invoice->hash);
 
         return $this->makePaypalPayment($invoiceId, $redirectRoute);
-    }
+    }/**
+ * makePaypalPayment.
+ *
+ * @param mixed $id  
+ * @param mixed $redirectRoute  
+ * @param mixed $type  
+ * @return mixed
+ */
+
 
     private function makePaypalPayment($id, $redirectRoute, $type = null)
     {
@@ -255,7 +288,13 @@ class PaypalController extends Controller
         }
 
         $payment->save();
-    }
+    }/**
+ * getPaymentStatus.
+ *
+ * @param mixed $request  
+ * @return mixed
+ */
+
 
     public function getPaymentStatus(Request $request)
     {
@@ -332,7 +371,13 @@ class PaypalController extends Controller
         Session::put('error', __('messages.paymentFailed'));
 
         return redirect(url()->temporarySignedRoute($redirectRoute, now()->addDays(GlobalSetting::SIGNED_ROUTE_EXPIRY), [$enc_invoice_id]));
-    }
+    }/**
+ * payWithPaypalRecurring.
+ *
+ * @param mixed $requestObject  
+ * @return mixed
+ */
+
 
     public function payWithPaypalRecurring(Request $requestObject)
     {
@@ -396,7 +441,14 @@ class PaypalController extends Controller
         }
 
         abort_403(true);
-    }
+    }/**
+ * webhook.
+ *
+ * @param mixed $request  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function webhook(Request $request, $companyHash)
     {

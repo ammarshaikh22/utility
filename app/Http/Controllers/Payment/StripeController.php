@@ -9,7 +9,11 @@ use Illuminate\Http\Request;
 use App\Traits\MakePaymentTrait;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
-use App\Models\PaymentGatewayCredentials;
+use App\Models\PaymentGatewayCredentials;/**
+ * Class StripeController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class StripeController extends Controller
 {
@@ -56,7 +60,14 @@ class StripeController extends Controller
         $invoice->save();
 
         return $this->makeStripePayment($redirectRoute, $id, $param);
-    }
+    }/**
+ * paymentWithStripePublic.
+ *
+ * @param mixed $request  
+ * @param mixed $hash  
+ * @return mixed
+ */
+
 
     public function paymentWithStripePublic(Request $request, $hash)
     {
@@ -69,7 +80,15 @@ class StripeController extends Controller
         $invoice->status = 'paid';
         $invoice->save();
         return $this->makeStripePayment($redirectRoute, $hash, 'hash');
-    }
+    }/**
+ * makeStripePayment.
+ *
+ * @param mixed $redirectRoute  
+ * @param mixed $id  
+ * @param mixed $param  
+ * @return mixed
+ */
+
 
     private function makeStripePayment($redirectRoute, $id , $param = null)
     {
