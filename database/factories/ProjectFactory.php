@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+/**
+ * Namespace for Database Factories - contains classes for generating fake data for models
+ */
+
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,6 +25,7 @@ class ProjectFactory extends Factory
      */
     public function definition()
     {
+        // Predefined realistic project names array (100+ project ideas)
         $projectArray = [
             'Create Design of worksuite',
             'Install Application',
@@ -115,35 +120,42 @@ class ProjectFactory extends Factory
             'Quantum computing and quantum cryptography development service'
         ];
 
+        // Generate start date (1-6 months ago)
         $startDate = now()->subMonths(fake()->numberBetween(1, 6));
 
+        // Generate unique project name from predefined array
         $projectName = fake()->unique(true)->randomElement($projectArray);
         /* @phpstan-ignore-line */
 
         return [
-            'project_name' => $projectName,
-            'project_summary' => fake()->paragraph,
-            'start_date' => $startDate->format('Y-m-d'),
-            'deadline' => $startDate->addMonths(4)->format('Y-m-d'),
-            'notes' => fake()->paragraph,
-            'completion_percent' => fake()->numberBetween(40, 100),
-            'feedback' => fake()->realText(),
-            'project_short_code' => substr($this->initials($projectName), 0, 3),
-            'calculate_task_progress' => 'false',
+            'project_name' => $projectName,                           // Unique project name from predefined list
+            'project_summary' => fake()->paragraph,                   // Single paragraph project summary
+            'start_date' => $startDate->format('Y-m-d'),              // Project start date (1-6 months ago)
+            'deadline' => $startDate->addMonths(4)->format('Y-m-d'),  // Deadline: 4 months after start date
+            'notes' => fake()->paragraph,                             // Project notes paragraph
+            'completion_percent' => fake()->numberBetween(40, 100),   // Progress: 40-100% complete
+            'feedback' => fake()->realText(),                         // Project feedback text
+            'project_short_code' => substr($this->initials($projectName), 0, 3), // 3-letter project code from name initials
+            'calculate_task_progress' => 'false',                     // Default: don't auto-calculate task progress
         ];
     }
 
+    /**
+     * Generate initials from project name (e.g., "Project Management" -> "PM")
+     */
     protected function initials($str): string
     {
-        $str = preg_replace('/\s+/', ' ', $str);
+        $str = preg_replace('/\s+/', ' ', $str); // Normalize multiple spaces to single space
         $ret = '';
 
         $array = explode(' ', $str);
 
+        // If single word, use last 4 chars uppercase
         if (count($array) === 1 || count($array) === 0) {
             return $this->clean(strtoupper(substr($str, -4)));
         }
 
+        // Multiple words: take first letter of each word
         foreach ($array as $word) {
             $ret .= strtoupper($word[0]);
         }
@@ -151,6 +163,9 @@ class ProjectFactory extends Factory
         return $this->clean($ret);
     }
 
+    /**
+     * Clean string: replace spaces with hyphens, remove special chars, collapse multiple hyphens
+     */
     protected function clean($string): array|string|null
     {
         $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.

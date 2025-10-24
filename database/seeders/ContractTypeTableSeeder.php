@@ -2,11 +2,14 @@
 
 namespace Database\Seeders;
 
+/**
+ * Seeder for Contract Type system - creates 39 predefined contract types per company
+ */
+
 use Illuminate\Database\Seeder;
 
 class ContractTypeTableSeeder extends Seeder
 {
-
     /**
      * Run the database seeds.
      *
@@ -14,7 +17,7 @@ class ContractTypeTableSeeder extends Seeder
      */
     public function run($companyId)
     {
-
+        // Predefined list of 39 comprehensive contract types
         $contracts = [
             'Employment contract',
             'Service contract',
@@ -57,15 +60,15 @@ class ContractTypeTableSeeder extends Seeder
             'Memorandum of agreement'
         ];
 
+        // Bulk insert all 39 contract types using array_map for efficiency
         \App\Models\ContractType::insert(
             array_map(function ($value) use ($companyId) {
                 return [
-                    'company_id' => $companyId,
-                    'name' => $value
+                    'company_id' => $companyId,    // Specific company
+                    'name' => $value               // Contract type name from predefined list
                 ];
             }, $contracts)
         );
 
     }
-
 }

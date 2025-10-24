@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+/**
+ * Namespace for Database Factories - contains classes for generating fake data for models
+ */
+
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,6 +25,7 @@ class ProductFactory extends Factory
      */
     public function definition()
     {
+        // Predefined realistic product names array (38 popular items)
         $productArray = [
             'Women\'s Fashion Handbag',
             'Men\'s Leather Wallet',
@@ -62,10 +67,10 @@ class ProductFactory extends Factory
         ];
 
         return [
-            'name' => fake()->randomElement($productArray),
-            'price' => fake()->numberBetween(100, 1000),
-            'allow_purchase' => 1,
-            'description' => fake()->paragraph,
+            'name' => fake()->randomElement($productArray),        // Random product from predefined realistic list
+            'price' => fake()->numberBetween(100, 1000),           // Product price ($100-$1000)
+            'allow_purchase' => 1,                                  // Default: product is purchasable
+            'description' => fake()->paragraph,                     // Single paragraph product description
         ];
     }
 

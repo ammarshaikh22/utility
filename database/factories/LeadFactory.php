@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+/**
+ * Namespace for Database Factories - contains classes for generating fake data for models
+ */
+
 use App\Models\Deal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,14 +26,14 @@ class LeadFactory extends Factory
     public function definition()
     {
         return [
-            'company_name' => fake()->company,
-            'address' => fake()->address,
-            'client_name' => fake()->name,
-            'client_email' => fake()->email,
-            'mobile' => fake()->randomNumber(8),
-            'value' => fake()->randomNumber(6),
-            'note' => fake()->text(),
-            'next_follow_up' => 'yes',
+            'company_name' => fake()->company,                    // Random company name
+            'address' => fake()->address,                         // Full realistic address
+            'client_name' => fake()->name,                        // Random full name
+            'client_email' => fake()->email,                      // Random valid email address
+            'mobile' => fake()->randomNumber(8),                  // 8-digit mobile number
+            'value' => fake()->randomNumber(6),                   // Random 6-digit deal value (100000-999999)
+            'note' => fake()->text(),                             // Random text notes
+            'next_follow_up' => 'yes',                            // Default flag indicating follow-up required
         ];
     }
 
