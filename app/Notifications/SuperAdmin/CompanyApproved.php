@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace App\Notifications\SuperAdmin;
@@ -99,4 +98,3 @@ class CompanyApproved extends BaseNotification
             ->content('This is a redirected notification. Add slack username for *' . $notifiable->name . '*');
     }
 }
-```

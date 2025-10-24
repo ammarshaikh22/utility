@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file StripeWebhookController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -12,7 +20,11 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use App\Traits\MakeOrderInvoiceTrait;
-use Stripe\Exception\SignatureVerificationException;
+use Stripe\Exception\SignatureVerificationException;/**
+ * Class StripeWebhookController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class StripeWebhookController extends Controller
 {

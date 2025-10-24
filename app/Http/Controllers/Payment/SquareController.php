@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file SquareController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -18,18 +26,32 @@ use App\Traits\MakePaymentTrait;
 use Square\Models\CreateOrderRequest;
 use Square\Models\Order as SquareOrder;
 use Square\Models\CreateCheckoutRequest;
-use App\Traits\PaymentGatewayTrait;
+use App\Traits\PaymentGatewayTrait;/**
+ * Class SquareController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class SquareController extends Controller
 {
 
-    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;
+    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;/**
+ * __construct.
+ * @return mixed
+ */
+
 
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = __('app.square');
-    }
+    }/**
+ * paymentWithSquarePublic.
+ *
+ * @param mixed $request  
+ * @return mixed
+ */
+
 
     public function paymentWithSquarePublic(Request $request)
     {
@@ -116,7 +138,16 @@ class SquareController extends Controller
         } catch (\Throwable $e) {
             return Reply::error($e->getMessage());
         }
-    }
+    }/**
+ * handleGatewayCallback.
+ *
+ * @param mixed $request  
+ * @param mixed $id  
+ * @param mixed $type  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function handleGatewayCallback(Request $request, $id, $type, $companyHash)
     {
@@ -162,7 +193,14 @@ class SquareController extends Controller
         }
 
         return redirect()->route('dashboard');
-    }
+    }/**
+ * handleGatewayWebhook.
+ *
+ * @param mixed $request  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function handleGatewayWebhook(Request $request, $companyHash)
     {

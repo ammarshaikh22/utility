@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace App\Notifications\SuperAdmin;
@@ -115,4 +114,3 @@ class NewSupportTicketReply extends BaseNotification
         return $this->ticket->toArray();
     }
 }
-```

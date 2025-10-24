@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace App\Notifications\SuperAdmin;
@@ -138,4 +137,3 @@ class NewSupportTicketRequester extends BaseNotification
             ->body(__('email.newTicketRequester.text')); // Set push notification body
     }
 }
-```

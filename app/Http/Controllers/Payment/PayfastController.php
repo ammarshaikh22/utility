@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file PayfastController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -12,18 +20,32 @@ use App\Traits\MakePaymentTrait;
 use App\Traits\PaymentGatewayTrait;
 use App\Http\Controllers\Controller;
 use App\Models\GlobalSetting;
-use App\Traits\MakeOrderInvoiceTrait;
+use App\Traits\MakeOrderInvoiceTrait;/**
+ * Class PayfastController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class PayfastController extends Controller
 {
 
-    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;
+    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;/**
+ * __construct.
+ * @return mixed
+ */
+
 
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = __('app.payfast');
-    }
+    }/**
+ * paymentWithPayfastPublic.
+ *
+ * @param mixed $request  
+ * @return mixed
+ */
+
 
     public function paymentWithPayfastPublic(Request $request)
     {
@@ -72,7 +94,15 @@ class PayfastController extends Controller
             return Reply::error($th->getMessage());
         }
 
-    }
+    }/**
+ * handleGatewayCallback.
+ *
+ * @param mixed $id  
+ * @param mixed $type  
+ * @param mixed $status  
+ * @return mixed
+ */
+
 
     public function handleGatewayCallback($id, $type, $status)
     {
@@ -100,7 +130,14 @@ class PayfastController extends Controller
 
 
         return redirect()->route('dashboard');
-    }
+    }/**
+ * handleGatewayWebhook.
+ *
+ * @param mixed $request  
+ * @param mixed $companyHash  
+ * @return mixed
+ */
+
 
     public function handleGatewayWebhook(Request $request, $companyHash)
     {

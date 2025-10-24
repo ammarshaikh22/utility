@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @file AuthorizeController.php
+ * @brief Auto-generated documentation comments added on 2025-10-22 06:20:17Z.
+ * 
+ * Notes:
+ * - Comments were added without changing executable code.
+ * - Please review descriptions/placeholders and adjust as needed.
+ */
 
 namespace App\Http\Controllers\Payment;
 
@@ -11,18 +19,33 @@ use App\Http\Controllers\Controller;
 use App\Traits\MakeOrderInvoiceTrait;
 use net\authorize\api\contract\v1 as AuthorizeAPI;
 use App\Http\Requests\PaymentGateway\AuthorizeDetails;
-use net\authorize\api\controller\CreateTransactionController;
+use net\authorize\api\controller\CreateTransactionController;/**
+ * Class AuthorizeController
+ * @brief Controller handling payment gateway operations.
+ */
+
 
 class AuthorizeController extends Controller
 {
 
-    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;
+    use MakePaymentTrait, MakeOrderInvoiceTrait, PaymentGatewayTrait;/**
+ * __construct.
+ * @return mixed
+ */
+
 
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = __('app.authorize');
-    }
+    }/**
+ * paymentWithAuthorizePublic.
+ *
+ * @param mixed $request  
+ * @param mixed $id  
+ * @return mixed
+ */
+
 
     public function paymentWithAuthorizePublic(AuthorizeDetails $request, $id)
     {

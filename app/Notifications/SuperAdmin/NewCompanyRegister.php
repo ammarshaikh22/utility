@@ -1,4 +1,3 @@
-```php
 <?php
 
 namespace App\Notifications\SuperAdmin;
@@ -95,4 +94,3 @@ class NewCompanyRegister extends BaseNotification
         return $this->forCompany->toArray();
     }
 }
-```
