@@ -24,6 +24,12 @@ class PaymentGatewayCredentialController extends AccountBaseController
         });
     }
 
+    /**
+     * Display the payment gateway settings page.
+     * Loads credentials, offline methods, currencies, and renders the appropriate view based on the selected tab (e.g., PayPal, Stripe).
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $this->credentials = PaymentGatewayCredentials::first();
@@ -39,7 +45,6 @@ class PaymentGatewayCredentialController extends AccountBaseController
 
         switch ($tab) {
         case 'stripe':
-
             $this->webhookRoute = route('stripe.webhook', [$hash]);
             $this->view = 'payment-gateway-settings.ajax.stripe';
             break;
@@ -87,6 +92,12 @@ class PaymentGatewayCredentialController extends AccountBaseController
     }
 
     /**
+     * Update payment gateway credentials for the specified method.
+     * Delegates to specific methods based on the payment method (e.g., PayPal, Stripe) and saves the updated credentials.
+     *
+     * @param  \App\Http\Requests\PaymentGateway\UpdateGatewayCredentials  $request
+     * @param  int  $id
+     * @return array
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -129,9 +140,16 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->save();
 
         return Reply::success(__('messages.updateSuccess'));
-
     }
 
+    /**
+     * Update PayPal payment gateway credentials.
+     * Saves client ID and secret for either sandbox or live mode, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function paypal($request, $credential)
     {
         if ($request->payment_method == 'paypal') {
@@ -150,6 +168,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         }
     }
 
+    /**
+     * Update Stripe payment gateway credentials.
+     * Saves client ID, secret, and webhook secret for either test or live mode, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function stripe($request, $credential)
     {
         if ($request->stripe_mode == 'test') {
@@ -167,6 +193,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->stripe_status = ($request->stripe_status) ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Razorpay payment gateway credentials.
+     * Saves key, secret, and webhook secret for either test or live mode, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function razorpay($request, $credential)
     {
         if ($request->razorpay_mode == 'test') {
@@ -180,11 +214,18 @@ class PaymentGatewayCredentialController extends AccountBaseController
             $credential->live_razorpay_webhook_secret = $request->live_razorpay_webhook_secret;
         }
 
-
         $credential->razorpay_mode = $request->razorpay_mode;
         $credential->razorpay_status = ($request->razorpay_status) ? 'active' : 'inactive';
     }
 
+    /**
+     * Update Paystack payment gateway credentials.
+     * Saves key, secret, and merchant email for both test and live modes, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function paystack($request, $credential)
     {
         $credential->paystack_mode = $request->paystack_mode;
@@ -198,6 +239,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->paystack_status = ($request->paystack_status) ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Mollie payment gateway credentials.
+     * Saves the API key and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function mollie($request, $credential)
     {
         $credential->mollie_api_key = $request->mollie_api_key;
@@ -205,6 +254,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->mollie_status = ($request->mollie_status) ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Payfast payment gateway credentials.
+     * Saves merchant ID, merchant key, and passphrase for either sandbox or live mode, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function payfast($request, $credential)
     {
         if ($request->payfast_mode == 'sandbox') {
@@ -222,6 +279,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->payfast_status = ($request->payfast_status) ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Authorize.net payment gateway credentials.
+     * Saves API login ID, transaction key, and environment, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function authorizeSave($request, $credential)
     {
         $credential->authorize_api_login_id = $request->authorize_api_login_id;
@@ -231,6 +296,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->authorize_status = $request->authorize_status ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Square payment gateway credentials.
+     * Saves application ID, access token, location ID, and environment, and sets the status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function square($request, $credential)
     {
         $credential->square_application_id = $request->square_application_id;
@@ -241,6 +314,14 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->square_status = $request->square_status ? 'active' : 'deactive';
     }
 
+    /**
+     * Update Flutterwave payment gateway credentials.
+     * Saves key, secret, and hash for both test and live modes, along with webhook secret and status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\PaymentGatewayCredentials  $credential
+     * @return void
+     */
     private function flutterwave($request, $credential)
     {
         $credential->test_flutterwave_key = $request->test_flutterwave_key;
@@ -254,6 +335,13 @@ class PaymentGatewayCredentialController extends AccountBaseController
         $credential->flutterwave_status = $request->flutterwave_status ? 'active' : 'deactive';
     }
 
+    /**
+     * Fix decryption issues for encrypted fields in payment gateway credentials.
+     * Sets encrypted fields to null if decryption fails and saves the updated credentials.
+     *
+     * @param  \App\Models\PaymentGatewayCredentials  $gateway
+     * @return void
+     */
     public function fixPayloadMismatch($gateway)
     {
         $casts = (new PaymentGatewayCredentials())->getCasts();

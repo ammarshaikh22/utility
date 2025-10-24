@@ -8,25 +8,29 @@ use App\Models\EmergencyContact;
 
 class EmergencyContactController extends AccountBaseController
 {
-
     /**
-     * Show the form for creating a new resource.
+     * Show the form to create a new emergency contact.
      *
-     * @return \Illuminate\Http\Response
+     * @return string Rendered HTML view for creating an emergency contact
      */
     public function create()
     {
         $this->pageTitle = __('app.addContact');
-
         $this->userId = request()->user_id ? request()->user_id : null;
 
         return view('profile-settings.emergency-contacts.create', $this->data)->render();
     }
 
+    /**
+     * Store a newly created emergency contact in storage.
+     *
+     * @param  StoreEmergencyContactRequest  $request
+     * @return array JSON response with success message and updated HTML
+     */
     public function store(StoreEmergencyContactRequest $request)
     {
         $emergencyContact = new EmergencyContact();
-        $emergencyContact->user_id = !is_null($request->user_id) ? $request->user_id : user()->id;
+        $emergencyContact->user_id = $request->user_id ?? user()->id;
         $emergencyContact->name = $request->name;
         $emergencyContact->mobile = $request->mobile;
         $emergencyContact->email = $request->email;
@@ -42,20 +46,19 @@ class EmergencyContactController extends AccountBaseController
     }
 
     /**
-     * Display the specified resource.
+     * Display a specific emergency contact.
      *
-     * @param  \App\Models\EmergencyContact  $emergencyContact
-     * @return \Illuminate\Http\Response
+     * @param  EmergencyContact  $emergencyContact
+     * @return string Rendered HTML view of the contact
      */
     public function show(EmergencyContact $emergencyContact)
     {
         $this->managePermission = user()->permission('manage_emergency_contact');
 
-        abort_403 (
+        abort_403(
             !($this->managePermission == 'all'
             || ($emergencyContact->added_by == user()->id)
-            || ($emergencyContact->user_id == user()->id)
-            )
+            || ($emergencyContact->user_id == user()->id))
         );
 
         $this->pageTitle = __('modules.emergencyContact.emergencyContact');
@@ -65,20 +68,19 @@ class EmergencyContactController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing emergency contact.
      *
-     * @param  \App\Models\EmergencyContact  $emergencyContact
-     * @return \Illuminate\Http\Response
+     * @param  EmergencyContact  $emergencyContact
+     * @return string Rendered HTML view for editing the contact
      */
     public function edit(EmergencyContact $emergencyContact)
     {
         $this->managePermission = user()->permission('manage_emergency_contact');
 
-        abort_403 (
+        abort_403(
             !($this->managePermission == 'all'
             || ($emergencyContact->added_by == user()->id)
-             || ($emergencyContact->user_id == user()->id)
-            )
+            || ($emergencyContact->user_id == user()->id))
         );
 
         $this->pageTitle = __('app.editContact');
@@ -87,15 +89,21 @@ class EmergencyContactController extends AccountBaseController
         return view('profile-settings.emergency-contacts.edit', $this->data)->render();
     }
 
+    /**
+     * Update the specified emergency contact in storage.
+     *
+     * @param  StoreEmergencyContactRequest  $request
+     * @param  EmergencyContact  $emergencyContact
+     * @return array JSON response with success message and updated HTML
+     */
     public function update(StoreEmergencyContactRequest $request, EmergencyContact $emergencyContact)
     {
         $this->managePermission = user()->permission('manage_emergency_contact');
 
-        abort_403 (
+        abort_403(
             !($this->managePermission == 'all'
             || ($emergencyContact->added_by == user()->id)
-            || ($emergencyContact->user_id == user()->id)
-            )
+            || ($emergencyContact->user_id == user()->id))
         );
 
         $emergencyContact->name = $request->name;
@@ -113,25 +121,25 @@ class EmergencyContactController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified emergency contact from storage.
      *
-     * @param  \App\Models\EmergencyContact  $emergencyContact
-     * @return \Illuminate\Http\Response
+     * @param  EmergencyContact  $emergencyContact
+     * @return array JSON response with success message and redirect URL
      */
     public function destroy(EmergencyContact $emergencyContact)
     {
         $this->managePermission = user()->permission('manage_emergency_contact');
 
-        abort_403 (
+        abort_403(
             !($this->managePermission == 'all'
             || ($emergencyContact->added_by == user()->id)
-             || ($emergencyContact->user_id == user()->id)
-            )
+            || ($emergencyContact->user_id == user()->id))
         );
 
         $emergencyContact->delete();
 
-        return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => route('profile-settings.index').'?tab=emergency-contacts']);
+        return Reply::successWithData(__('messages.deleteSuccess'), [
+            'redirectUrl' => route('profile-settings.index') . '?tab=emergency-contacts'
+        ]);
     }
-
 }

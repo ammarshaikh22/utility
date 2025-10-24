@@ -30,6 +30,14 @@ class BankAccountController extends AccountBaseController
     }
 
     /**
+     * Constructor
+     *
+     * Purpose: Initialize controller defaults and middleware to ensure the user has access to bank account module.
+     * Inputs: none
+     * Outputs: none (controller state initialized)
+     */
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
@@ -54,6 +62,15 @@ class BankAccountController extends AccountBaseController
     }
 
     /**
+     * List bank accounts.
+     *
+     * Purpose: Prepare bank accounts for listing and render DataTable view.
+     * Inputs: BankAccountDataTable instance
+     * Outputs: Rendered view for bank-account.index or AJAX datatable response
+     * Side effects: Aborts with 403 if user lacks view permission
+     */
+
+    /**
      * Show the form for creating a new resource.
      *
      * @return \Illuminate\Http\Response
@@ -73,6 +90,15 @@ class BankAccountController extends AccountBaseController
 
         return view('bank-account.create', $this->data);
     }
+
+    /**
+     * Show form to create a new bank account.
+     *
+     * Purpose: Prepare currencies and view for account creation.
+     * Inputs: optional AJAX request
+     * Outputs: AJAX fragment or full view for creating bank account
+     * Side effects: Aborts with 403 if user lacks add permission
+     */
 
     public function store(StoreAccount $request)
     {
@@ -104,6 +130,15 @@ class BankAccountController extends AccountBaseController
     }
 
     /**
+     * Store a newly created bank account.
+     *
+     * Purpose: Validate input (via StoreAccount), create BankAccount record and optionally upload bank logo.
+     * Inputs: StoreAccount validated request
+     * Outputs: JSON success with redirect URL
+     * Side effects: Writes BankAccount record and stores uploaded logo file
+     */
+
+    /**
      * Display the specified resource.
      *
      * @param int $id
@@ -132,6 +167,15 @@ class BankAccountController extends AccountBaseController
     }
 
     /**
+     * Display a specific bank account and its recent transactions.
+     *
+     * Purpose: Load BankAccount and associated transaction statistics and render transaction DataTable.
+     * Inputs: $id bank account id
+     * Outputs: Rendered view for bank-account.show (transaction list) or AJAX response
+     * Side effects: Aborts with 403 when user lacks view permission
+     */
+
+    /**
      * Show the form for editing the specified resource.
      *
      * @param int $id
@@ -156,6 +200,15 @@ class BankAccountController extends AccountBaseController
 
         return view('bank-account.create', $this->data);
     }
+
+    /**
+     * Show the form for editing a bank account.
+     *
+     * Purpose: Load BankAccount for edit, prepare currencies list and edit view.
+     * Inputs: $id bank account id
+     * Outputs: AJAX fragment or full view used for editing
+     * Side effects: Aborts with 403 when user lacks edit permission
+     */
 
     public function update(StoreAccount $request, $id)
     {
@@ -196,6 +249,15 @@ class BankAccountController extends AccountBaseController
     }
 
     /**
+     * Update a bank account record.
+     *
+     * Purpose: Apply validated changes to BankAccount and handle logo updates/deletion.
+     * Inputs: StoreAccount validated request, $id bank account id
+     * Outputs: JSON success with redirect URL
+     * Side effects: Updates DB record and file storage
+     */
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param int $id
@@ -216,6 +278,15 @@ class BankAccountController extends AccountBaseController
 
     }
 
+    /**
+     * Remove a bank account.
+     *
+     * Purpose: Delete BankAccount after permission checks and return redirect route.
+     * Inputs: $id bank account id
+     * Outputs: JSON success with redirect URL
+     * Side effects: Deletes DB record
+     */
+
     public function changeStatus(Request $request)
     {
         $accountId = $request->accountId;
@@ -234,6 +305,15 @@ class BankAccountController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Toggle the active status of a bank account.
+     *
+     * Purpose: Update BankAccount.status to enable/disable account.
+     * Inputs: Request with accountId and status
+     * Outputs: JSON success
+     * Side effects: Persists status change to DB
+     */
+
     public function applyQuickAction()
     {
         switch (request()->action_type) {
@@ -246,12 +326,29 @@ class BankAccountController extends AccountBaseController
         }
     }
 
+    /**
+     * Apply quick bulk actions (delete) to bank accounts.
+     *
+     * Purpose: Delegate to deleteRecords for bulk deletions
+     * Inputs: request()->action_type and row_ids
+     * Outputs: JSON success or error
+     */
+
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_bankaccount') != 'all');
 
         BankAccount::whereIn('id', explode(',', $request->row_ids))->forceDelete();
     }
+
+    /**
+     * Permanently delete multiple bank accounts.
+     *
+     * Purpose: Force delete bank accounts specified by row_ids.
+     * Inputs: $request->row_ids comma-separated ids
+     * Outputs: none (permission enforced)
+     * Side effects: Removes DB rows permanently
+     */
 
     public function createTransaction()
     {
@@ -285,6 +382,15 @@ class BankAccountController extends AccountBaseController
 
         return view('bank-account.create', $this->data);
     }
+
+    /**
+     * Show form for creating a bank transaction (transfer/deposit/withdrawal).
+     *
+     * Purpose: Determine transaction type, permissions and prepare account lists for the transaction form.
+     * Inputs: request parameters 'type' and 'accountId'
+     * Outputs: AJAX fragment or full view for transaction creation
+     * Side effects: Aborts with 403 if user lacks the transaction-specific permission
+     */
 
     public function storeTransaction(StoreTransaction $request)
     {
@@ -346,6 +452,15 @@ class BankAccountController extends AccountBaseController
         return Reply::successWithData(__('messages.bankTransactionSuccess'), ['redirectUrl' => route('bankaccounts.show', $id)]);
     }
 
+    /**
+     * Store a bank transaction (transfer, deposit or withdrawal).
+     *
+     * Purpose: Validate permission, create BankTransaction debit/credit entries and compute new balances.
+     * Inputs: StoreTransaction validated request (type, amount, accounts, exchange_rate, memo)
+     * Outputs: JSON success with redirect to bank account show
+     * Side effects: Writes BankTransaction(s) and updates balances implicitly via stored bank_balance
+     */
+
     public function viewTransaction($id)
     {
         $this->bankTransaction = BankTransaction::with('bankAccount', 'bankAccount.currency')->findOrFail($id);
@@ -367,6 +482,15 @@ class BankAccountController extends AccountBaseController
         return view('bank-account.create', $this->data);
     }
 
+    /**
+     * View a specific bank transaction.
+     *
+     * Purpose: Load BankTransaction with its account and currency and return view fragment or full page.
+     * Inputs: $id transaction id
+     * Outputs: AJAX fragment or full view
+     * Side effects: Aborts with 403 when user lacks view permission
+     */
+
     public function destroyTransaction(Request $request)
     {
         $bankTransaction = BankTransaction::findOrFail($request->transactionId);
@@ -380,6 +504,15 @@ class BankAccountController extends AccountBaseController
         return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => route('bankaccounts.show', $bankTransaction->bank_account_id)]);
     }
 
+    /**
+     * Delete a specific bank transaction.
+     *
+     * Purpose: Remove single BankTransaction after permission checks and redirect back to account.
+     * Inputs: request->transactionId
+     * Outputs: JSON success with redirect URL
+     * Side effects: Deletes DB row
+     */
+
     public function applyTransactionQuickAction()
     {
         switch (request()->action_type) {
@@ -392,12 +525,24 @@ class BankAccountController extends AccountBaseController
         }
     }
 
+    /**
+     * Apply quick actions for transactions (bulk delete).
+     */
+
     protected function deleteTransactionRecords($request)
     {
         abort_403(user()->permission('delete_bankaccount') != 'all');
 
         BankTransaction::whereIn('id', explode(',', $request->row_ids))->forceDelete();
     }
+
+    /**
+     * Permanently delete multiple bank transactions.
+     *
+     * Purpose: Force delete BankTransaction records by provided row_ids.
+     * Inputs: $request->row_ids
+     * Outputs: none (permission enforced)
+     */
 
     public function generateStatement($id)
     {
@@ -409,6 +554,14 @@ class BankAccountController extends AccountBaseController
         return view('bank-account.generate-statement', $this->data);
     }
 
+    /**
+     * Show page to generate bank statement for an account.
+     *
+     * Purpose: Render statement generation UI after permission checks.
+     * Inputs: $id bank account id
+     * Outputs: statement generation view
+     */
+
     public function getBankStatement(Request $request)
     {
         $pdfOption = $this->domPdfObjectForDownload($request);
@@ -417,6 +570,14 @@ class BankAccountController extends AccountBaseController
 
         return $pdf->download($filename . '.pdf');
     }
+
+    /**
+     * Return downloadable PDF bank statement for requested date range.
+     *
+     * Purpose: Create PDF via domPdfObjectForDownload and return it for download.
+     * Inputs: Request with accountId, startDate, endDate
+     * Outputs: PDF download response
+     */
 
     public function domPdfObjectForDownload($request)
     {
@@ -441,6 +602,14 @@ class BankAccountController extends AccountBaseController
             'fileName' => $filename
         ];
     }
+
+    /**
+     * Prepare DOMPDF object and filename for bank statement download.
+     *
+     * Purpose: Aggregate transactions between the provided dates and render the statement view into a PDF wrapper.
+     * Inputs: request with accountId, startDate, endDate
+     * Outputs: array containing 'pdf' object and 'fileName'
+     */
 
     public function creditVsDebitChart($bankAccountId)
     {
@@ -519,5 +688,13 @@ class BankAccountController extends AccountBaseController
         return $data;
 
     }
+
+    /**
+     * Prepare data for a credit vs debit chart for a given bank account over recent months.
+     *
+     * Purpose: Aggregate monthly credit/debit totals for the last 3 months and format data for chart rendering.
+     * Inputs: $bankAccountId
+     * Outputs: array with labels, values, colors and series names for frontend chart
+     */
 
 }

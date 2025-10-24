@@ -26,11 +26,12 @@ class ProjectCalendarController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the project calendar view or fetch project data for a calendar.
+     * Renders the calendar view or returns filtered project data in JSON format for AJAX requests based on date range, permissions, and filters.
      *
-     * @return \Illuminate\Http\Response
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response|array
      */
-
     public function index(Request $request)
     {
         $viewPermission = user()->permission('view_projects');
@@ -50,7 +51,6 @@ class ProjectCalendarController extends AccountBaseController
         if ($request->start && $request->end) {
             $startDate = Carbon::parse($request->start)->format('Y-m-d');
             $endDate = Carbon::parse($request->end)->format('Y-m-d');
-
 
             if ($startDate !== null && $endDate !== null) {
                 $model = Project::where(function ($q) use ($startDate, $endDate) {
@@ -91,7 +91,6 @@ class ProjectCalendarController extends AccountBaseController
             }
 
             if (!is_null($request->status) && $request->status != 'all') {
-
                 if ($request->status == 'overdue') {
                     $model->where('projects.completion_percent', '!=', 100);
 

@@ -27,7 +27,8 @@ class ProjectMemberController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Show the form for adding members to a project.
+     * Verifies add permission, retrieves employees not already assigned to the project, and renders the create view.
      *
      * @return \Illuminate\Http\Response
      */
@@ -56,7 +57,10 @@ class ProjectMemberController extends AccountBaseController
     }
 
     /**
-     * @param StoreProjectMembers $request
+     * Add members to a project.
+     * Verifies the request and syncs the specified user IDs to the project's members without detaching existing ones.
+     *
+     * @param  \App\Http\Requests\ProjectMembers\StoreProjectMembers  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -69,11 +73,12 @@ class ProjectMemberController extends AccountBaseController
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the hourly rate of a project member.
+     * Updates the specified member's hourly rate and saves the changes.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return array
      */
     public function update(Request $request, $id)
     {
@@ -84,10 +89,11 @@ class ProjectMemberController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove a member from a project.
+     * Deletes the project member record and clears the project admin if the removed member was the admin.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return array
      */
     public function destroy($id)
     {
@@ -105,13 +111,19 @@ class ProjectMemberController extends AccountBaseController
         return Reply::success(__('messages.memberRemovedFromProject'));
     }
 
+    /**
+     * Add a group of members to a project based on department.
+     * Assigns all active employees from the specified departments to the project and links the departments to the project.
+     *
+     * @param  \App\Http\Requests\ProjectMembers\SaveGroupMembers  $request
+     * @return array
+     */
     public function storeGroup(SaveGroupMembers $request)
     {
         $groups = $request->group_id;
         $project = Project::findOrFail($request->project_id);
 
         foreach ($groups as $group) {
-
             $members = EmployeeDetails::join('users', 'users.id', '=', 'employee_details.user_id')
                 ->where('employee_details.department_id', $group)
                 ->where('users.status', 'active')

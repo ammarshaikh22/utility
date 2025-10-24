@@ -37,6 +37,13 @@ class ProposalController extends AccountBaseController
         });
     }
 
+    /**
+     * Display a listing of proposals using a DataTable.
+     * Checks view permission and renders the proposal index view with lead data for non-AJAX requests.
+     *
+     * @param  \App\DataTables\ProposalDataTable  $dataTable
+     * @return mixed
+     */
     public function index(ProposalDataTable $dataTable)
     {
         abort_403($this->sidebarUserPermissions['view_lead_proposals'] == 5);
@@ -48,6 +55,12 @@ class ProposalController extends AccountBaseController
         return $dataTable->render('proposals.index', $this->data);
     }
 
+    /**
+     * Show the form for creating a new proposal.
+     * Verifies add permission, retrieves necessary data (leads, deals, taxes, units, products, etc.), and renders the create view.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
         $this->pageTitle = __('modules.proposal.createProposal');
@@ -118,9 +131,15 @@ class ProposalController extends AccountBaseController
         return view('proposals.create', $this->data);
     }
 
+    /**
+     * Store a new proposal in the database.
+     * Validates item data, generates a unique proposal number, saves proposal details, and logs the search entry.
+     *
+     * @param  \App\Http\Requests\Proposal\StoreRequest  $request
+     * @return array
+     */
     public function store(StoreRequest $request)
     {
-
         $items = $request->item_name;
         $cost_per_item = $request->cost_per_item;
         $quantity = $request->quantity;
@@ -151,7 +170,6 @@ class ProposalController extends AccountBaseController
         $originalNumber = $zero . $lastProposal;
         $proposalNumber = $invoiceSetting->proposal_prefix . $invoiceSetting->proposal_number_separator . $zero . $lastProposal;
 
-
         $proposal = new Proposal();
         $proposal->deal_id = $request->deal_id;
         $proposal->valid_till = companyToYmd($request->valid_till);
@@ -179,6 +197,13 @@ class ProposalController extends AccountBaseController
         return Reply::redirect($redirectUrl, __('messages.recordSaved'));
     }
 
+    /**
+     * Display the details of a specific proposal.
+     * Verifies view permission, calculates discounts and taxes, and renders the show view with proposal details.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $this->viewLeadProposalsPermission = user()->permission('view_lead_proposals');
@@ -216,25 +241,20 @@ class ProposalController extends AccountBaseController
             ->get();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = ProposalItem::taxbyid($tax)->first();
 
                 if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
                     if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
                     }
                     else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                     }
-
                 }
                 else {
                     if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
-
                     }
                     else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
@@ -251,6 +271,13 @@ class ProposalController extends AccountBaseController
         return view('proposals.show', $this->data);
     }
 
+    /**
+     * Show the form for editing an existing proposal.
+     * Retrieves proposal details, taxes, currencies, units, products, and categories, then renders the edit view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
         $this->pageTitle = __('modules.proposal.updateProposal');
@@ -272,6 +299,14 @@ class ProposalController extends AccountBaseController
         return view('proposals.create', $this->data);
     }
 
+    /**
+     * Update an existing proposal in the database.
+     * Validates item data, updates proposal details, and redirects to the proposal show page.
+     *
+     * @param  \App\Http\Requests\Proposal\StoreRequest  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(StoreRequest $request, $id)
     {
         $items = $request->item_name;
@@ -335,6 +370,13 @@ class ProposalController extends AccountBaseController
         return Reply::redirect(route('proposals.show', $proposal->id), __('messages.updateSuccess'));
     }
 
+    /**
+     * Delete a specific proposal from the database.
+     * Verifies delete permission and removes the proposal record.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function destroy($id)
     {
         $proposal = Proposal::findOrFail($id);
@@ -346,6 +388,13 @@ class ProposalController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Mark a proposal as sent and optionally trigger a notification event.
+     * Updates the proposal's send status and triggers a NewProposalEvent if not marked as sent manually.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function sendProposal($id)
     {
         $proposal = Proposal::findOrFail($id);
@@ -363,9 +412,15 @@ class ProposalController extends AccountBaseController
         }
 
         return Reply::success(__('messages.proposalSendSuccess'));
-
     }
 
+    /**
+     * Download a proposal as a PDF file.
+     * Verifies view permission, generates a PDF using DomPDF, and initiates the download.
+     *
+     * @param  int  $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function download($id)
     {
         $this->proposal = Proposal::with('unit')->findOrFail($id);
@@ -379,6 +434,13 @@ class ProposalController extends AccountBaseController
         return $pdf->download($filename . '.pdf');
     }
 
+    /**
+     * Generate a DomPDF object for downloading a proposal.
+     * Prepares proposal data, calculates discounts and taxes, and loads the PDF view with custom settings.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function domPdfObjectForDownload($id)
     {
         $this->invoiceSetting = invoice_setting();
@@ -407,26 +469,21 @@ class ProposalController extends AccountBaseController
         $this->invoiceSetting = invoice_setting();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = ProposalItem::taxbyid($tax)->first();
 
                 if ($this->tax) {
                     if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
                         if ($this->proposal->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->proposal->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
                         }
                         else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                         }
-
                     }
                     else {
                         if ($this->proposal->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->proposal->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
-
                         }
                         else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
@@ -461,6 +518,13 @@ class ProposalController extends AccountBaseController
         ];
     }
 
+    /**
+     * Delete an image associated with a proposal item.
+     * Removes the image file from storage and deletes the corresponding database record.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function deleteProposalItemImage(Request $request)
     {
         $item = ProposalItemImage::where('proposal_item_id', $request->invoice_item_id)->first();
@@ -473,6 +537,13 @@ class ProposalController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Retrieve products by unit type for a proposal.
+     * Fetches products associated with the specified unit type and returns them with unit details.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function getclients($id)
     {
         $client_data = Product::where('unit_id', $id)->get();
@@ -481,6 +552,13 @@ class ProposalController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $client_data, 'type' => $unitId]);
     }
 
+    /**
+     * Add a product item to a proposal form.
+     * Retrieves product details, converts price based on exchange rate, and renders the add item view.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function addItem(Request $request)
     {
         $this->items = Product::findOrFail($request->id);
@@ -494,7 +572,6 @@ class ProposalController extends AccountBaseController
                 $this->items->price = floor($this->items->total_amount / $exchangeRate->exchange_rate);
             }
             else {
-
                 $this->items->price = floatval($this->items->price) / floatval($exchangeRate->exchange_rate);
             }
         }

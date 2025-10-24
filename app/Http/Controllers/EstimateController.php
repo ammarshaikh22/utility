@@ -764,6 +764,12 @@ class EstimateController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $client_data, 'type' => $unitId]);
     }
 
+    /**
+     * Adds a product item to an estimate, handling currency conversion and rendering the item view.
+     *
+     * @param Request $request The HTTP request containing product ID and currency ID.
+     * @return \App\Helper\Reply Returns a JSON response with the rendered view for the added item.
+     */
     public function addItem(Request $request)
     {
         $this->items = Product::findOrFail($request->id);

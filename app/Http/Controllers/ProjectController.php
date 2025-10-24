@@ -80,6 +80,17 @@ class ProjectController extends AccountBaseController
     }
 
     /**
+     * Constructor
+     *
+     * Purpose: Set up controller-level defaults and middleware.
+     * - Initializes parent controller and page title.
+     * - Adds a middleware closure to abort if the current user doesn't have the 'projects' module.
+     *
+     * Inputs: None
+     * Outputs: None (modifies controller state)
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return \Illuminate\Http\Response
@@ -109,6 +120,18 @@ class ProjectController extends AccountBaseController
     }
 
     /**
+     * Display a listing of projects.
+     *
+     * Purpose: Render the projects listing page or return JSON for datatable AJAX requests.
+     * Inputs:
+     *  - $dataTable (ProjectsDataTable) injected datatable handler
+     * Outputs:
+     *  - HTML view 'projects.index' with controller data or datatable AJAX payload
+     * Side effects:
+     *  - Aborts with 403 if user doesn't have required view permission.
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return array
@@ -133,6 +156,18 @@ class ProjectController extends AccountBaseController
         }
     }
 
+    /**
+     * Apply a quick action to multiple selected projects.
+     *
+     * Purpose: Dispatches the requested bulk action: delete, archive or change-status.
+     * Inputs:
+     *  - Request with action_type and row_ids (comma-separated IDs) and optionally status
+     * Outputs:
+     *  - JSON success or error reply via Reply helper
+     * Side effects:
+     *  - Calls corresponding protected helper to perform DB operations.
+     */
+
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_projects') != 'all');
@@ -147,6 +182,18 @@ class ProjectController extends AccountBaseController
         }
     }
 
+    /**
+     * Permanently delete multiple projects.
+     *
+     * Purpose: Force-delete projects and their files from storage.
+     * Inputs:
+     *  - $request->row_ids comma-separated project IDs
+     * Outputs:
+     *  - None (throws 403 on insufficient permission)
+     * Side effects:
+     *  - Permanently deletes DB records and deletes project file directories.
+     */
+
     protected function archiveRecords($request)
     {
         abort_403(user()->permission('edit_projects') != 'all');
@@ -154,12 +201,31 @@ class ProjectController extends AccountBaseController
         Project::whereIn('id', explode(',', $request->row_ids))->delete();
     }
 
+    /**
+     * Soft-archive multiple projects.
+     *
+     * Purpose: Soft-delete (archive) projects by IDs.
+     * Inputs:
+     *  - $request->row_ids comma-separated project IDs
+     * Outputs:
+     *  - None (throws 403 on insufficient permission)
+     * Side effects:
+     *  - Performs soft-delete on matching Project models.
+     */
+
     public function archiveDestroy($id)
     {
         Project::destroy($id);
 
         return Reply::success(__('messages.projectArchiveSuccessfully'));
     }
+
+    /**
+     * Restore a project from archive by destroying soft-delete (helper naming kept).
+     *
+     * Note: This method calls destroy on the model which will soft-delete when used
+     * in the archive context. Kept as-is to preserve existing behavior.
+     */
 
     protected function changeStatus($request)
     {
@@ -182,6 +248,19 @@ class ProjectController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Bulk change status for multiple projects.
+     *
+     * Purpose: Change the status of many projects and handle finished/non-finished logic.
+     * Inputs:
+     *  - $request->row_ids comma-separated project IDs
+     *  - $request->status new status string
+     * Outputs:
+     *  - JSON success message or throws 403
+     * Side effects:
+     *  - Updates Project.status and completion_percent based on rules.
+     */
+
     public function updateStatus(Request $request, $id)
     {
         abort_403(user()->permission('edit_projects') != 'all');
@@ -202,6 +281,19 @@ class ProjectController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update the status of a single project.
+     *
+     * Purpose: Update project's status and validate rules when marking finished.
+     * Inputs:
+     *  - Request with 'status'
+     *  - $id project id
+     * Outputs:
+     *  - JSON success or error reply
+     * Side effects:
+     *  - Changes project.status and possibly completion_percent.
+     */
+
     private function handleNonFinishedStatus($project, $id, $newStatus)
     {
         if ($project->status == 'finished') {
@@ -210,6 +302,15 @@ class ProjectController extends AccountBaseController
 
         $project->update(['status' => $newStatus]);
     }
+
+    /**
+     * Helper for handling non-finished statuses.
+     *
+     * Purpose: When changing away from 'finished', recompute completion_percent
+     * if it was previously finished and update the status.
+     * Inputs: Project model, project id, new status string
+     * Outputs: None (updates provided Project instance)
+     */
 
     private function handleFinishedStatus($project, $id)
     {
@@ -230,6 +331,16 @@ class ProjectController extends AccountBaseController
 
         return true;
     }
+
+    /**
+     * Helper for handling when a project is marked 'finished'.
+     *
+     * Purpose: Validate if project can be marked finished based on task progress
+     * or set completion_percent to 100 when tasks are not used for progress.
+     * Inputs: Project model, project id
+     * Outputs: boolean true on success, false if validation fails (tasks incomplete)
+     * Side effects: Modifies and saves project.status and completion_percent.
+     */
 
     /**
      * Remove the specified resource from storage.
@@ -255,6 +366,17 @@ class ProjectController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
 
     }
+
+    /**
+     * Permanently delete a specific project.
+     *
+     * Purpose: Force-delete the project after permission checks and cleanup related data.
+     * Inputs: $id project id
+     * Outputs: JSON success reply
+     * Side effects:
+     *  - Deletes project files directory, clears project reference in invoices/payments,
+     *    and force-deletes the project row.
+     */
 
     /**
      * Show the form for creating a new resource.
@@ -330,6 +452,16 @@ class ProjectController extends AccountBaseController
         return view('projects.create', $this->data);
 
     }
+
+    /**
+     * Show 'create project' form.
+     *
+     * Purpose: Prepare data required for project creation form (clients, categories, teams, templates, currencies)
+     * and return either AJAX partial or full view.
+     * Inputs: request parameters like 'duplicate_project' and 'template'
+     * Outputs: View 'projects.create' or AJAX fragment 'projects.ajax.create'
+     * Side effects: Loads project template/duplicate data when requested.
+     */
 
     /**
      * @param StoreProject $request
@@ -540,6 +672,16 @@ class ProjectController extends AccountBaseController
         }
     }
 
+    /**
+     * Store a newly created project in storage.
+     *
+     * Purpose: Validate input (via StoreProject request), create Project and related models
+     * (departments, notes, milestones, tasks, files, custom fields) and return created project ID.
+     * Inputs: StoreProject validated request with project attributes and optional template/duplicate flags
+     * Outputs: JSON reply with projectID and redirectUrl or error reply
+     * Side effects: DB writes inside a transaction; may dispatch import/logging actions.
+     */
+
     public function edit($id)
     {
         $this->project = Project::with('client', 'members', 'members.user', 'members.user.session', 'members.user.employeeDetail.designation', 'milestones', 'milestones.currency', 'departments')
@@ -624,6 +766,15 @@ class ProjectController extends AccountBaseController
         return view('projects.create', $this->data);
 
     }
+
+    /**
+     * Show the edit form for a project.
+     *
+     * Purpose: Load project with related data and permissions then display edit form.
+     * Inputs: $id project id
+     * Outputs: View 'projects.create' (used as edit) or AJAX partial
+     * Side effects: Aborts with 403 if the user lacks necessary edit permissions.
+     */
 
     /**
      * @param UpdateProject $request
@@ -756,6 +907,15 @@ class ProjectController extends AccountBaseController
 
         return Reply::successWithData(__('messages.updateSuccess'), ['projectID' => $project->id, 'redirectUrl' => $redirectUrl]);
     }
+
+    /**
+     * Update a project's details.
+     *
+     * Purpose: Apply incoming updates from UpdateProject request to Project model and save.
+     * Inputs: UpdateProject validated request, $id project id
+     * Outputs: JSON success reply with projectID and redirectUrl
+     * Side effects: Updates DB, custom fields and logs project activity.
+     */
 
     /**
      * Display the specified resource.
@@ -929,6 +1089,16 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Display a single project's details page.
+     *
+     * Purpose: Load project along with related collections (members, milestones, files, permissions)
+     * and route to the requested tab (overview, tasks, gantt, files, invoices, etc.).
+     * Inputs: $id project id and optional 'tab' request parameter
+     * Outputs: View 'projects.show' with appropriate AJAX fragment or datatable output
+     * Side effects: Aborts with 403 if the user doesn't have view permission for this project.
+     */
+
     // Convert minutes in hours and minutes
     public function convertMinutesToHoursAndMinutes($totalMinutes, $breakMinutes = 0)
     {
@@ -939,6 +1109,15 @@ class ProjectController extends AccountBaseController
 
         return $hours.__('app.hour').' '. $minutes.__('app.minute');
     }
+
+    /**
+     * Convert total minutes into a localized hours/minutes string.
+     *
+     * Inputs:
+     *  - $totalMinutes int total minutes logged
+     *  - $breakMinutes int optional minutes to subtract (breaks)
+     * Outputs: string like "X hour Y minute" (localized)
+     */
 
     /**
      * XXXXXXXXXXX
@@ -958,6 +1137,13 @@ class ProjectController extends AccountBaseController
 
         return $data;
     }
+
+    /**
+     * Build task chart data for a project.
+     *
+     * Inputs: $id project id
+     * Outputs: array with 'labels', 'colors' and 'values' counts per task status
+     */
 
     /**
      * XXXXXXXXXXX
@@ -989,6 +1175,16 @@ class ProjectController extends AccountBaseController
         $data['datasets'] = $dataset;
         return $data;
     }
+
+    /**
+     * Prepare hours budget chart dataset.
+     *
+     * Inputs:
+     *  - $project Project model
+     *  - $hoursLogged total logged minutes
+     *  - $breakMinutes minutes to subtract
+     * Outputs: structured dataset array used by frontend charts
+     */
 
     /**
      * XXXXXXXXXXX
@@ -1024,6 +1220,13 @@ class ProjectController extends AccountBaseController
     }
 
     /**
+     * Prepare amount (financial) budget chart dataset for a project.
+     *
+     * Inputs: $project Project model
+     * Outputs: structured dataset array for frontend charts, includes planned/actual/overrun
+     */
+
+    /**
      * Store a newly created resource in storage.
      *
      * @param \Illuminate\Http\Request $request
@@ -1044,6 +1247,14 @@ class ProjectController extends AccountBaseController
     }
 
     /**
+     * Pin a project/task for the current user.
+     *
+     * Inputs: Request with task_id and project_id
+     * Outputs: success reply
+     * Side effects: creates a Pinned record for the current user
+     */
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param int $id
@@ -1057,6 +1268,14 @@ class ProjectController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Remove a pin for the current user on a project.
+     *
+     * Inputs: $id project id
+     * Outputs: success reply
+     * Side effects: deletes Pinned records for current user and project
+     */
+
     public function assignProjectAdmin(Request $request)
     {
         $userId = $request->userId;
@@ -1067,6 +1286,14 @@ class ProjectController extends AccountBaseController
 
         return Reply::success(__('messages.roleAssigned'));
     }
+
+    /**
+     * Assign a user as the project admin.
+     *
+     * Inputs: Request with userId and projectId
+     * Outputs: success reply
+     * Side effects: updates project.project_admin and saves
+     */
 
     public function tasks($projectAdmin = false)
     {
@@ -1088,6 +1315,14 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Return tasks tab for a project (renders datatable)
+     *
+     * Inputs: $projectAdmin boolean to bypass permission checks
+     * Outputs: rendered datatable within 'projects.show' view
+     * Side effects: aborts with 403 when user lacks permissions
+     */
+
     public function archivedTasks($projectAdmin = false)
     {
         $dataTable = new ArchiveTasksDataTable();
@@ -1108,6 +1343,13 @@ class ProjectController extends AccountBaseController
         return $dataTable->render('projects.show', $this->data);
 
     }
+
+    /**
+     * Return archived tasks (soft-deleted) for a project.
+     *
+     * Inputs: $projectAdmin boolean
+     * Outputs: rendered datatable in 'projects.show' view
+     */
 
     public function ganttData()
     {
@@ -1163,6 +1405,13 @@ class ProjectController extends AccountBaseController
         return response()->json($data);
     }
 
+    /**
+     * Provide simplified Gantt data (JSON) for tasks within a project.
+     *
+     * Inputs via request: projectID, assignedTo, projectTask (ids), taskStatus, milestones
+     * Outputs: JSON array of tasks formatted for frontend Gantt consumption
+     */
+
     public function estimates($projectId, $clientId)
     {
         $dataTable = new EstimatesDataTable(
@@ -1181,6 +1430,13 @@ class ProjectController extends AccountBaseController
         return $dataTable->render('projects.show', $this->data);
     }
 
+    /**
+     * Render estimates datatable for a project.
+     *
+     * Inputs: $projectId, $clientId
+     * Outputs: DataTable render inside 'projects.show'
+     */
+
     public function invoices()
     {
         $dataTable = new InvoicesDataTable($this->onlyTrashedRecords);
@@ -1194,6 +1450,13 @@ class ProjectController extends AccountBaseController
 
         return $dataTable->render('projects.show', $this->data);
     }
+
+    /**
+     * Render invoices datatable for the current project context.
+     *
+     * Inputs: none (uses controller/project context)
+     * Outputs: DataTable render
+     */
 
     /**
      * XXXXXXXXXXX
@@ -1258,6 +1521,15 @@ class ProjectController extends AccountBaseController
     }
 
     /**
+     * Return HTML options for invoices and bank accounts filtered by project and currency.
+     *
+     * Inputs:
+     *  - $request->currencyId currency filter
+     *  - $id project id (0 for all)
+     * Outputs: JSON with 'data' HTML options, 'account' bank account options, 'exchangeRate'
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return \Illuminate\Http\Response
@@ -1312,6 +1584,13 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Return selectable project members as HTML options and a JSON userData list.
+     *
+     * Inputs: $id project id (0 for public/all employees)
+     * Outputs: JSON payload with options HTML and userData array for JS use
+     */
+
     public function timelogs($projectAdmin = false)
     {
         $dataTable = new TimeLogsDataTable($this->onlyTrashedRecords);
@@ -1329,6 +1608,10 @@ class ProjectController extends AccountBaseController
         return $dataTable->render('projects.show', $this->data);
     }
 
+    /**
+     * Render timelogs datatable for project.
+     */
+
     public function expenses()
     {
         $dataTable = new ExpensesDataTable($this->onlyTrashedRecords);
@@ -1344,6 +1627,10 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Render expenses datatable for project.
+     */
+
     public function payments()
     {
         $dataTable = new PaymentsDataTable($this->onlyTrashedRecords);
@@ -1358,6 +1645,10 @@ class ProjectController extends AccountBaseController
         return $dataTable->render('projects.show', $this->data);
 
     }
+
+    /**
+     * Render payments datatable for project.
+     */
 
     public function discussions($projectAdmin = false)
     {
@@ -1376,6 +1667,10 @@ class ProjectController extends AccountBaseController
         return $dataTable->render('projects.show', $this->data);
 
     }
+
+    /**
+     * Render discussions datatable for project.
+     */
 
     public function burndown(Request $request, $id)
     {
@@ -1460,6 +1755,13 @@ class ProjectController extends AccountBaseController
         return view('projects.ajax.burndown', $this->data);
     }
 
+    /**
+     * Generate burndown chart data for a project between requested dates.
+     *
+     * Inputs: Request with startDate and endDate and $id
+     * Outputs: Sets controller properties used by view or returns data for AJAX
+     */
+
     public function notes($projectAdmin = false)
     {
         $dataTable = new ProjectNotesDataTable();
@@ -1478,6 +1780,10 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Render notes for the project as a datatable.
+     */
+
     public function tickets($projectAdmin = false)
     {
         $dataTable = new TicketDataTable($this->onlyTrashedRecords);
@@ -1494,6 +1800,10 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Render tickets datatable for the project.
+     */
+
     public function burndownChart($project)
     {
         $viewPermission = user()->permission('view_project_burndown_chart');
@@ -1507,6 +1817,10 @@ class ProjectController extends AccountBaseController
         return view('projects.show', $this->data);
 
     }
+
+    /**
+     * Display burndown chart tab for a project after permission checks.
+     */
 
     public function rating($projectAdmin)
     {
@@ -1530,6 +1844,10 @@ class ProjectController extends AccountBaseController
         return view('projects.show', $this->data);
 
     }
+
+    /**
+     * Show project rating management UI for allowed users.
+     */
 
     /**
      * XXXXXXXXXXX
@@ -1559,6 +1877,10 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Display archived projects list.
+     */
+
     public function archiveRestore($id)
     {
         $project = Project::withTrashed()->findOrFail($id);
@@ -1566,6 +1888,10 @@ class ProjectController extends AccountBaseController
 
         return Reply::success(__('messages.projectRevertSuccessfully'));
     }
+
+    /**
+     * Restore an archived project (undo soft-delete).
+     */
 
     public function importProject()
     {
@@ -1583,6 +1909,10 @@ class ProjectController extends AccountBaseController
         return view('projects.create', $this->data);
     }
 
+    /**
+     * Show import project UI.
+     */
+
     public function importStore(ImportRequest $request)
     {
         $rvalue = $this->importFileProcess($request, ProjectImport::class);
@@ -1596,12 +1926,20 @@ class ProjectController extends AccountBaseController
         return Reply::successWithData(__('messages.importUploadSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Handle uploaded import file and queue processing steps; returns an import progress view.
+     */
+
     public function importProcess(ImportProcessRequest $request)
     {
         $batch = $this->importJobProcess($request, ProjectImport::class, ImportProjectJob::class);
 
         return Reply::successWithData(__('messages.importProcessStart'), ['batch' => $batch]);
     }
+
+    /**
+     * Dispatch background import job for projects based on uploaded file.
+     */
 
     public function changeProjectStatus(Request $request)
     {
@@ -1637,6 +1975,10 @@ class ProjectController extends AccountBaseController
 
         return Reply::success(__('messages.updateSuccess'));
     }
+
+    /**
+     * Change status for a single project with proper permission checks.
+     */
 
     public function pendingTasks($id)
     {
@@ -1680,6 +2022,10 @@ class ProjectController extends AccountBaseController
 
     }
 
+    /**
+     * Return pending tasks for current user as HTML <option> list, filtered by project.
+     */
+
     public function ajaxLoadProject(Request $request)
     {
         $search = $request->search;
@@ -1700,6 +2046,10 @@ class ProjectController extends AccountBaseController
 
         return response()->json($response);
     }
+
+    /**
+     * AJAX endpoint to search projects by name for select2/autocomplete usage.
+     */
 
     public function duplicateProject($id)
     {
@@ -1739,6 +2089,10 @@ class ProjectController extends AccountBaseController
 
         return view('projects.duplicate-project', $this->data);
     }
+
+    /**
+     * Render duplicate project form prefilled with existing project data.
+     */
 
     public function storeDuplicateProject($request, $project)
     {
@@ -1891,6 +2245,14 @@ class ProjectController extends AccountBaseController
         }
     }
 
+    /**
+     * Copy selected parts (files, milestones, time logs, notes, tasks) from an existing project
+     * into a newly created duplicate project according to the request flags.
+     *
+     * Inputs: $request containing flags and IDs, $project new Project model
+     * Side effects: Creates many new model records and copies files on disk.
+     */
+
     public function saveSubTask($projectTask, $task, $request)
     {
         if($request->has('same_assignee')){
@@ -1943,6 +2305,10 @@ class ProjectController extends AccountBaseController
         }
     }
 
+    /**
+     * Copy subtasks and their files when duplicating tasks for a duplicated project.
+     */
+
     public function getProjects(Request $request)
     {
         $clientId = UserService::getUserId();
@@ -1962,6 +2328,13 @@ class ProjectController extends AccountBaseController
         return Reply::dataOnly(['projects' => $projects]);
     }
 
+    /**
+     * Return a filtered list of projects for an employee or client requester.
+     *
+     * Inputs (via request): requesterType ('client'|'employee'), clientId/userId
+     * Outputs: JSON with projects collection
+     */
+
     public function orders()
     {
         $dataTable = new OrdersDataTable($this->onlyTrashedRecords);
@@ -1975,6 +2348,10 @@ class ProjectController extends AccountBaseController
 
         return $dataTable->render('projects.show', $this->data);
     }
+
+    /**
+     * Render orders datatable for the current project.
+     */
 
     public function ganttDataNew($projectID, $hideCompleted, $company)
     {
@@ -2121,5 +2498,13 @@ class ProjectController extends AccountBaseController
 
         return $ganttData;
     }
+
+    /**
+     * Build a rich Gantt data structure including milestones, tasks and custom links.
+     *
+     * Inputs: $projectID, $hideCompleted flag (0|1), $company object for rendering
+     * Outputs: array with 'data' and 'links' consumed by frontend Gantt component
+     * Side effects: None (pure data aggregation)
+     */
 
 }

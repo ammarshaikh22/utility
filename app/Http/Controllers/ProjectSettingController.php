@@ -21,14 +21,18 @@ class ProjectSettingController extends AccountBaseController
         $this->activeSettingMenu = 'project_settings';
         $this->middleware(function ($request, $next) {
             abort_403(!(user()->permission('manage_project_setting') == 'all' && in_array('projects', user_modules())));
-
             return $next($request);
         });
     }
 
+    /**
+     * Display the project settings page.
+     * Renders the appropriate tab view (reminder, status, or category) based on the request and handles AJAX responses.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
-
         $tab = request('tab');
 
         switch ($tab) {
@@ -50,18 +54,30 @@ class ProjectSettingController extends AccountBaseController
 
         if (request()->ajax()) {
             $html = view($this->view, $this->data)->render();
-
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle, 'activeTab' => $this->activeTab]);
         }
 
         return view('project-settings.index', $this->data);
     }
 
+    /**
+     * Show the form for creating a new project status setting.
+     * Renders the modal view for adding a new project status.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
         return view('project-settings.create-project-status-settings-modal', $this->data);
     }
 
+    /**
+     * Store a new project status setting in the database.
+     * Saves the status name, color, and status, with a default inactive status.
+     *
+     * @param  \App\Http\Requests\StoreStatusSettingRequest  $request
+     * @return array
+     */
     public function store(StoreStatusSettingRequest $request)
     {
         $projectStatusSetting = new ProjectStatusSetting();
@@ -74,13 +90,27 @@ class ProjectSettingController extends AccountBaseController
         return Reply::success(__('messages.recordSaved'));
     }
 
+    /**
+     * Show the form for editing an existing project status setting.
+     * Retrieves the specified status setting and renders the edit view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
-        $this->projectStatusSetting = ProjectStatusSetting::findOrfail($id);
-
+        $this->projectStatusSetting = ProjectStatusSetting::findOrFail($id);
         return view('project-settings.edit', $this->data);
     }
 
+    /**
+     * Update an existing project status setting in the database.
+     * Updates the status name, color, and status for the specified setting.
+     *
+     * @param  \App\Http\Requests\StoreStatusSettingRequest  $request
+     * @param  int  $id
+     * @return array
+     */
     public function statusUpdate(StoreStatusSettingRequest $request, $id)
     {
         $projectStatusSetting = ProjectStatusSetting::findOrFail($id);
@@ -94,26 +124,44 @@ class ProjectSettingController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Change the status of a project status setting.
+     * Updates the status (e.g., active/inactive) for the specified setting.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function changeStatus($id)
     {
         $projectStatusSetting = ProjectStatusSetting::findOrFail($id);
-
         $projectStatusSetting->status = request()->status;
-
         $projectStatusSetting->update();
 
         return Reply::success(__('messages.recordSaved'));
     }
 
+    /**
+     * Set a project status as the default status.
+     * Marks the specified status as active and sets all others to inactive.
+     *
+     * @return array
+     */
     public function setDefault()
     {
-
         ProjectStatusSetting::where('id', request()->id)->update(['default_status' => ProjectStatusSetting::ACTIVE]);
         ProjectStatusSetting::where('id', '<>', request()->id)->update(['default_status' => ProjectStatusSetting::INACTIVE]);
 
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update project reminder settings in the database.
+     * Updates reminder settings, including who to remind and the timing, for the specified project setting.
+     *
+     * @param  \App\Http\Requests\ProjectSetting\UpdateProjectSetting  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(UpdateProjectSetting $request, $id)
     {
         $projectSetting = ProjectSetting::findOrFail($id);
@@ -136,13 +184,19 @@ class ProjectSettingController extends AccountBaseController
             $remindTo = [ProjectSetting::REMIND_TO_ADMINS];
         }
 
-
         $projectSetting->remind_to = $remindTo;
         $projectSetting->save();
 
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Delete a specific project status setting from the database.
+     * Reassigns projects using the deleted status to the default status and removes the setting.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function destroy($id)
     {
         $projectStatusSetting = ProjectStatusSetting::findOrFail($id);
@@ -155,6 +209,12 @@ class ProjectSettingController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Show the form for creating a new project category.
+     * Verifies add permission and renders the modal view for adding a new category.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function createCategory()
     {
         $this->addPermission = user()->permission('manage_project_category');
@@ -163,6 +223,13 @@ class ProjectSettingController extends AccountBaseController
         return view('project-settings.create-project-category-settings-modal', $this->data);
     }
 
+    /**
+     * Store a new project category in the database.
+     * Verifies add permission and saves the category name.
+     *
+     * @param  \App\Http\Requests\Project\StoreProjectCategory  $request
+     * @return array
+     */
     public function saveProjectCategory(StoreProjectCategory $request)
     {
         $this->addPermission = user()->permission('manage_project_category');

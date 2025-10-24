@@ -23,11 +23,11 @@ class KnowledgeBaseController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of knowledge base articles and categories.
+     * Filters articles based on user permissions and roles, and optionally by category.
      *
      * @return \Illuminate\Http\Response
      */
-
     public function index()
     {
         $viewPermission = user()->permission('view_knowledgebase');
@@ -39,7 +39,7 @@ class KnowledgeBaseController extends AccountBaseController
         if (!in_array('admin', user_roles())) {
             $this->knowledgebases = $this->knowledgebases->where('to', in_array('client', user_roles()) ? 'client' : 'employee');
 
-            // Show only those records which has  knowledgebase means do not show categories that
+            // Show only those records which has knowledgebase means do not show categories that
             // Does not belong to them
             $this->categories = KnowledgeBaseCategory::with('knowledgebase')->whereHas('knowledgebase')->get();
         }
@@ -57,12 +57,13 @@ class KnowledgeBaseController extends AccountBaseController
         $this->knowledgebases = $this->knowledgebases->get();
 
         return view('knowledge-base.index', $this->data);
-
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new knowledge base article.
+     * Checks user permissions and retrieves categories for selection.
      *
+     * @param int|null $id
      * @return \Illuminate\Http\Response
      */
     public function create($id = null)
@@ -91,6 +92,13 @@ class KnowledgeBaseController extends AccountBaseController
         return view('knowledge-base.create', $this->data);
     }
 
+    /**
+     * Store a new knowledge base article in storage.
+     * Validates user permissions, saves article details, and redirects to the index page with category filter.
+     *
+     * @param \App\Http\Requests\KnowledgeBase\KnowledgeBaseStore $request
+     * @return \App\Helper\Reply
+     */
     public function store(KnowledgeBaseStore $request)
     {
         $this->addPermission = user()->permission('add_knowledgebase');
@@ -111,7 +119,8 @@ class KnowledgeBaseController extends AccountBaseController
     }
 
     /**
-     * Display the specified resource.
+     * Display a specific knowledge base article.
+     * Checks user permissions before displaying the article details.
      *
      * @param int $id
      * @return \Illuminate\Http\Response
@@ -135,12 +144,12 @@ class KnowledgeBaseController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing a knowledge base article.
+     * Checks user permissions and retrieves categories for selection.
      *
      * @param int $id
      * @return \Illuminate\Http\Response
      */
-
     public function edit($id)
     {
         $this->editPermission = user()->permission('edit_knowledgebase');
@@ -160,6 +169,14 @@ class KnowledgeBaseController extends AccountBaseController
         return view('knowledge-base.create', $this->data);
     }
 
+    /**
+     * Update an existing knowledge base article.
+     * Validates user permissions, updates article details, and redirects to the index page with category filter.
+     *
+     * @param \App\Http\Requests\KnowledgeBase\KnowledgeBaseStore $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function update(KnowledgeBaseStore $request, $id)
     {
         $this->editPermission = user()->permission('edit_knowledgebase');
@@ -179,10 +196,11 @@ class KnowledgeBaseController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a knowledge base article from storage.
+     * Checks user permissions before deletion and redirects to the index page.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
@@ -192,9 +210,15 @@ class KnowledgeBaseController extends AccountBaseController
         KnowledgeBase::destroy($id);
 
         return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => route('knowledgebase.index')]);
-
     }
 
+    /**
+     * Handle bulk actions for knowledge base articles.
+     * Currently supports bulk deletion based on provided action type.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function applyQuickAction(Request $request)
     {
         switch ($request->action_type) {
@@ -207,6 +231,13 @@ class KnowledgeBaseController extends AccountBaseController
         }
     }
 
+    /**
+     * Delete multiple knowledge base articles.
+     * Validates user permissions before performing bulk deletion.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         $this->deletePermission = user()->permission('delete_knowledgebase');
@@ -215,6 +246,13 @@ class KnowledgeBaseController extends AccountBaseController
         KnowledgeBase::whereIn('id', explode(',', $request->row_ids))->forceDelete();
     }
 
+    /**
+     * Search knowledge base articles based on query and filters.
+     * Filters results by search query, user roles, permissions, and category if provided.
+     *
+     * @param string $srch_query
+     * @return \App\Helper\Reply
+     */
     public function searchQuery($srch_query = '')
     {
         $model = KnowledgeBase::query();
@@ -246,7 +284,6 @@ class KnowledgeBaseController extends AccountBaseController
         $html = view('knowledge-base.ajax.knowledgedata', $this->data)->render();
 
         return Reply::dataOnly(['status' => 'success', 'html' => $html]);
-
     }
 
 }

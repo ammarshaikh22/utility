@@ -26,6 +26,13 @@ class NotificationSettingController extends AccountBaseController
         });
     }
 
+    /**
+     * Display the notification settings configuration page.
+     * Loads settings for email, Slack, push, or Pusher notifications based on the selected tab.
+     * Handles AJAX requests to dynamically update the view and checks if all notifications are enabled for the selected channel.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $tab = request('tab');

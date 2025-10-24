@@ -22,9 +22,14 @@ use App\Helper\UserService;
 use App\Events\EventCompletedEvent;
 use App\Helper\Common;
 
+/**
+ * Controller for managing events in the calendar, including CRUD operations, attendee management, and recurring events.
+ */
 class EventCalendarController extends AccountBaseController
 {
-
+    /**
+     * Initializes the controller, setting the page title and applying middleware to restrict access to users with the 'events' module.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -35,6 +40,11 @@ class EventCalendarController extends AccountBaseController
         });
     }
 
+    /**
+     * Displays the event calendar view or returns event data for the calendar based on filters.
+     *
+     * @return array|\Illuminate\View\View Returns event data as JSON for calendar rendering or the calendar view.
+     */
     public function index()
     {
         $viewPermission = user()->permission('view_events');
@@ -121,6 +131,12 @@ class EventCalendarController extends AccountBaseController
         return view('event-calendar.index', $this->data);
     }
 
+    /**
+     * Displays the table view of events with filtering and pagination.
+     *
+     * @param EventDataTable $dataTable The data table instance for rendering events.
+     * @return \Illuminate\View\View Returns the table view for events.
+     */
     public function tableView(EventDataTable $dataTable)
     {
         $viewPermission = user()->permission('view_events');
@@ -152,26 +168,35 @@ class EventCalendarController extends AccountBaseController
         return $dataTable->render('event-calendar.ajax.table-view', $this->data);
     }
 
+    /**
+     * Applies bulk actions (delete or change status) to selected events.
+     *
+     * @param Request $request The HTTP request containing action type and row IDs.
+     * @return \App\Helper\Reply Returns a JSON response indicating success or failure.
+     */
     public function applyQuickAction(Request $request)
     {
         abort_403(!in_array(user()->permission('delete_events'), ['all', 'added']));
 
         if ($request->action_type === 'delete') {
-
             $this->deleteRecords($request);
             return Reply::success(__('messages.deleteSuccess'));
         } elseif ($request->action_type === 'change-status') {
             $this->changeBulkStatus($request);
-
             return Reply::success(__('messages.updateSuccess'));
         }
 
         return Reply::error(__('messages.selectAction'));
     }
 
+    /**
+     * Changes the status of multiple events in bulk.
+     *
+     * @param Request $request The HTTP request containing status and row IDs.
+     * @return void
+     */
     protected function changeBulkStatus($request)
     {
-
         $event = Event::withoutGlobalScope(ActiveScope::class)->whereIn('id', explode(',', $request->row_ids))->get();
 
         $event->each(function ($event) use ($request) {
@@ -180,6 +205,12 @@ class EventCalendarController extends AccountBaseController
         });
     }
 
+    /**
+     * Deletes multiple events based on provided IDs.
+     *
+     * @param Request $request The HTTP request containing row IDs to delete.
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_events') != 'all');
@@ -187,6 +218,11 @@ class EventCalendarController extends AccountBaseController
         Event::whereIn('id', explode(',', $request->row_ids))->delete();
     }
 
+    /**
+     * Displays the form for creating a new event.
+     *
+     * @return \Illuminate\View\View Returns the create event view or AJAX response.
+     */
     public function create()
     {
         $addPermission = user()->permission('add_events');
@@ -201,9 +237,7 @@ class EventCalendarController extends AccountBaseController
         $usersData = $this->employees;
 
         foreach ($usersData as $user) {
-
             $url = route('employees.show', [$user->id]);
-
             $userData[] = ['id' => $user->id, 'value' => $user->name, 'image' => $user->image_url, 'link' => $url];
         }
 
@@ -225,6 +259,12 @@ class EventCalendarController extends AccountBaseController
         return view('event-calendar.create', $this->data);
     }
 
+    /**
+     * Stores a new event with attendees, recurring settings, and notifications.
+     *
+     * @param StoreEvent $request The validated HTTP request containing event data.
+     * @return \App\Helper\Reply Returns a JSON response with success message and redirect URL.
+     */
     public function store(StoreEvent $request)
     {
         $addPermission = user()->permission('add_events');
@@ -297,7 +337,6 @@ class EventCalendarController extends AccountBaseController
             $dueDate = Carbon::createFromFormat($this->company->date_format, $request->end_date);
 
             if ($repeatType == 'monthly-on-same-day') {
-
                 $startDateOriginal = $startDate->copy();
                 $dueDateDiff = $dueDate->diffInDays($startDate);
                 $weekOfMonth = $startDateOriginal->weekOfMonth;
@@ -373,6 +412,15 @@ class EventCalendarController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl, 'eventId' => $event->id]);
     }
 
+    /**
+     * Creates a recurring event based on the parent event and specified dates.
+     *
+     * @param Event $parentEvent The parent event to base the recurring event on.
+     * @param Request $request The HTTP request containing event data.
+     * @param Carbon $startDate The start date for the recurring event.
+     * @param Carbon $dueDate The end date for the recurring event.
+     * @return void
+     */
     private function addRepeatEvent($parentEvent, $request, $startDate, $dueDate)
     {
         $event = new Event();
@@ -432,6 +480,12 @@ class EventCalendarController extends AccountBaseController
         }
     }
 
+    /**
+     * Displays the form for editing an existing event.
+     *
+     * @param int $id The ID of the event to edit.
+     * @return \Illuminate\View\View Returns the edit event view or AJAX response.
+     */
     public function edit($id)
     {
         $this->event = Event::with('attendee', 'attendee.user', 'files')->findOrFail($id)->withCustomFields();
@@ -477,9 +531,7 @@ class EventCalendarController extends AccountBaseController
         $usersData = $this->employees;
 
         foreach ($usersData as $user) {
-
             $url = route('employees.show', [$user->id]);
-
             $userData[] = ['id' => $user->id, 'value' => $user->name, 'image' => $user->image_url, 'link' => $url];
         }
 
@@ -503,6 +555,13 @@ class EventCalendarController extends AccountBaseController
         return view('notices.create', $this->data);
     }
 
+    /**
+     * Updates an existing event, including attendees, recurring settings, and notifications.
+     *
+     * @param UpdateEvent $request The validated HTTP request containing updated event data.
+     * @param int $id The ID of the event to update.
+     * @return \App\Helper\Reply Returns a JSON response with success message and redirect URL.
+     */
     public function update(UpdateEvent $request, $id)
     {
         $this->editPermission = user()->permission('edit_events');
@@ -554,7 +613,6 @@ class EventCalendarController extends AccountBaseController
         }
 
         if ($request->has('repeat') && $request->repeat == 'yes') {
-
             Event::where('parent_id', $id)->delete();
 
             $repeatCount = $request->repeat_count;
@@ -564,7 +622,6 @@ class EventCalendarController extends AccountBaseController
             $dueDate = Carbon::createFromFormat($this->company->date_format, $request->end_date);
 
             if ($repeatType == 'monthly-on-same-day') {
-
                 $startDateOriginal = $startDate->copy();
                 $dueDateDiff = $dueDate->diffInDays($startDate);
                 $weekOfMonth = $startDateOriginal->weekOfMonth;
@@ -639,7 +696,6 @@ class EventCalendarController extends AccountBaseController
         }
 
         if ($request->user_id) {
-
             $existEventUser = EventAttendee::where('event_id', $event->id)->pluck('user_id')->toArray();
             $users = $request->user_id;
             $value = array_diff($existEventUser, $users);
@@ -647,7 +703,6 @@ class EventCalendarController extends AccountBaseController
             EventAttendee::whereIn('user_id', $value)->where('event_id', $event->id)->delete();
 
             foreach ($request->user_id as $userId) {
-
                 $checkExists = EventAttendee::where('user_id', $userId)->where('event_id', $event->id)->first();
 
                 if (!$checkExists) {
@@ -667,15 +722,11 @@ class EventCalendarController extends AccountBaseController
 
         if ($requestMentionIds != null) {
             foreach ($requestMentionIds as  $value) {
-
                 if (($mentionedUser) != null) {
-
                     if (!in_array($value, json_decode($mentionedUser))) {
-
                         $newMention[] = $value;
                     }
                 } else {
-
                     $newMention[] = $value;
                 }
             }
@@ -683,7 +734,6 @@ class EventCalendarController extends AccountBaseController
             $newMentionMembers = User::whereIn('id', $newMention)->get();
 
             if (!empty($newMention)) {
-
                 event(new EventInviteMentionEvent($event, $newMentionMembers));
             }
         }
@@ -697,9 +747,14 @@ class EventCalendarController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl]);
     }
 
+    /**
+     * Displays the details of a specific event.
+     *
+     * @param int $id The ID of the event to display.
+     * @return \Illuminate\View\View Returns the event details view or AJAX response.
+     */
     public function show($id)
     {
-
         $this->viewPermission = user()->permission('view_events');
         $this->event = Event::with('attendee', 'attendee.user', 'user')->findOrFail($id)->withCustomFields();
         $attendeesIds = $this->event->attendee->pluck('user_id')->toArray();
@@ -730,6 +785,12 @@ class EventCalendarController extends AccountBaseController
         return view('event-calendar.create', $this->data);
     }
 
+    /**
+     * Deletes a specific event or its recurring instances.
+     *
+     * @param int $id The ID of the event to delete.
+     * @return \App\Helper\Reply Returns a JSON response with success message and redirect URL.
+     */
     public function destroy($id)
     {
         $this->deletePermission = user()->permission('delete_events');
@@ -752,6 +813,12 @@ class EventCalendarController extends AccountBaseController
         return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => route('events.index')]);
     }
 
+    /**
+     * Generates a description for monthly recurring events based on the week and day.
+     *
+     * @param Request $request The HTTP request containing the date for calculation.
+     * @return \App\Helper\Reply Returns a JSON response with the monthly recurrence description.
+     */
     public function monthlyOn(Request $request)
     {
         $date = Carbon::createFromFormat($this->company->date_format, $request->date);
@@ -762,6 +829,13 @@ class EventCalendarController extends AccountBaseController
         return Reply::dataOnly(['message' => __('app.eventMonthlyOn', ['week' => $week, 'day' => $day])]);
     }
 
+    /**
+     * Updates the status of an event and sends notifications if cancelled or completed.
+     *
+     * @param StoreEventNote $request The validated HTTP request containing status and note.
+     * @param int $id The ID of the event to update.
+     * @return \App\Helper\Reply Returns a JSON response indicating success.
+     */
     public function updateStatus(StoreEventNote $request, $id)
     {
         $event = Event::findOrFail($id);
@@ -780,6 +854,13 @@ class EventCalendarController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Displays the form for adding a note when updating an event's status.
+     *
+     * @param Request $request The HTTP request containing the event status.
+     * @param int $id The ID of the event.
+     * @return \Illuminate\View\View Returns the status note view.
+     */
     public function eventStatusNote(Request $request, $id)
     {
         $this->event = Event::findOrFail($id);

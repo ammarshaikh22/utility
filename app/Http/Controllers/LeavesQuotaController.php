@@ -26,6 +26,14 @@ class LeavesQuotaController extends AccountBaseController
         });
     }
 
+    /**
+     * Update an employee's leave quota.
+     * Validates the leave count, updates quota details, and recalculates remaining and overutilized leaves.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function update(Request $request, $id)
     {
         $type = EmployeeLeaveQuota::findOrFail($id);
@@ -50,33 +58,47 @@ class LeavesQuotaController extends AccountBaseController
         return Reply::success(__('messages.leaveTypeAdded'));
     }
 
+    /**
+     * Retrieve leave types available for a specific employee or all leave types.
+     * Returns formatted HTML options for a select input based on user ID.
+     *
+     * @param int $userId
+     * @return \App\Helper\Reply
+     */
     public function employeeLeaveTypes($userId)
     {
         if ($userId != 0) {
             $employee = User::withoutGlobalScope(ActiveScope::class)->with(['roles', 'leaveTypes'])->findOrFail($userId);
             $options = '';
-            
-            foreach($employee->leaveTypes as $leavesQuota) {
+
+            foreach ($employee->leaveTypes as $leavesQuota) {
                 $hasLeave = ($leavesQuota->leaveType && $leavesQuota->leaveType->deleted_at == null) ? $leavesQuota->leaveType->leaveTypeCondition($leavesQuota->leaveType, $employee) : false;
 
                 if ($hasLeave) {
-                    $options .= '<option value="' . $leavesQuota->leave_type_id . '"> ' .  $leavesQuota->leaveType->type_name .' (' . $leavesQuota->leaves_remaining . ') </option>'; /** @phpstan-ignore-line */
+                    $options .= '<option value="' . $leavesQuota->leave_type_id . '"> ' . $leavesQuota->leaveType->type_name . ' (' . $leavesQuota->leaves_remaining . ') </option>';
                 }
             }
-        }
-        else {
+        } else {
             $leaveQuotas = LeaveType::all();
-
             $options = '';
 
             foreach ($leaveQuotas as $leaveQuota) {
-                $options .= '<option value="' . $leaveQuota->id . '"> ' .  $leaveQuota->type_name . ' (' . $leaveQuota->no_of_leaves . ') </option>'; /** @phpstan-ignore-line */
+                $options .= '<option value="' . $leaveQuota->id . '"> ' . $leaveQuota->type_name . ' (' . $leaveQuota->no_of_leaves . ') </option>';
             }
         }
 
         return Reply::dataOnly(['status' => 'success', 'data' => $options]);
     }
 
+    /**
+     * Export leave quota report for a specific employee, year, and month.
+     * Validates export permissions and generates a downloadable Excel file.
+     *
+     * @param int $id
+     * @param int $year
+     * @param int $month
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function exportAllLeaveQuota($id, $year, $month)
     {
         abort_403(!canDataTableExport());

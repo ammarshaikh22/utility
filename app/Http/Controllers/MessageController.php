@@ -26,7 +26,9 @@ class MessageController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Display the messaging interface with a list of recent user conversations.
+     * Handles AJAX search requests for users or messages and filters users based on roles and permissions.
+     * For clients, restricts employee visibility based on message settings and project assignments.
      *
      * @return \Illuminate\Http\Response
      */
@@ -125,7 +127,9 @@ class MessageController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXXx`
+     * Display the interface for starting a new conversation.
+     * Prepares a list of users (employees or clients) based on user roles and message settings.
+     * Restricts client visibility for employees based on project assignments if configured.
      *
      * @return \Illuminate\Http\Response
      */
@@ -134,7 +138,6 @@ class MessageController extends AccountBaseController
         $this->messageSetting = message_setting();
         $this->project_id = Project::where('client_id', user()->id)->pluck('id');
         $this->employee_project_id = ProjectMember::where('user_id', user()->id)->pluck('project_id');
-        $this->employee_user_id = ProjectMember::whereIn('project_id', $this->employee_project_id)->pluck('user_id');
         $this->employee_client_id = Project::whereIn('id', $this->employee_project_id)->pluck('client_id');
 
         $this->user_id = ProjectMember::whereIn('project_id', $this->project_id)->pluck('user_id');
@@ -188,8 +191,11 @@ class MessageController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Store a new chat message in the database.
+     * Validates the message content and saves it to the UserChat model.
+     * Returns updated user and message lists for real-time UI updates.
      *
+     * @param  \App\Http\Requests\ChatStoreRequest  $request
      * @return \Illuminate\Http\Response
      */
     public function store(ChatStoreRequest $request)
@@ -231,8 +237,10 @@ class MessageController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Display the conversation details for a specific user.
+     * Marks messages as read and returns the updated message list for the UI.
      *
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -249,6 +257,13 @@ class MessageController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'html' => $view, 'unreadMessages' => $this->unreadMessage, 'id' => $this->userId]);
     }
 
+    /**
+     * Delete a single chat message by its ID.
+     * Returns the updated chat details to reset the UI if necessary.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroy($id)
     {
         $userChats = UserChat::findOrFail($id);
@@ -262,6 +277,13 @@ class MessageController extends AccountBaseController
         return Reply::successWithData(__('messages.deleteSuccess'), ['chat_details' => $chatDetails]);
     }
 
+    /**
+     * Delete all messages between the authenticated user and another user.
+     * Removes all chat records in both directions (from and to the specified user).
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroyAll($id)
     {
         UserChat::where(function ($query) use ($id) {
@@ -272,10 +294,15 @@ class MessageController extends AccountBaseController
                 ->where('to', user()->id);
         })->delete();
 
-        // return response()->json(['success' => true, 'message' => __('messages.deleteSuccess')]);
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Fetch and render the updated list of recent user conversations.
+     * Used to refresh the user list in the UI, optionally highlighting a specific user.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function fetchUserListView()
     {
         $userLists = UserChat::userListLatest(user()->id, null);
@@ -294,6 +321,13 @@ class MessageController extends AccountBaseController
         return Reply::dataOnly(['user_list' => $userList]);
     }
 
+    /**
+     * Fetch and render the conversation messages for a specific user.
+     * Used to update the message list in the UI for a selected user.
+     *
+     * @param  int  $receiverID
+     * @return \Illuminate\Http\Response
+     */
     public function fetchUserMessages($receiverID)
     {
         $this->chatDetails = UserChat::chatDetail($receiverID, user()->id);
@@ -302,6 +336,12 @@ class MessageController extends AccountBaseController
         return Reply::dataOnly(['message_list' => $messageList]);
     }
 
+    /**
+     * Check for new unread messages for the authenticated user.
+     * Marks notifications as sent and returns the count of new messages.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function checkNewMessages()
     {
         $newMessageCount = UserChat::where('to', user()->id)->where('message_seen', 'no')->where('notification_sent', 0)->count();
@@ -311,6 +351,13 @@ class MessageController extends AccountBaseController
         return Reply::dataOnly(['new_message_count' => $newMessageCount]);
     }
 
+    /**
+     * Validate if a chat message is non-empty.
+     * Returns an error if the message is empty, otherwise confirms validity.
+     *
+     * @param  string  $message
+     * @return array
+     */
     public function validateModule($message)
     {
         if ($message == '') {

@@ -25,29 +25,33 @@ class LeaveSettingController extends AccountBaseController
         });
     }
 
+    /**
+     * Display the leave settings index with different tabs (type, general, archive).
+     * Retrieves leave types, departments, designations, and settings based on the active tab.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
     {
         $this->leaveTypes = LeaveType::withCount('leaves')->get();
-    
-
         $tab = request('tab');
 
         switch ($tab) {
         case 'general':
             $this->leavePermission = LeaveSetting::first();
             $this->view = 'leave-settings.ajax.general';
-                break;
+            break;
         case 'archive':
             $this->archiveleaveTypes = LeaveType::onlyTrashed()->get();
             $this->departments = Team::all();
             $this->designations = Designation::all();
             $this->view = 'leave-settings.ajax.archive';
-                break;
+            break;
         default:
             $this->departments = Team::all();
             $this->designations = Designation::all();
             $this->view = 'leave-settings.ajax.type';
-                break;
+            break;
         }
 
         $this->activeTab = $tab ?: 'type';
@@ -60,6 +64,13 @@ class LeaveSettingController extends AccountBaseController
         return view('leave-settings.index', $this->data);
     }
 
+    /**
+     * Store or update leave settings for the company.
+     * Updates the leave start period and triggers leave quota recalculation.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function store(Request $request)
     {
         $setting = company();
@@ -69,10 +80,16 @@ class LeaveSettingController extends AccountBaseController
 
         Artisan::call('app:recalculate-leaves-quotas ' . $setting->id);
 
-
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update the manager permission setting for leaves.
+     * Modifies the manager permission value for the specified leave setting.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function changePermission(Request $request)
     {
         $permission = LeaveSetting::findOrFail($request->id);

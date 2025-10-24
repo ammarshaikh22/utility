@@ -12,7 +12,11 @@ class NoticeFileController extends AccountBaseController
 {
 
     /**
-     * Store a newly created resource in storage.
+     * Store one or more files attached to a notice.
+     * Verifies add permission, uploads files to local storage or S3, and saves file metadata.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
      */
     public function store(Request $request)
     {
@@ -38,6 +42,13 @@ class NoticeFileController extends AccountBaseController
         }
     }
 
+    /**
+     * Delete a specific file attached to a notice.
+     * Verifies delete permission, removes the file from storage, and updates the file list view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroy($id)
     {
         $file = NoticeFile::where('id', $id)->first();
@@ -66,7 +77,10 @@ class NoticeFileController extends AccountBaseController
     }
 
     /**
-     * @param int $id
+     * Download a specific file attached to a notice.
+     * Verifies view permission and retrieves the file from local storage or S3 using its hashed ID.
+     *
+     * @param  int  $id
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download($id)
@@ -83,7 +97,6 @@ class NoticeFileController extends AccountBaseController
         ));
 
         return download_local_s3($file, 'notice-files/' . $file->notice_id . '/' . $file->hashname);
-
     }
 
 }

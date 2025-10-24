@@ -17,6 +17,12 @@ class ProfileSettingController extends AccountBaseController
         $this->activeSettingMenu = 'profile_settings';
     }
 
+    /**
+     * Display the profile settings page.
+     * Loads user data, permissions, and renders the appropriate tab view (profile, emergency contacts, or documents) based on the request.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $tab = request('tab');
@@ -34,7 +40,6 @@ class ProfileSettingController extends AccountBaseController
         $this->salutations = Salutation::cases();
 
         switch ($tab) {
-
         case 'emergency-contacts':
             $this->contacts = EmergencyContact::where('user_id', user()->id)->get();
             $this->view = 'profile-settings.ajax.emergency-contacts';
@@ -48,7 +53,6 @@ class ProfileSettingController extends AccountBaseController
                 abort_403(($viewDocumentPermission == 'none'));
                 $this->view = 'profile-settings.ajax.employee.index';
             }
-
             break;
         default:
             $this->view = 'profile-settings.ajax.profile';

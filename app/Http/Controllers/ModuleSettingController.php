@@ -20,9 +20,15 @@ class ModuleSettingController extends AccountBaseController
         });
     }
 
+    /**
+     * Display the module settings configuration page.
+     * Fetches module settings based on the selected tab (admin, employee, or client) and renders the appropriate view.
+     * Handles AJAX requests to dynamically update the module list.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
-
         $tab = request('tab');
 
         $this->modulesData = match ($tab) {
@@ -42,6 +48,14 @@ class ModuleSettingController extends AccountBaseController
         return view('module-settings.index', $this->data);
     }
 
+    /**
+     * Update the status of a specific module setting.
+     * Modifies the status of the module identified by the provided ID and saves the changes.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request, $id)
     {
         $setting = ModuleSetting::findOrFail($id);

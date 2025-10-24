@@ -21,15 +21,28 @@ class MessageSettingController extends AccountBaseController
         });
     }
 
+    /**
+     * Display the message settings configuration page.
+     * Loads the current message settings and renders the settings view.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $this->messageSettings = message_setting();
         return view('message-settings.index', $this->data);
     }
 
+    /**
+     * Update the message settings based on the provided request data.
+     * Modifies permissions for client-admin and client-employee interactions, 
+     * client restrictions, and sound notification settings, then saves the changes.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request)
     {
-
         $setting = message_setting();
 
         if ($request->allow_client_admin) {

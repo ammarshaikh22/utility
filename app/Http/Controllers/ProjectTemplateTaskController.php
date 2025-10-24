@@ -28,19 +28,26 @@ class ProjectTemplateTaskController extends AccountBaseController
         });
     }
 
+    /**
+     * Redirect to the project template index page.
+     * Serves as a fallback for the index route, redirecting to the main project template page.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function index()
     {
         return redirect()->route('project-template.index');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new task for a project template.
+     * Verifies manage permission, retrieves project template, categories, labels, and employees, then renders the create view.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request)
     {
-
         $this->manageProjectTemplatePermission = user()->permission('manage_project_template');
         abort_403(!in_array($this->manageProjectTemplatePermission, ['all', 'added']));
 
@@ -52,7 +59,6 @@ class ProjectTemplateTaskController extends AccountBaseController
 
         if (!is_null($this->project)) {
             $this->employees = $this->project->projectMembers;
-
         }
         else {
             $this->employees = User::allEmployees(null, true);
@@ -65,11 +71,13 @@ class ProjectTemplateTaskController extends AccountBaseController
         }
 
         return view('project-templates.task.create', $this->data);
-
     }
 
     /**
-     * @param StoreTask $request
+     * Store a new task for a project template.
+     * Saves task details including heading, description, category, priority, and labels, and assigns users to the task.
+     *
+     * @param  \App\Http\Requests\TemplateTasks\StoreTask  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -106,9 +114,10 @@ class ProjectTemplateTaskController extends AccountBaseController
     }
 
     /**
-     * Display the specified resource.
+     * Display the details of a specific project template task.
+     * Verifies view or manage permissions, retrieves task details, and renders the show view with subtask or task details.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -127,7 +136,6 @@ class ProjectTemplateTaskController extends AccountBaseController
         $this->view = 'project-templates.task.ajax.show';
 
         if (request()->ajax()) {
-
             if (request('json')) {
                 return $this->returnAjax($this->tab);
             }
@@ -136,13 +144,13 @@ class ProjectTemplateTaskController extends AccountBaseController
         }
 
         return view('project-templates.task.create', $this->data);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing a specific project template task.
+     * Verifies manage permission, retrieves task details, project template, categories, labels, and employees, then renders the edit view.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -162,7 +170,7 @@ class ProjectTemplateTaskController extends AccountBaseController
 
         if (!is_null($this->project)) {
             $this->employees = $this->project->projectMembers;
-        }else {
+        } else {
             $this->employees = User::allEmployees(null, true);
         }
 
@@ -173,12 +181,14 @@ class ProjectTemplateTaskController extends AccountBaseController
         }
 
         return view('project-templates.task.create', $this->data);
-
     }
 
     /**
-     * @param StoreTask $request
-     * @param int $id
+     * Update an existing project template task.
+     * Updates task details including heading, description, category, priority, and labels, reassigns users, and redirects to the task list.
+     *
+     * @param  \App\Http\Requests\TemplateTasks\StoreTask  $request
+     * @param  int  $id
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -190,7 +200,7 @@ class ProjectTemplateTaskController extends AccountBaseController
         if ($request->description != '') {
             $task->description = trim_editor($request->description);
         }
-        
+
         $task->milestone_id = $request->milestone_id;
         $task->project_template_task_category_id = $request->category_id;
         $task->priority = $request->priority;
@@ -218,10 +228,11 @@ class ProjectTemplateTaskController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific project template task.
+     * Removes the task from the database and returns a success message.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id
+     * @return array
      */
     public function destroy($id)
     {

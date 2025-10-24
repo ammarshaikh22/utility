@@ -41,8 +41,11 @@ class ProductController extends AccountBaseController
     }
 
     /**
-     * @param  ProductsDataTable $dataTable
-     * @return mixed|void
+     * Display a listing of products using a DataTable.
+     * Checks view permissions and prepares product, category, subcategory, and cart data for the index view.
+     *
+     * @param  \App\DataTables\ProductsDataTable  $dataTable
+     * @return mixed
      */
     public function index(ProductsDataTable $dataTable)
     {
@@ -64,7 +67,8 @@ class ProductController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new product.
+     * Verifies add permission and prepares tax, category, unit type, and custom field data for the create form.
      *
      * @return \Illuminate\Http\Response
      */
@@ -96,9 +100,11 @@ class ProductController extends AccountBaseController
     }
 
     /**
+     * Store a new product in the database.
+     * Verifies add permission, saves product details, handles file uploads, and supports custom fields and add-more functionality.
      *
-     * @param  StoreProductRequest $request
-     * @return void
+     * @param  \App\Http\Requests\Product\StoreProductRequest  $request
+     * @return array
      */
     public function store(StoreProductRequest $request)
     {
@@ -130,7 +136,6 @@ class ProductController extends AccountBaseController
             $product->updateCustomFieldData($request->custom_fields_data);
         }
 
-
         $redirectUrl = urldecode($request->redirect_url);
 
         if ($redirectUrl == '') {
@@ -144,13 +149,13 @@ class ProductController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl, 'productID' => $product->id, 'defaultImage' => $request->default_image ?? 0]);
-
     }
 
     /**
-     * Display the specified resource.
+     * Display the details of a specific product.
+     * Verifies view permission, loads product details with taxes and custom fields, and renders the show view.
      *
-     * @param  int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -186,13 +191,13 @@ class ProductController extends AccountBaseController
         }
 
         return view('products.create', $this->data);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing product.
+     * Verifies edit permission, loads product details with taxes, categories, and images, and renders the edit view.
      *
-     * @param  int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -207,7 +212,6 @@ class ProductController extends AccountBaseController
         $this->unit_types = UnitType::all();
         $this->subCategories = !is_null($this->product->sub_category_id) ? ProductSubCategory::where('category_id', $this->product->category_id)->get() : [];
         $this->pageTitle = __('app.update') . ' ' . __('app.menu.products');
-
 
         $images = [];
 
@@ -237,13 +241,15 @@ class ProductController extends AccountBaseController
         }
 
         return view('products.create', $this->data);
-
     }
 
     /**
-     * @param  UpdateProductRequest $request
-     * @param  int                  $id
-     * @return array|void
+     * Update an existing product in the database.
+     * Verifies edit permission, updates product details, handles file uploads/deletions, and supports custom fields.
+     *
+     * @param  \App\Http\Requests\Product\UpdateProductRequest  $request
+     * @param  int  $id
+     * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function update(UpdateProductRequest $request, $id)
@@ -289,9 +295,10 @@ class ProductController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific product from the database.
+     * Verifies delete permission and removes the product record.
      *
-     * @param  int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -306,8 +313,10 @@ class ProductController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Handle bulk actions for products, such as deletion or updating purchase allowance.
+     * Delegates to specific methods based on the requested action type.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function applyQuickAction(Request $request)
@@ -326,6 +335,13 @@ class ProductController extends AccountBaseController
         }
     }
 
+    /**
+     * Delete multiple product records based on provided IDs.
+     * Verifies delete permission and permanently removes the specified products.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_product') != 'all');
@@ -333,6 +349,13 @@ class ProductController extends AccountBaseController
         Product::whereIn('id', explode(',', $request->row_ids))->forceDelete();
     }
 
+    /**
+     * Update the purchase allowance status for multiple products.
+     * Verifies edit permission and updates the allow_purchase field for the specified products.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function allowPurchase($request)
     {
         abort_403(user()->permission('edit_product') != 'all');
@@ -340,24 +363,31 @@ class ProductController extends AccountBaseController
         Product::whereIn('id', explode(',', $request->row_ids))->update(['allow_purchase' => $request->status]);
     }
 
+    /**
+     * Add a product to the user's cart.
+     * Updates quantity if the product is already in the cart, otherwise creates a new cart entry.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function addCartItem(Request $request)
     {
         $newItem = $request->productID;
 
-           $orderExist = OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->exists();
-           $quantity = 1;
+        $orderExist = OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->exists();
+        $quantity = 1;
 
         if ($orderExist == true) {
-                $orderCartUpdate = OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->first();
+            $orderCartUpdate = OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->first();
 
-                $quantity = ($request->has('quantity')) ? $request->quantity : $orderCartUpdate->quantity + 1;
+            $quantity = ($request->has('quantity')) ? $request->quantity : $orderCartUpdate->quantity + 1;
 
-                OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->update(
-                    [
-                        'quantity' => $quantity,
-                        'amount' => $orderCartUpdate->unit_price * $quantity,
-                    ]
-                );
+            OrderCart::where('product_id', '=', $newItem)->where('client_id', user()->id)->update(
+                [
+                    'quantity' => $quantity,
+                    'amount' => $orderCartUpdate->unit_price * $quantity,
+                ]
+            );
             $productDetails[] = OrderCart::where('product_id', '=', $newItem)->first();
 
         } else {
@@ -390,6 +420,14 @@ class ProductController extends AccountBaseController
 
     }
 
+    /**
+     * Remove a product from the user's cart.
+     * Deletes either a single cart item or all cart items for the user, based on the request type.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function removeCartItem(Request $request, $id)
     {
         if ($request->type == 'all_data') {
@@ -405,14 +443,17 @@ class ProductController extends AccountBaseController
             $productDetails = OrderCart::where('id', $id)->where('client_id', user()->id)->get();
         }
 
-
         return response(Reply::successWithData(__('messages.deleteSuccess'), ['status' => 'success', 'productItems' => $productDetails ]))->cookie('productDetails', json_encode($productDetails));
-
     }
 
+    /**
+     * Show the form for emptying the user's cart.
+     * Renders the empty cart view for AJAX or full page requests.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function emptyCart()
     {
-
         $this->view = 'products.ajax.empty_cart';
 
         if (request()->ajax()) {
@@ -420,9 +461,15 @@ class ProductController extends AccountBaseController
         }
 
         return view('products.create', $this->data);
-
     }
 
+    /**
+     * Display the user's cart contents.
+     * Verifies client role and prepares cart items, taxes, and order details for the cart view.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function cart(Request $request)
     {
         abort_403(!in_array('client', user_roles()));
@@ -442,6 +489,12 @@ class ProductController extends AccountBaseController
         return view('products.create', $this->data);
     }
 
+    /**
+     * Retrieve a list of all products as HTML options.
+     * Generates a dropdown-compatible list of product names and IDs.
+     *
+     * @return array
+     */
     public function allProductOption()
     {
         $products = Product::all();
@@ -455,6 +508,12 @@ class ProductController extends AccountBaseController
         return Reply::dataOnly(['products' => $option]);
     }
 
+    /**
+     * Show the form for importing products via Excel.
+     * Verifies add permission and renders the import view.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function importProduct()
     {
         $this->pageTitle = __('app.importExcel') . ' ' . __('app.menu.product');
@@ -471,6 +530,13 @@ class ProductController extends AccountBaseController
         return view('products.create', $this->data);
     }
 
+    /**
+     * Handle the upload of an Excel file for product import.
+     * Processes the uploaded file and initiates the import process.
+     *
+     * @param  \App\Http\Requests\Admin\Employee\ImportRequest  $request
+     * @return array
+     */
     public function importStore(ImportRequest $request)
     {
         $rvalue = $this->importFileProcess($request, ProductImport::class);
@@ -484,6 +550,13 @@ class ProductController extends AccountBaseController
         return Reply::successWithData(__('messages.importUploadSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Process the imported Excel file for products.
+     * Triggers the import job to handle the product data in the background.
+     *
+     * @param  \App\Http\Requests\Admin\Employee\ImportProcessRequest  $request
+     * @return array
+     */
     public function importProcess(ImportProcessRequest $request)
     {
         $batch = $this->importJobProcess($request, ProductImport::class, ImportProductJob::class);

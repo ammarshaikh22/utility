@@ -19,7 +19,8 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of all offline payment methods.
+     * Retrieves all offline payment methods and renders the index view for payment gateway settings.
      *
      * @return \Illuminate\Http\Response
      */
@@ -30,7 +31,8 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new offline payment method.
+     * Renders a modal view for adding a new offline payment method.
      *
      * @return \Illuminate\Http\Response
      */
@@ -40,7 +42,10 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * @param StoreRequest $request
+     * Store a new offline payment method in the database.
+     * Saves the method's name, description, and optional image, then returns a success message.
+     *
+     * @param  \App\Http\Requests\OfflinePaymentSetting\StoreRequest  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -60,7 +65,8 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing offline payment method.
+     * Retrieves the specified payment method and renders a modal view for editing.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
@@ -73,8 +79,11 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * @param UpdateRequest $request
-     * @param int $id
+     * Update an existing offline payment method in the database.
+     * Updates the method's name, description, status, and image (if provided or deleted), then redirects to the index page.
+     *
+     * @param  \App\Http\Requests\OfflinePaymentSetting\UpdateRequest  $request
+     * @param  int  $id
      * @return array|string[]
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -101,7 +110,8 @@ class OfflinePaymentSettingController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific offline payment method from the database.
+     * Removes the specified payment method and returns a success message.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response

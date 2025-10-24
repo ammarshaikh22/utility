@@ -31,7 +31,8 @@ class InvoiceSettingController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the invoice settings page with dynamic tabs based on user modules.
+     * Renders the appropriate view (general, template, quickbooks, payment, units, or prefix) based on the selected tab.
      *
      * @return \Illuminate\Http\Response
      */
@@ -86,8 +87,11 @@ class InvoiceSettingController extends AccountBaseController
     }
 
     /**
-     * @param UpdateInvoiceSetting $request
-     * @return array
+     * Update general invoice settings.
+     * Handles updates to various invoice-related settings and uploads for logo and authorised signatory signature.
+     *
+     * @param \App\Http\Requests\UpdateInvoiceSetting $request
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
@@ -131,6 +135,14 @@ class InvoiceSettingController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update invoice, estimate, order, and proposal prefix settings.
+     * Updates prefixes, number separators, and digit counts based on enabled user modules.
+     *
+     * @param \App\Http\Requests\UpdatePrefixSetting $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function updatePrefix(UpdatePrefixSetting $request, $id)
     {
         $setting = InvoiceSetting::findOrFail($id);
@@ -171,6 +183,14 @@ class InvoiceSettingController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update the invoice template setting.
+     * Updates the template used for invoices and clears relevant session data.
+     *
+     * @param \App\Http\Requests\UpdateTemplateSetting $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function updateTemplate(UpdateTemplateSetting $request, $id)
     {
         $setting = InvoiceSetting::findOrFail($id);

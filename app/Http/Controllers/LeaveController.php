@@ -43,6 +43,15 @@ class LeaveController extends AccountBaseController
     }
 
     /**
+     * Constructor
+     *
+     * Purpose: Initialize controller defaults (page title and leave settings) and
+     * apply middleware to check module access.
+     * Inputs: none
+     * Outputs: none (controller state initialized)
+     */
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
@@ -64,6 +73,17 @@ class LeaveController extends AccountBaseController
 
         return $dataTable->render('leaves.index', $this->data);
     }
+
+    /**
+     * Display a listing of leave records.
+     *
+     * Purpose: Render the leave listing page, preparing employee and leave type
+     * data used by the datatable.
+     * Inputs:
+     *  - $dataTable LeaveDataTable (injected)
+     * Outputs: Rendered view for leaves.index or AJAX Datatable response
+     * Side effects: Aborts with 403 when user lacks view permission
+     */
 
     public function exportAllLeaves(Request $request)
     {
@@ -89,6 +109,15 @@ class LeaveController extends AccountBaseController
 
         return Excel::download(new LeaveExport($startDate, $endDate, $exportAll), 'Leave_From_' . $dateRange . '.xlsx');
     }
+
+    /**
+     * Export leaves to Excel.
+     *
+     * Purpose: Export a date-range (or all) leaves to an Excel file using LeaveExport.
+     * Inputs via request query: startDate, endDate (optional)
+     * Outputs: Downloads an Excel (.xlsx) file
+     * Side effects: Aborts when exporting is disabled for datatables.
+     */
 
     /**
      * Show the form for creating a new resource.
@@ -132,6 +161,15 @@ class LeaveController extends AccountBaseController
 
         return view('leaves.create', $this->data);
     }
+
+    /**
+     * Show the form for creating a new leave.
+     *
+     * Purpose: Prepare employees, leave types and default selections for the create form.
+     * Inputs: optional request values (default_assign)
+     * Outputs: AJAX fragment or full view for creating leave
+     * Side effects: Aborts with 403 when user lacks add permission
+     */
 
     private function checkAttendance(array $dates, $user_id, $leave_half_day = null, $leave_half_day_type = null) {
 
@@ -199,6 +237,19 @@ class LeaveController extends AccountBaseController
 
         return false;
     }
+
+    /**
+     * Check whether attendance exists for given user on given dates.
+     *
+     * Purpose: Used before creating/editing leave to avoid conflicting attendance.
+     * Inputs:
+     *  - $dates: array of Carbon date objects
+     *  - $user_id: integer user id
+     *  - $leave_half_day: optional flag ('yes'/'no')
+     *  - $leave_half_day_type: optional half-day type ('first_half'|'second_half')
+     * Outputs: boolean true if attendance detected that conflicts with leave, false otherwise
+     * Side effects: None (reads Attendance and shift/default shift configuration)
+     */
 
     /**
      * @param StoreLeave $request
@@ -383,6 +434,17 @@ class LeaveController extends AccountBaseController
     }
 
     /**
+     * Store a newly created leave request.
+     *
+     * Purpose: Validate leave rules, filter out holidays, prevent conflicts with existing leaves/attendance,
+     * and create one or multiple Leave records inside a DB transaction.
+     * Inputs:
+     *  - StoreLeave validated request (user_id, leave_type_id, duration, dates, reason, etc.)
+     * Outputs: JSON success or error via Reply helper; returns created leave IDs on success
+     * Side effects: Creates Leave rows, may update/mark other overlapping leaves as rejected.
+     */
+
+    /**
      * Display the specified resource.
      *
      * @param int $id
@@ -425,6 +487,18 @@ class LeaveController extends AccountBaseController
 
         return view('leaves.create', $this->data);
     }
+
+    /**
+     * Display a specific leave or related multiple leaves.
+     *
+     * Purpose: Load a single leave (by id) or group of leaves (by unique_id) and
+     * return the appropriate AJAX partial or full view.
+     * Inputs:
+     *  - $id: numeric leave id or unique_id for multiple leaves
+     *  - optional request->type to force single view
+     * Outputs: view fragment or full view depending on AJAX and type
+     * Side effects: Aborts with 403 if user lacks view permission
+     */
 
     /**
      * Show the form for editing the specified resource.
@@ -480,6 +554,15 @@ class LeaveController extends AccountBaseController
 
         return view('leaves.create', $this->data);
     }
+
+    /**
+     * Show the form for editing a leave request.
+     *
+     * Purpose: Load the leave model and prepare employee/leave quota data for editing.
+     * Inputs: $id leave id
+     * Outputs: AJAX fragment or full view used for editing
+     * Side effects: Aborts with 403 when user lacks edit permission or leave isn't pending
+     */
 
     /**
      * @param UpdateLeave $request
@@ -598,6 +681,15 @@ class LeaveController extends AccountBaseController
     }
 
     /**
+     * Update a leave's details.
+     *
+     * Purpose: Apply validated updates to an existing leave, checking attendance/holiday/conflict rules.
+     * Inputs: UpdateLeave validated request, $id leave id
+     * Outputs: JSON success with a redirect URL or error via Reply helper
+     * Side effects: Updates Leave model, may change status and reject_reason/approve_reason
+     */
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param int $id
@@ -647,6 +739,16 @@ class LeaveController extends AccountBaseController
 
         return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => $route]);
     }
+
+    /**
+     * Delete a leave (single or multiple depending on request parameters).
+     *
+     * Purpose: Remove leave(s) after permission checks. Handles 'multiple' duration cleanup
+     * (unique_id grouping) and returns a redirect route for UI post-delete.
+     * Inputs: $id leave id; optional request params uniId and duration
+     * Outputs: JSON success with redirectUrl
+     * Side effects: Deletes Leave rows from DB and updates group durations when necessary
+     */
 
     public function leaveCalendar(Request $request)
     {
@@ -740,6 +842,15 @@ class LeaveController extends AccountBaseController
         return view('leaves.calendar.index', $this->data);
     }
 
+    /**
+     * Provide JSON calendar data or render the calendar view.
+     *
+     * Purpose: When requested with start/end, returns an array of leave events formatted
+     * for the calendar frontend; otherwise returns the calendar view.
+     * Inputs: request params startDate, endDate, filters
+     * Outputs: array of events (for AJAX) or view 'leaves.calendar.index'
+     */
+
     public function applyQuickAction(Request $request)
     {
         switch ($request->action_type) {
@@ -764,6 +875,14 @@ class LeaveController extends AccountBaseController
         }
     }
 
+    /**
+     * Apply bulk actions to selected leaves (delete or change status).
+     *
+     * Purpose: Dispatches to helper methods to delete or change statuses in bulk.
+     * Inputs: Request with action_type and row_ids
+     * Outputs: JSON success or error via Reply
+     */
+
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_leave') != 'all');
@@ -783,6 +902,14 @@ class LeaveController extends AccountBaseController
             }
         }
     }
+
+    /**
+     * Helper to delete multiple leave records by IDs.
+     *
+     * Purpose: Force-deletes leaves and handles grouped 'unique_id' grouped leaves.
+     * Inputs: $request->row_ids comma-separated
+     * Outputs: none (throws 403 if permission insufficient)
+     */
 
     protected function changeBulkStatus($request)
     {
@@ -833,6 +960,14 @@ class LeaveController extends AccountBaseController
 
     }
 
+    /**
+     * Change the status for multiple leaves in bulk.
+     *
+     * Purpose: Update leave.status for many leaves while skipping already approved/rejected ones.
+     * Inputs: $request->row_ids and $request->status
+     * Outputs: array with counts of updated and skipped records
+     */
+
     public function leaveAction(ActionLeave $request)
     {
         $this->reportingTo = EmployeeDetails::where('reporting_to', user()->id)->first();
@@ -874,6 +1009,15 @@ class LeaveController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Process approval/rejection action for a leave or a group of leaves.
+     *
+     * Purpose: Validate permissions and call leaveStore for each leave being acted on.
+     * Inputs: ActionLeave validated request (leaveId, action, type)
+     * Outputs: JSON success or error
+     * Side effects: Modifies Leave records (status, approved_by, approved_at)
+     */
+
     public function leaveStore($leave, $request)
     {
         $leave->status = $request->action;
@@ -891,6 +1035,14 @@ class LeaveController extends AccountBaseController
         $leave->save();
     }
 
+    /**
+     * Persist a single leave approval/rejection to the DB.
+     *
+     * Purpose: Set status, reason, approved_by and approved_at on the provided Leave model.
+     * Inputs: $leave model instance, $request containing action and optional reasons
+     * Outputs: none (saves the model)
+     */
+
     public function preApprove(Request $request)
     {
         $this->reportingTo = EmployeeDetails::where('reporting_to', user()->id)->first();
@@ -906,6 +1058,14 @@ class LeaveController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Toggle pre-approval manager permission flag for a leave or leave group.
+     *
+     * Purpose: Update manager_status_permission for given leave id or unique_id.
+     * Inputs: Request with leaveUId or leaveId and action
+     * Outputs: JSON success
+     */
+
     public function approveLeave(Request $request)
     {
         $this->reportingTo = EmployeeDetails::where('reporting_to', user()->id)->first();
@@ -919,6 +1079,12 @@ class LeaveController extends AccountBaseController
         return view('leaves.approve.index', $this->data);
     }
 
+    /**
+     * Show the approve leave modal view.
+     *
+     * Purpose: Prepare view variables and return view for approving a leave.
+     */
+
     public function rejectLeave(Request $request)
     {
         $this->reportingTo = EmployeeDetails::where('reporting_to', user()->id)->first();
@@ -931,6 +1097,10 @@ class LeaveController extends AccountBaseController
 
         return view('leaves.reject.index', $this->data);
     }
+
+    /**
+     * Show the reject leave modal view.
+     */
 
     public function personalLeaves()
     {
@@ -1007,6 +1177,13 @@ class LeaveController extends AccountBaseController
         return view('leaves.create', $this->data);
     }
 
+    /**
+     * Show the current user's personal leaves and leave quotas.
+     *
+     * Purpose: Computes leave window (year start or joining date), allowed quotas and
+     * prepares a view showing the user's leave balances.
+     */
+
     public function getDate(Request $request)
     {
         if ($request->date != null) {
@@ -1019,6 +1196,13 @@ class LeaveController extends AccountBaseController
 
         return Reply::dataOnly(['status' => 'success', 'users' => $users]);
     }
+
+    /**
+     * Return count of approved leaves for a specific date.
+     *
+     * Inputs: request->date
+     * Outputs: JSON with 'users' count
+     */
 
     public function viewRelatedLeave(Request $request)
     {
@@ -1033,6 +1217,10 @@ class LeaveController extends AccountBaseController
         return view('leaves.view-multiple-related-leave', $this->data);
     }
 
+    /**
+     * Render modal with related multiple leaves based on unique_id.
+     */
+
     public function leaveTypeRole($id)
     {
         $roles = User::with('roles')->findOrFail($id);
@@ -1045,5 +1233,12 @@ class LeaveController extends AccountBaseController
 
         $this->userRole = $userRole;
     }
+
+    /**
+     * Helper to get role ids for a given user used by leave type selection logic.
+     *
+     * Inputs: $id user id
+     * Outputs: sets $this->userRole array of role ids on the controller
+     */
 
 }

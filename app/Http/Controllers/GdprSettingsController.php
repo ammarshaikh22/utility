@@ -10,214 +10,234 @@ use App\Http\Requests\Gdpr\CreateRequest;
 use App\Models\GdprSetting;
 use App\Models\PurposeConsent;
 use App\Models\RemovalRequest;
-use App\Models\RemovalRequestLead;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class GdprSettingsController extends AccountBaseController
 {
+    protected ?GdprSetting $gdprSetting = null;
 
     public function __construct()
     {
         parent::__construct();
+
         $this->pageTitle = 'app.menu.gdpr';
         $this->activeSettingMenu = 'gdpr_settings';
         $this->gdprSetting = GdprSetting::first();
+
         $this->middleware(function ($request, $next) {
-            abort_403(!(user()->permission('manage_gdpr_setting') == 'all' || in_array('client', user_roles())));
+            abort_403(!(
+                user()->permission('manage_gdpr_setting') === 'all' ||
+                in_array('client', user_roles(), true)
+            ));
             return $next($request);
         });
     }
 
-    public function index()
+    /**
+     * Display GDPR settings main page.
+     */
+    public function index(Request $request): View|JsonResponse
     {
-        $this->view = 'gdpr-settings.ajax.general';
+        $tab = $request->get('tab', 'general');
 
-        $tab = request('tab');
+        $this->view = match ($tab) {
+            'right-to-erasure' => 'gdpr-settings.ajax.right-to-erasure',
+            'right-to-data-portability' => 'gdpr-settings.ajax.right-to-data-portability',
+            'right-to-informed' => 'gdpr-settings.ajax.right-to-informed',
+            'right-to-access' => 'gdpr-settings.ajax.right-to-access',
+            'consent-settings' => 'gdpr-settings.ajax.consent-settings',
+            'consent-lists' => null,
+            'removal-requests' => null,
+            'removal-requests-lead' => null,
+            default => 'gdpr-settings.ajax.general',
+        };
 
-        switch ($tab) {
-        case 'right-to-erasure':
-            $this->view = 'gdpr-settings.ajax.right-to-erasure';
-                break;
-        case 'right-to-data-portability':
-            $this->view = 'gdpr-settings.ajax.right-to-data-portability';
-                break;
-        case 'right-to-informed':
-            $this->view = 'gdpr-settings.ajax.right-to-informed';
-                break;
-        case 'right-to-access':
-            $this->view = 'gdpr-settings.ajax.right-to-access';
-                break;
-        case 'consent-settings':
-            $this->view = 'gdpr-settings.ajax.consent-settings';
-                break;
-        case 'consent-lists':
-                return $this->consentList();
-        case 'removal-requests':
-                return $this->removalRequest();
-        case 'removal-requests-lead':
-                return $this->removalRequestLead();
-        default:
-            $this->view = 'gdpr-settings.ajax.general';
-                break;
-        }
+        $this->activeTab = $tab;
 
-        $this->activeTab = $tab ?: 'general';
-
-        if (request()->ajax()) {
-            $html = view($this->view, $this->data)->render();
-            return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle, 'activeTab' => $this->activeTab]);
-        }
-
-        return view('gdpr-settings.index', $this->data);
-
+        return match ($tab) {
+            'consent-lists' => $this->consentList(),
+            'removal-requests' => $this->removalRequest(),
+            'removal-requests-lead' => $this->removalRequestLead(),
+            default => $this->renderView($request),
+        };
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Render GDPR tab views.
      */
-    public function updateGeneral(Request $request)
+    protected function renderView(Request $request): View|JsonResponse
+    {
+        if ($request->ajax()) {
+            $html = view($this->view, $this->data)->render();
+
+            return Reply::dataOnly([
+                'status' => 'success',
+                'html' => $html,
+                'title' => $this->pageTitle,
+                'activeTab' => $this->activeTab,
+            ]);
+        }
+
+        return view('gdpr-settings.index', $this->data);
+    }
+
+    /**
+     * Update general GDPR settings.
+     */
+    public function updateGeneral(Request $request): JsonResponse
     {
         $this->gdprSetting->update($request->all());
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
+        $this->clearCache();
+
         return Reply::success(__('messages.gdprUpdated'));
     }
 
-    public function storeConsent(CreateRequest $request)
+    /**
+     * Store a new consent purpose.
+     */
+    public function storeConsent(CreateRequest $request): JsonResponse
     {
-        $consent = new PurposeConsent();
-        $consent->create($request->all());
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
+        PurposeConsent::create($request->validated());
+        $this->clearCache();
+
         return Reply::success(__('messages.gdprUpdated'));
     }
 
-    public function updateConsent(CreateRequest $request, $id)
+    /**
+     * Update a consent purpose.
+     */
+    public function updateConsent(CreateRequest $request, int $id): JsonResponse
     {
         $consent = PurposeConsent::findOrFail($id);
-        $consent->update($request->all());
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
+        $consent->update($request->validated());
+
+        $this->clearCache();
 
         return Reply::success(__('messages.gdprUpdated'));
     }
 
-    public function addConsent()
+    public function addConsent(): View
     {
         return view('gdpr-settings.create-consent-modal', $this->data);
     }
 
-    public function editConsent($id)
+    public function editConsent(int $id): View
     {
         $this->consent = PurposeConsent::findOrFail($id);
+
         return view('gdpr-settings.edit-consent-modal', $this->data);
     }
 
-    public function removalRequest()
+    /**
+     * Customer data removal requests.
+     */
+    public function removalRequest(): View
     {
-        $this->view = 'gdpr-settings.ajax.removal-request';
-
         $dataTable = new CustomerDataRemovalDataTable();
-        $tab = request('tab');
-        $this->activeTab = $tab ?: 'removal-requests';
+        $this->activeTab = request('tab', 'removal-requests');
 
-        $this->view = 'gdpr-settings.ajax.removal-request';
-        return $dataTable->render('gdpr-settings.index', $this->data);
-    }
-
-    public function removalRequestLead()
-    {
-        $this->view = 'gdpr-settings.ajax.removal-request-lead';
-
-        $dataTable = new LeadDataRemovalDataTable();
-
-        $tab = request('tab');
-        $this->activeTab = $tab ?: 'removal-requests-lead';
-
-        $this->view = 'gdpr-settings.ajax.removal-request-lead';
-        return $dataTable->render('gdpr-settings.index', $this->data);
-    }
-
-    public function consentList()
-    {
-        $this->view = 'gdpr-settings.ajax.consent-lists';
-
-        $dataTable = new ConsentDataTable();
-
-        $tab = request('tab');
-        $this->activeTab = $tab ?: 'consent';
-        $this->view = 'gdpr-settings.ajax.consent-lists';
         return $dataTable->render('gdpr-settings.index', $this->data);
     }
 
     /**
-     * XXXXXXXXXXX
-     *
-     * @return \Illuminate\Http\Response
+     * Lead data removal requests.
      */
-    public function applyQuickAction(Request $request)
+    public function removalRequestLead(): View
     {
-        switch ($request->action_type) {
-        case 'delete':
-            $this->deleteRecords($request);
-                return Reply::success(__('messages.deleteSuccess'));
-        default:
-                return Reply::error(__('messages.selectAction'));
-        }
+        $dataTable = new LeadDataRemovalDataTable();
+        $this->activeTab = request('tab', 'removal-requests-lead');
+
+        return $dataTable->render('gdpr-settings.index', $this->data);
     }
 
-    protected function deleteRecords($request)
+    /**
+     * Display consent list.
+     */
+    public function consentList(): View
+    {
+        $dataTable = new ConsentDataTable();
+        $this->activeTab = request('tab', 'consent');
+
+        return $dataTable->render('gdpr-settings.index', $this->data);
+    }
+
+    /**
+     * Handle bulk actions.
+     */
+    public function applyQuickAction(Request $request): JsonResponse
+    {
+        return match ($request->action_type) {
+            'delete' => $this->deleteRecords($request),
+            default => Reply::error(__('messages.selectAction')),
+        };
+    }
+
+    protected function deleteRecords(Request $request): JsonResponse
     {
         PurposeConsent::whereIn('id', explode(',', $request->row_ids))->delete();
+
+        return Reply::success(__('messages.deleteSuccess'));
     }
 
-    public function purposeDelete($id)
+    public function purposeDelete(int $id): JsonResponse
     {
         PurposeConsent::destroy($id);
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
-        return Reply::success('Deleted successfully');
+        $this->clearCache();
+
+        return Reply::success(__('messages.deleteSuccess'));
     }
 
-    public function approveRejectClient($id, $type)
+    /**
+     * Approve or reject a client data removal request.
+     */
+    public function approveRejectClient(int $id, string $type): JsonResponse
     {
-        $removal = RemovalRequest::findorFail($id);
-        $removal->status = $type;
-        $removal->save();
+        $removal = RemovalRequest::findOrFail($id);
+        $removal->update(['status' => $type]);
+
         try {
-            if ($type == 'approved' && $removal->user) {
+            if ($type === 'approved' && $removal->user) {
                 $removal->user->delete();
             }
-
-        } catch (\Exception $e) {
-            Log::info($e);
+        } catch (\Throwable $e) {
+            Log::error('GDPR Client Deletion Failed: ' . $e->getMessage());
         }
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
+
+        $this->clearCache();
+
         return Reply::success(__('messages.updateSuccess'));
     }
 
-    public function approveRejectLead($id, $type)
+    /**
+     * Approve or reject a lead data removal request.
+     */
+    public function approveRejectLead(int $id, string $type): JsonResponse
     {
-        $removal = RemovalRequestDeal::findorFail($id);
-        $removal->status = $type;
-        $removal->save();
+        $removal = \App\Models\RemovalRequestLead::findOrFail($id);
+        $removal->update(['status' => $type]);
 
         try {
-            if ($type == 'approved' && $removal->lead) {
+            if ($type === 'approved' && $removal->lead) {
                 $removal->lead->delete();
             }
-
-        } catch (\Exception $e) {
-            Log::info($e);
+        } catch (\Throwable $e) {
+            Log::error('GDPR Lead Deletion Failed: ' . $e->getMessage());
         }
-        session()->forget('gdpr_setting');
-        cache()->forget('global-setting');
-        return Reply::success('successfully');
+
+        $this->clearCache();
+
+        return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Clear relevant cache/session keys.
+     */
+    protected function clearCache(): void
+    {
+        session()->forget('gdpr_setting');
+        cache()->forget('global-setting');
+    }
 }

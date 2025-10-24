@@ -19,7 +19,9 @@ class InvoicePaymentDetailController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Display the form for creating a new invoice payment detail.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -27,7 +29,11 @@ class InvoicePaymentDetailController extends AccountBaseController
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new invoice payment detail in storage.
+     * Validates user permissions, saves payment details, and handles image upload.
+     *
+     * @param \App\Http\Requests\InvoicePaymentRequest $request
+     * @return \App\Helper\Reply
      */
     public function store(InvoicePaymentRequest $request)
     {
@@ -46,7 +52,10 @@ class InvoicePaymentDetailController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Display the form for editing an existing invoice payment detail.
+     *
+     * @param string $id
+     * @return \Illuminate\View\View
      */
     public function edit(string $id)
     {
@@ -55,7 +64,12 @@ class InvoicePaymentDetailController extends AccountBaseController
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update an existing invoice payment detail in storage.
+     * Handles updates to title, payment details, and image, including deletion of existing image if requested.
+     *
+     * @param \App\Http\Requests\InvoicePaymentRequest $request
+     * @param string $id
+     * @return \App\Helper\Reply
      */
     public function update(InvoicePaymentRequest $request, string $id)
     {
@@ -76,11 +90,14 @@ class InvoicePaymentDetailController extends AccountBaseController
         $payment->save();
 
         return Reply::success(__('messages.updateSuccess'));
-
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete an invoice payment detail from storage.
+     * Verifies user permissions before deletion.
+     *
+     * @param string $id
+     * @return \App\Helper\Reply
      */
     public function destroy(string $id)
     {

@@ -21,10 +21,16 @@ use App\Scopes\ActiveScope;
 use App\Traits\ImportExcel;
 use Illuminate\Http\Request;
 
+/**
+ * Controller for managing expenses, including CRUD operations, status changes, and import functionality.
+ */
 class ExpenseController extends AccountBaseController
 {
     use ImportExcel;
 
+    /**
+     * Initializes the controller, setting the page title and applying middleware to restrict access to users with the 'expenses' module.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -35,6 +41,12 @@ class ExpenseController extends AccountBaseController
         });
     }
 
+    /**
+     * Displays the list of expenses with filtering and pagination.
+     *
+     * @param ExpensesDataTable $dataTable The data table instance for rendering expenses.
+     * @return \Illuminate\View\View Returns the expenses index view or data table response.
+     */
     public function index(ExpensesDataTable $dataTable)
     {
         $viewPermission = user()->permission('view_expenses');
@@ -47,9 +59,14 @@ class ExpenseController extends AccountBaseController
         }
 
         return $dataTable->render('expenses.index', $this->data);
-
     }
 
+    /**
+     * Changes the status of a specific expense.
+     *
+     * @param Request $request The HTTP request containing the expense ID and new status.
+     * @return \App\Helper\Reply Returns a JSON response indicating success.
+     */
     public function changeStatus(Request $request)
     {
         abort_403(user()->permission('approve_expenses') != 'all');
@@ -62,6 +79,12 @@ class ExpenseController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Displays the details of a specific expense.
+     *
+     * @param int $id The ID of the expense to display.
+     * @return \Illuminate\View\View Returns the expense details view or AJAX response.
+     */
     public function show($id)
     {
         $this->expense = Expense::with(['user', 'project', 'category', 'transactions' => function($q){
@@ -91,9 +114,13 @@ class ExpenseController extends AccountBaseController
         }
 
         return view('expenses.show', $this->data);
-
     }
 
+    /**
+     * Displays the form for creating a new expense.
+     *
+     * @return \Illuminate\View\View Returns the create expense view or AJAX response.
+     */
     public function create()
     {
         $this->addPermission = user()->permission('add_expenses');
@@ -119,7 +146,6 @@ class ExpenseController extends AccountBaseController
             $this->projects = Project::where('added_by', user()->id)->orWhereHas('projectMembers', function ($query) {
                 $query->where('user_id', user()->id);
             })->get();
-
         } else {
             $this->projects = Project::all();
         }
@@ -131,7 +157,6 @@ class ExpenseController extends AccountBaseController
             $this->project = Project::with('projectMembers')->where('id', $this->projectId)->first();
             $this->projectName = $this->project->project_name;
             $this->employees = $this->project->projectMembers;
-
         } else {
             $this->employees = User::allEmployees(null, true);
         }
@@ -151,9 +176,14 @@ class ExpenseController extends AccountBaseController
         }
 
         return view('expenses.show', $this->data);
-
     }
 
+    /**
+     * Stores a new expense with associated details and optional file upload.
+     *
+     * @param StoreExpense $request The validated HTTP request containing expense data.
+     * @return \App\Helper\Reply Returns a JSON response with success message and redirect URL.
+     */
     public function store(StoreExpense $request)
     {
         $currencySetting = Currency::findOrFail($request->currency_id);
@@ -208,6 +238,12 @@ class ExpenseController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl]);
     }
 
+    /**
+     * Displays the form for editing an existing expense.
+     *
+     * @param int $id The ID of the expense to edit.
+     * @return \Illuminate\View\View Returns the edit expense view or AJAX response.
+     */
     public function edit($id)
     {
         $this->expense = Expense::findOrFail($id)->withCustomFields();
@@ -230,7 +266,6 @@ class ExpenseController extends AccountBaseController
 
         $bankAccounts = $bankAccounts->get();
         $this->bankDetails = $bankAccounts;
-
 
         $userId = $this->expense->user_id;
 
@@ -260,9 +295,15 @@ class ExpenseController extends AccountBaseController
         }
 
         return view('expenses.show', $this->data);
-
     }
 
+    /**
+     * Updates an existing expense with new details and optional file upload.
+     *
+     * @param StoreExpense $request The validated HTTP request containing updated expense data.
+     * @param int $id The ID of the expense to update.
+     * @return \App\Helper\Reply Returns a JSON response with success message and redirect URL.
+     */
     public function update(StoreExpense $request, $id)
     {
         $currencySetting = Currency::findOrFail($request->currency_id);
@@ -280,7 +321,6 @@ class ExpenseController extends AccountBaseController
         $expense->description = trim_editor($request->description);
 
         $expense->project_id = ($request->project_id > 0) ? $request->project_id : null;
-
 
         if ($request->bill_delete == 'yes') {
             Files::deleteFile($expense->bill, Expense::FILE_PATH);
@@ -307,9 +347,14 @@ class ExpenseController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('expenses.index')]);
-
     }
 
+    /**
+     * Deletes a specific expense.
+     *
+     * @param int $id The ID of the expense to delete.
+     * @return \App\Helper\Reply Returns a JSON response indicating success.
+     */
     public function destroy($id)
     {
         $this->expense = Expense::findOrFail($id);
@@ -321,9 +366,10 @@ class ExpenseController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Applies bulk actions (delete or change status) to selected expenses.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request The HTTP request containing action type and row IDs.
+     * @return \App\Helper\Reply Returns a JSON response indicating success or failure.
      */
     public function applyQuickAction(Request $request)
     {
@@ -339,6 +385,12 @@ class ExpenseController extends AccountBaseController
         }
     }
 
+    /**
+     * Deletes multiple expenses based on provided IDs.
+     *
+     * @param Request $request The HTTP request containing row IDs to delete.
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_employees') != 'all');
@@ -349,6 +401,12 @@ class ExpenseController extends AccountBaseController
         }
     }
 
+    /**
+     * Changes the status of multiple expenses in bulk.
+     *
+     * @param Request $request The HTTP request containing status and row IDs.
+     * @return void
+     */
     protected function changeBulkStatus($request)
     {
         abort_403(user()->permission('edit_employees') != 'all');
@@ -361,6 +419,12 @@ class ExpenseController extends AccountBaseController
         });
     }
 
+    /**
+     * Retrieves projects and categories associated with a specific employee.
+     *
+     * @param Request $request The HTTP request containing user ID and category ID.
+     * @return \App\Helper\Reply Returns a JSON response with project and category options.
+     */
     protected function getEmployeeProjects(Request $request)
     {
         // Get employee category
@@ -371,7 +435,6 @@ class ExpenseController extends AccountBaseController
                 $roleId = (count($user->role) > 1) ? $user->role[1]->role_id : $user->role[0]->role_id;
                 $q->where('role_id', $roleId);
             })->get();
-
         }
         else {
             $categories = ExpensesCategory::get();
@@ -406,10 +469,15 @@ class ExpenseController extends AccountBaseController
             }
         }
 
-
         return Reply::dataOnly(['status' => 'success', 'data' => $data, 'category' => $categories]);
     }
 
+    /**
+     * Retrieves employees associated with a specific expense category.
+     *
+     * @param Request $request The HTTP request containing category ID and user ID.
+     * @return \App\Helper\Reply Returns a JSON response with employee options.
+     */
     protected function getCategoryEmployee(Request $request)
     {
         $expenseCategory = ExpensesCategoryRole::where('expenses_category_id', $request->categoryId)->get();
@@ -466,6 +534,11 @@ class ExpenseController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'employees' => $data]);
     }
 
+    /**
+     * Displays the form for importing expenses via Excel.
+     *
+     * @return \Illuminate\View\View Returns the import expense view or AJAX response.
+     */
     public function import()
     {
         $this->pageTitle = __('app.importExcel') . ' ' . __('app.menu.expenses');
@@ -482,6 +555,12 @@ class ExpenseController extends AccountBaseController
         return view('expenses.show', $this->data);
     }
 
+    /**
+     * Processes the uploaded Excel file for importing expenses.
+     *
+     * @param ImportRequest $request The validated HTTP request containing the Excel file.
+     * @return \App\Helper\Reply Returns a JSON response with success message and import progress view.
+     */
     public function importStore(ImportRequest $request)
     {
         $rvalue = $this->importFileProcess($request, ExpenseImport::class);
@@ -495,11 +574,16 @@ class ExpenseController extends AccountBaseController
         return Reply::successWithData(__('messages.importUploadSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Handles the background processing of the expense import job.
+     *
+     * @param ImportProcessRequest $request The validated HTTP request containing import process data.
+     * @return \App\Helper\Reply Returns a JSON response with success message and batch ID.
+     */
     public function importProcess(ImportProcessRequest $request)
     {
         $batch = $this->importJobProcess($request, ExpenseImport::class, ImportExpenseJob::class);
 
         return Reply::successWithData(__('messages.importProcessStart'), ['batch' => $batch]);
     }
-
 }

@@ -16,9 +16,9 @@ class LeadFileController extends AccountBaseController
     use IconTrait;
 
     /**
-     * ManageLeadFileController constructor.
+     * LeadFileController constructor.
+     * Sets page icon and title.
      */
-
     public function __construct()
     {
         parent::__construct();
@@ -27,11 +27,11 @@ class LeadFileController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for uploading new lead files.
+     * Validates user permissions before rendering the create view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
-
     public function create()
     {
         $addPermission = user()->permission('add_lead_files');
@@ -41,8 +41,11 @@ class LeadFileController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
-     * @return array
+     * Store one or more uploaded files for a lead.
+     * Validates permissions, uploads files to local/S3, and saves metadata.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Throwable
      */
@@ -73,11 +76,13 @@ class LeadFileController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Delete a specified lead file from storage.
+     * Validates user permissions before deletion.
+     *
+     * @param \Illuminate\Http\Request $request
      * @param int $id
-     * @return array|void
+     * @return \App\Helper\Reply
      */
-
     public function destroy(Request $request, $id)
     {
         $deletePermission = user()->permission('delete_lead_files');
@@ -87,12 +92,14 @@ class LeadFileController extends AccountBaseController
         DealFile::destroy($id);
 
         return Reply::success(__('messages.deleteSuccess'));
-
     }
 
     /**
-     * @param mixed $id
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse|void
+     * Download a specified lead file.
+     * Validates user permissions and initiates download from local storage or S3.
+     *
+     * @param int $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download($id)
     {
@@ -104,8 +111,11 @@ class LeadFileController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
-     * @return mixed
+     * Render the lead files layout in list or thumbnail view.
+     * Validates user permissions and returns the rendered view based on layout type.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
      */
     public function layout(Request $request)
     {

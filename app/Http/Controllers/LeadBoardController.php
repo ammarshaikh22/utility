@@ -32,8 +32,10 @@ class LeadBoardController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the lead board with deals organized by pipeline stages.
+     * Filters deals based on permissions, date range, and other criteria, and renders the board view.
      *
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
@@ -270,9 +272,7 @@ class LeadBoardController extends AccountBaseController
                     ->orderBy('deals.column_priority', 'asc')
                     ->groupBy('deals.id');
 
-
                 $this->dateFilter($leads, $startDate, $endDate, $request);
-
 
                 if (!is_null($request->min) || !is_null($request->max)) {
                     $min = $request->min;
@@ -303,7 +303,6 @@ class LeadBoardController extends AccountBaseController
                         ->where('lead_products.product_id', $request->product);
                 }
 
-
                 if ($request->deal_watcher_id !== null && $request->deal_watcher_id != 'all' && $request->deal_watcher_id != '') {
                     $leads->where('deals.deal_watcher', $request->deal_watcher_id);
                 }
@@ -317,7 +316,6 @@ class LeadBoardController extends AccountBaseController
                 }
 
                 if ($request->searchText != '') {
-
                     $leads->where(function ($query) {
                         $safeTerm = Common::safeString(request('searchText'));
                         $query->where('leads.client_name', 'like', '%' . $safeTerm . '%')
@@ -331,7 +329,6 @@ class LeadBoardController extends AccountBaseController
                 if (($request->agent != 'all' && $request->agent != '' && $request->agent != 'undefined') || $this->viewLeadPermission == 'added') {
                     $leads->where(function ($query) use ($request) {
                         if ($request->agent != 'all' && $request->agent != '') {
-
                             $query->whereHas('leadAgent', function ($q) use ($request) {
                                 $q->where('user_id', $request->agent);
                             });
@@ -392,6 +389,16 @@ class LeadBoardController extends AccountBaseController
         return view('leads.board.index', $this->data);
     }
 
+    /**
+     * Apply date filters to a query based on the specified date range and filter type.
+     * Filters deals by creation date, update date, or follow-up date.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @param \Illuminate\Http\Request $request
+     * @return void
+     */
     public function dateFilter($query, $startDate, $endDate, $request)
     {
         if ($startDate && $endDate) {
@@ -409,6 +416,13 @@ class LeadBoardController extends AccountBaseController
         }
     }
 
+    /**
+     * Load additional deals for a specific pipeline stage.
+     * Retrieves more deals based on pagination and filters, and renders the load more view.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function loadMore(Request $request)
     {
         $startDate = ($request->startDate != 'null') ? companyToDateString($request->startDate) : null;
@@ -470,6 +484,13 @@ class LeadBoardController extends AccountBaseController
         return Reply::dataOnly(['view' => $view, 'load_more' => $loadStatus]);
     }
 
+    /**
+     * Update the order and stage of deals in a pipeline stage.
+     * Updates the pipeline stage and priority of deals based on the provided task IDs and priorities.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function updateIndex(Request $request)
     {
         $taskIds = $request->taskIds;
@@ -500,6 +521,13 @@ class LeadBoardController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success']);
     }
 
+    /**
+     * Toggle the collapsed state of a pipeline stage column for a user.
+     * Updates the user’s lead board settings to mark a column as collapsed or expanded.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function collapseColumn(Request $request)
     {
         $setting = UserLeadboardSetting::firstOrNew([
@@ -512,6 +540,13 @@ class LeadBoardController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success']);
     }
 
+    /**
+     * Retrieve the slug of a pipeline stage.
+     * Returns the slug for the specified stage ID.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getStageSlug(Request $request)
     {
         $stage = PipelineStage::find($request->statusID);

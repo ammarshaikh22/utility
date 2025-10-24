@@ -24,12 +24,17 @@ class ProjectNoteController extends AccountBaseController
         });
     }
 
+    /**
+     * Show the form for creating a new project note.
+     * Verifies add permission, retrieves project members, and renders the create view with user data.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
         $this->viewProjectPermission = user()->permission('add_project_note');
         $this->project = Project::findOrFail(request('project'));
         abort_403(!(in_array($this->viewProjectPermission, ['all']) || $this->project->project_admin == user()->id));
-
 
         $this->employees = $this->project->projectMembers;
 
@@ -40,11 +45,8 @@ class ProjectNoteController extends AccountBaseController
         $usersData = $this->employees;
 
         foreach ($usersData as $user) {
-
             $url = route('employees.show', [$user->id]);
-
             $userData[] = ['id' => $user->id, 'value' => $user->name, 'image' => $user->image_url, 'link' => $url];
-
         }
 
         $this->userData = $userData;
@@ -58,6 +60,13 @@ class ProjectNoteController extends AccountBaseController
         return view('projects.create', $this->data);
     }
 
+    /**
+     * Store a new project note in the database.
+     * Saves note details, assigns users for private notes, and redirects to the project notes tab.
+     *
+     * @param  \App\Http\Requests\Project\StoreProjectNote  $request
+     * @return array
+     */
     public function store(StoreProjectNote $request)
     {
         $this->addProjectPermission = user()->permission('add_project_note');
@@ -90,18 +99,21 @@ class ProjectNoteController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => route('projects.show', $note->project_id) . '?tab=notes']);
-
-
     }
 
+    /**
+     * Display the details of a specific project note.
+     * Verifies view permissions, retrieves note details, and renders the show view or redirects to the project notes tab.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
-
         $this->note = ProjectNote::with('project')->findOrFail($id);
 
         if ($this->note->type == 1) {
             $this->employees = $this->note->noteUsers;
-
         } else {
             $this->employees = $this->note->project->projectMembers; /** @phpstan-ignore-line */
         }
@@ -117,10 +129,8 @@ class ProjectNoteController extends AccountBaseController
             /** @phpstan-ignore-next-line */
             || ($this->note->project && $this->note->project->project_admin == user()->id)
             || ($viewProjectNotePermission == 'added' && $this->note->added_by == user()->id)
-
             || ($viewProjectNotePermission == 'owned' && $this->note->client_id == user()->id) /* @phpstan-ignore-line */
             || ($viewProjectNotePermission == 'owned' && in_array(user()->id, $memberIds) && in_array('employee', user_roles()))
-
             || ($viewProjectNotePermission == 'both' && (user()->id == $this->note->client_id || $this->note->added_by == user()->id || in_array(user()->id, $memberIds)))/* @phpstan-ignore-line */
         ));
 
@@ -133,9 +143,15 @@ class ProjectNoteController extends AccountBaseController
         }
 
         return redirect(route('projects.show', $this->note->project_id) . '?tab=notes');
-
     }
 
+    /**
+     * Show the form for editing an existing project note.
+     * Verifies edit permission, retrieves note and project member data, and renders the edit view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
         $this->editPermission = user()->permission('edit_project_note');
@@ -149,9 +165,7 @@ class ProjectNoteController extends AccountBaseController
 
         foreach ($usersData as $user) {
             $url = route('employees.show', [$user->id]);
-
             $projectuserData[] = ['id' => $user->id, 'value' => $user->name, 'image' => $user->image_url, 'link' => $url];
-
         }
 
         $this->projectuserData = $projectuserData;
@@ -169,6 +183,14 @@ class ProjectNoteController extends AccountBaseController
         return view('projects.create', $this->data);
     }
 
+    /**
+     * Update an existing project note in the database.
+     * Updates note details, manages private note user assignments, and redirects to the project notes tab.
+     *
+     * @param  \App\Http\Requests\Project\StoreProjectNote  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(StoreProjectNote $request, $id)
     {
         $note = ProjectNote::findOrFail($id);
@@ -180,7 +202,7 @@ class ProjectNoteController extends AccountBaseController
         $note->ask_password = $request->ask_password ?: '';
         $note->save();
 
-        // delete all data od this project_note_id from client_user_notes
+        // delete all data of this project_note_id from client_user_notes
         ProjectUserNote::where('project_note_id', $note->id)->delete();
 
         /* if note type is private */
@@ -198,12 +220,17 @@ class ProjectNoteController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('projects.show', $note->project_id) . '?tab=notes']);
-
     }
 
+    /**
+     * Delete a specific project note from the database.
+     * Verifies delete permission and removes the note if authorized.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function destroy($id)
     {
-
         $this->contact = ProjectNote::findOrFail($id);
         $this->deletePermission = user()->permission('delete_project_note');
 
@@ -217,17 +244,31 @@ class ProjectNoteController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Handle quick actions for project notes.
+     * Processes bulk actions like deletion based on the specified action type.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function applyQuickAction(Request $request)
     {
         switch ($request->action_type) {
         case 'delete':
             $this->deleteRecords($request);
-                return Reply::success(__('messages.deleteSuccess'));
+            return Reply::success(__('messages.deleteSuccess'));
         default:
-                return Reply::error(__('messages.selectAction'));
+            return Reply::error(__('messages.selectAction'));
         }
     }
 
+    /**
+     * Delete multiple project notes from the database.
+     * Verifies delete permission and removes the specified notes.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_project_note') !== 'all');
@@ -235,6 +276,13 @@ class ProjectNoteController extends AccountBaseController
         return true;
     }
 
+    /**
+     * Show the password verification form for a protected project note.
+     * Retrieves the note and renders the password verification view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function askForPassword($id)
     {
         $this->note = ProjectNote::findOrFail($id);
@@ -242,6 +290,13 @@ class ProjectNoteController extends AccountBaseController
         return view('projects.notes.verify-password', $this->data);
     }
 
+    /**
+     * Verify the user's password for accessing a protected project note.
+     * Checks if the provided password matches the user's password and returns the result.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function checkPassword(Request $request)
     {
         $this->client = User::findOrFail($this->user->id);

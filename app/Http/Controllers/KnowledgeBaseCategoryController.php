@@ -10,12 +10,25 @@ use App\Models\BaseModel;
 class KnowledgeBaseCategoryController extends AccountBaseController
 {
 
+    /**
+     * Display the form for creating a new knowledge base category.
+     * Retrieves all existing categories for display in the form.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
         $this->categories = KnowledgeBaseCategory::all();
         return view('knowledge-base.create_category', $this->data);
     }
 
+    /**
+     * Store a new knowledge base category in storage.
+     * Validates and saves the category name, then returns updated category options.
+     *
+     * @param \App\Http\Requests\KnowledgeBase\KnowledgeBaseCategoryStore $request
+     * @return \App\Helper\Reply
+     */
     public function store(KnowledgeBaseCategoryStore $request)
     {
         $category = new KnowledgeBaseCategory();
@@ -27,6 +40,14 @@ class KnowledgeBaseCategoryController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $options]);
     }
 
+    /**
+     * Update an existing knowledge base category.
+     * Validates and updates the category name, then returns updated category data.
+     *
+     * @param \App\Http\Requests\KnowledgeBase\KnowledgeBaseCategoryStore $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function update(KnowledgeBaseCategoryStore $request, $id)
     {
         $category = KnowledgeBaseCategory::findOrFail($id);
@@ -39,10 +60,11 @@ class KnowledgeBaseCategoryController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a knowledge base category from storage.
+     * Removes the specified category and returns updated category data.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {

@@ -20,25 +20,40 @@ class ProjectTimelogBreakController extends AccountBaseController
         });
     }
 
+    /**
+     * Show the form for editing a timelog break.
+     * Retrieves the specified timelog break and renders the edit view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
         $this->timelogBreak = ProjectTimeLogBreak::findOrFail($id);
         return view('timelog-break.edit', $this->data);
     }
 
+    /**
+     * Update a timelog break's details.
+     * Verifies edit permissions, updates start and end times, recalculates total hours and minutes, updates earnings for the associated timelog, and saves changes.
+     *
+     * @param  \App\Http\Requests\TimelogBreak\UpdateTimelogBreak  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(UpdateTimelogBreak $request, $id)
     {
-        $timeLogBreak = ProjectTimeLogBreak::findOrfail($id);
+        $timeLogBreak = ProjectTimeLogBreak::findOrFail($id);
         $timeLog = ProjectTimeLog::findOrFail($timeLogBreak->project_time_log_id);
         $editTimelogPermission = user()->permission('edit_timelogs');
 
         abort_403(!(
             $editTimelogPermission == 'all'
-        || ($editTimelogPermission == 'added' && $timeLog->added_by == user()->id)
-        || ($editTimelogPermission == 'owned'
-            && (($timeLog->project && $timeLog->project->client_id == user()->id) || $timeLog->user_id == user()->id)
+            || ($editTimelogPermission == 'added' && $timeLog->added_by == user()->id)
+            || ($editTimelogPermission == 'owned'
+                && (($timeLog->project && $timeLog->project->client_id == user()->id) || $timeLog->user_id == user()->id)
             )
-        || ($editTimelogPermission == 'both' && (($timeLog->project && $timeLog->project->client_id == user()->id) || $timeLog->user_id == user()->id || $timeLog->added_by == user()->id))
+            || ($editTimelogPermission == 'both' && (($timeLog->project && $timeLog->project->client_id == user()->id) || $timeLog->user_id == user()->id || $timeLog->added_by == user()->id))
         ));
 
         $startTime = Carbon::parse($request->start_time)->format('Y-m-d') . ' ' . Carbon::parse($request->start_time)->format('H:i:s');
@@ -70,6 +85,13 @@ class ProjectTimelogBreakController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Delete a specific timelog break.
+     * Removes the timelog break record from the database and returns a success message.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function destroy($id)
     {
         ProjectTimeLogBreak::destroy($id);

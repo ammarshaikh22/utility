@@ -12,8 +12,10 @@ class ProductSubCategoryController extends AccountBaseController
 {
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new product subcategory.
+     * Retrieves categories, subcategories, and a specific category ID (if provided) to render the create view.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request)
@@ -26,7 +28,10 @@ class ProductSubCategoryController extends AccountBaseController
     }
 
     /**
-     * @param StoreProductSubCategory $request
+     * Store a new product subcategory in the database.
+     * Saves the subcategory, generates dropdown options for categories and subcategories, and returns them.
+     *
+     * @param  \App\Http\Requests\Product\StoreProductSubCategory  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -55,12 +60,12 @@ class ProductSubCategoryController extends AccountBaseController
             }
         }
 
-
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $category, 'subCategoryData' => $subCategory]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update an existing product subcategory in the database.
+     * Updates the subcategory's category ID and name, and returns updated dropdown options for categories and subcategories.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
@@ -80,7 +85,8 @@ class ProductSubCategoryController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific product subcategory from the database.
+     * Removes the subcategory record and returns a success message.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
@@ -91,6 +97,13 @@ class ProductSubCategoryController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Generate HTML options for a category dropdown.
+     * Returns a list of categories with an optional selected category ID.
+     *
+     * @param  int|null  $selectId
+     * @return string
+     */
     public function categoryDropdown($selectId = null)
     {
         /* Category Dropdown */
@@ -110,6 +123,13 @@ class ProductSubCategoryController extends AccountBaseController
         return $categoryOptions;
     }
 
+    /**
+     * Generate HTML options for a subcategory dropdown.
+     * Returns a list of subcategories with an optional selected subcategory ID.
+     *
+     * @param  int  $selectId
+     * @return string
+     */
     public function subCategoryDropdown($selectId)
     {
         /* Sub-Category Dropdown */
@@ -129,6 +149,13 @@ class ProductSubCategoryController extends AccountBaseController
         return $subCategoryOptions;
     }
 
+    /**
+     * Retrieve subcategories for a specific category ID.
+     * Returns a list of subcategories associated with the given category.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function getSubCategories($id)
     {
         $sub_categories = ProductSubCategory::where('category_id', $id)->get();

@@ -12,7 +12,6 @@ use App\Models\ProjectTemplateMilestone;
 use Carbon\CarbonInterval;
 use Illuminate\Http\Request;
 
-
 class ProjectTemplateMilestoneController extends AccountBaseController
 {
 
@@ -28,7 +27,8 @@ class ProjectTemplateMilestoneController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Show the form for creating a new milestone for a project template.
+     * Verifies add permission and retrieves the project template to render the create view.
      *
      * @return \Illuminate\Http\Response
      */
@@ -45,7 +45,10 @@ class ProjectTemplateMilestoneController extends AccountBaseController
     }
 
     /**
-     * @param StoreMilestone $request
+     * Store a new milestone for a project template.
+     * Saves milestone details including title, summary, cost, currency, status, and dates, then returns a success message.
+     *
+     * @param  \App\Http\Requests\Milestone\StoreMilestone  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -63,14 +66,14 @@ class ProjectTemplateMilestoneController extends AccountBaseController
         $milestone->end_date = $request->end_date == null ? $request->end_date : companyToYmd($request->end_date);
         $milestone->save();
 
-
         return Reply::success(__('messages.milestoneSuccess'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing project template milestone.
+     * Retrieves the milestone and available currencies, then renders the edit view.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -82,8 +85,11 @@ class ProjectTemplateMilestoneController extends AccountBaseController
     }
 
     /**
-     * @param StoreMilestone $request
-     * @param int $id
+     * Update an existing project template milestone.
+     * Updates milestone details including title, summary, cost, currency, status, and dates, then returns a success message.
+     *
+     * @param  \App\Http\Requests\Milestone\StoreMilestone  $request
+     * @param  int  $id
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -102,15 +108,15 @@ class ProjectTemplateMilestoneController extends AccountBaseController
         $milestone->end_date = $request->end_date == null ? $request->end_date : companyToYmd($request->end_date);
         $milestone->save();
 
-
         return Reply::success(__('messages.milestoneSuccess'));
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific project template milestone.
+     * Removes the milestone from the database and returns a success message.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id
+     * @return array
      */
     public function destroy($id)
     {
@@ -119,6 +125,13 @@ class ProjectTemplateMilestoneController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Display details of a specific project template milestone.
+     * Verifies view permission, retrieves the milestone with its tasks and project template, and renders the show view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $viewMilestonePermission = user()->permission('view_project_milestones');
@@ -150,6 +163,13 @@ class ProjectTemplateMilestoneController extends AccountBaseController
         return view('project-templates.milestone.show', $this->data);
     }
 
+    /**
+     * Retrieve milestone options for a specific project template.
+     * Returns HTML options for milestones that are not completed, or an empty option if no project ID is provided.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function byProject($id)
     {
         if ($id == 0) {
@@ -163,6 +183,14 @@ class ProjectTemplateMilestoneController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $options]);
     }
 
+    /**
+     * Update the status of a project template milestone.
+     * Updates the milestone's status and returns a success response in JSON format.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function updateStatus(Request $request, $id)
     {
         $milestone = ProjectTemplateMilestone::findOrFail($id);

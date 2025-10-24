@@ -21,9 +21,10 @@ class LeadSourceSettingController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new lead source.
+     * Validates user permissions before rendering the create modal.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -31,18 +32,19 @@ class LeadSourceSettingController extends AccountBaseController
         abort_403(!in_array($this->addPermission, ['all', 'added']));
 
         return view('lead-settings.create-source-modal');
-
     }
 
     /**
-     * @param StoreLeadSource $request
-     * @return array|void
+     * Store a new lead source in storage.
+     * Validates permissions, saves the source, and returns updated options for select input.
+     *
+     * @param \App\Http\Requests\LeadSetting\StoreLeadSource $request
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function store(StoreLeadSource $request)
     {
         $this->addPermission = user()->permission('add_lead_sources');
-
         abort_403(!in_array($this->addPermission, ['all', 'added']));
 
         $source = new LeadSource();
@@ -50,20 +52,18 @@ class LeadSourceSettingController extends AccountBaseController
         $source->save();
 
         $leadSource = LeadSource::get();
-
         $options = BaseModel::options($leadSource, $source, 'type');
 
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $options]);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing lead source.
+     * Validates user permissions before rendering the edit modal.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
-
     public function edit($id)
     {
         $this->source = LeadSource::findOrFail($id);
@@ -74,9 +74,12 @@ class LeadSourceSettingController extends AccountBaseController
     }
 
     /**
-     * @param UpdateLeadSource $request
+     * Update an existing lead source in storage.
+     * Validates permissions and updates the source type.
+     *
+     * @param \App\Http\Requests\LeadSetting\UpdateLeadSource $request
      * @param int $id
-     * @return array|void
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function update(UpdateLeadSource $request, $id)
@@ -92,10 +95,11 @@ class LeadSourceSettingController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a lead source from storage.
+     * Validates user permissions before deletion.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {

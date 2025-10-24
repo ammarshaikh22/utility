@@ -26,7 +26,10 @@ class PromotionController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new promotion record.
+     * Retrieves employee details, current designation and department, and available designations and departments for the create view.
+     *
+     * @return string
      */
     public function create()
     {
@@ -52,7 +55,11 @@ class PromotionController extends AccountBaseController
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new promotion record in the database.
+     * Creates a promotion or demotion record with details like date, designation, department, and notification settings, using a transaction for data integrity.
+     *
+     * @param  \App\Http\Requests\Admin\Employee\StorePromotionRequest  $request
+     * @return array
      */
     public function store(StorePromotionRequest $request)
     {
@@ -79,7 +86,11 @@ class PromotionController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing promotion record.
+     * Retrieves the promotion details, employee ID, designations, and departments, then renders the edit view.
+     *
+     * @param  string  $id
+     * @return string
      */
     public function edit(string $id)
     {
@@ -95,7 +106,12 @@ class PromotionController extends AccountBaseController
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update an existing promotion record in the database.
+     * Updates the promotion or demotion details like date, designation, department, and notification settings, using a transaction for data integrity.
+     *
+     * @param  \App\Http\Requests\Admin\Employee\StorePromotionRequest  $request
+     * @param  string  $id
+     * @return array
      */
     public function update(StorePromotionRequest $request, string $id)
     {
@@ -118,7 +134,11 @@ class PromotionController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific promotion record from the database.
+     * Removes the promotion record and returns a success message.
+     *
+     * @param  string  $id
+     * @return array
      */
     public function destroy(string $id)
     {

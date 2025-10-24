@@ -33,6 +33,8 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
+     * Display a listing of all language settings.
+     *
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function index()
@@ -42,12 +44,13 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Update the status of a language setting.
+     * Updates the specified language setting's status and saves it.
+     *
+     * @param \Illuminate\Http\Request $request
      * @param int $id
-     * @return array
-     * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
+     * @return \App\Helper\Reply
      */
-    // phpcs:ignore
     public function update(Request $request, $id)
     {
         $setting = LanguageSetting::findOrFail($request->id);
@@ -58,16 +61,17 @@ class LanguageSettingController extends AccountBaseController
 
         $setting->save();
 
-
         return Reply::success(__('messages.updateSuccess'));
     }
 
     /**
-     * @param UpdateRequest $request
+     * Update a language setting's details.
+     * Updates language name, code, flag, status, and RTL setting, and handles language folder renaming.
+     *
+     * @param \App\Http\Requests\Admin\Language\UpdateRequest $request
      * @param int $id
-     * @return array
+     * @return \App\Helper\Reply
      */
-    // phpcs:ignore
     public function updateData(UpdateRequest $request, $id)
     {
         $setting = LanguageSetting::findOrFail($request->id);
@@ -95,13 +99,15 @@ class LanguageSettingController extends AccountBaseController
         $setting->is_rtl = $request->is_rtl;
         $setting->save();
 
-
         return Reply::success(__('messages.updateSuccess'));
     }
 
     /**
-     * @param StoreRequest $request
-     * @return array
+     * Store a new language setting.
+     * Creates a new language folder and saves the language details.
+     *
+     * @param \App\Http\Requests\Admin\Language\StoreRequest $request
+     * @return \App\Helper\Reply
      */
     public function store(StoreRequest $request)
     {
@@ -124,7 +130,10 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Show the form for creating a new language setting.
+     * Retrieves available flags for selection.
+     *
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function create(Request $request)
@@ -135,7 +144,10 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Show the form for auto-translation settings.
+     * Retrieves the current translation settings for display.
+     *
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function autoTranslate(Request $request)
@@ -144,6 +156,13 @@ class LanguageSettingController extends AccountBaseController
         return view('language-settings.auto-translate-modal', $this->data);
     }
 
+    /**
+     * Update auto-translation settings.
+     * Validates and updates the translation settings.
+     *
+     * @param \App\Http\Requests\Admin\Language\AutoTranslateRequest $request
+     * @return \App\Helper\Reply
+     */
     public function autoTranslateUpdate(AutoTranslateRequest $request)
     {
         $translateSetting = TranslateSetting::first();
@@ -153,9 +172,12 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Show the form for editing an existing language setting.
+     * Retrieves the language setting and available flags for selection.
+     *
+     * @param \Illuminate\Http\Request $request
      * @param int $id
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function edit(Request $request, $id)
     {
@@ -166,8 +188,11 @@ class LanguageSettingController extends AccountBaseController
     }
 
     /**
+     * Delete a language setting and its associated resources.
+     * Removes the language folder, translations, and updates the default locale if necessary.
+     *
      * @param int $id
-     * @return array
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
@@ -196,6 +221,12 @@ class LanguageSettingController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Reset and re-import translations.
+     * Executes artisan commands to reset and import translations.
+     *
+     * @return \App\Helper\Reply
+     */
     public function fixTranslation()
     {
         Artisan::call('translations:reset');
@@ -203,6 +234,12 @@ class LanguageSettingController extends AccountBaseController
         return Reply::success(__('modules.languageSettings.fixTranslationSuccess'));
     }
 
+    /**
+     * Create an English locale by copying existing language resources.
+     * Copies the 'eng' folder and JSON file to create an 'en' locale.
+     *
+     * @return \App\Helper\Reply
+     */
     public function createEnLocale()
     {
         // copy eng folder from resources/lang to resources/lang/en

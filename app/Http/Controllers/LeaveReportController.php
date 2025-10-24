@@ -20,6 +20,13 @@ class LeaveReportController extends AccountBaseController
         $this->pageTitle = 'app.menu.leaveReport';
     }
 
+    /**
+     * Display a listing of leave reports using a DataTable.
+     * Validates user permissions and sets default date range for filtering.
+     *
+     * @param \App\DataTables\LeaveReportDataTable $dataTable
+     * @return mixed
+     */
     public function index(LeaveReportDataTable $dataTable)
     {
         $viewPermission = user()->permission('view_leave_report');
@@ -34,6 +41,14 @@ class LeaveReportController extends AccountBaseController
         return $dataTable->render('reports.leave.index', $this->data);
     }
 
+    /**
+     * Display leave details for a specific user.
+     * Filters leave types and their associated leaves based on date range and status.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
     public function show(Request $request, $id)
     {
         $this->userId = $id;
@@ -64,13 +79,19 @@ class LeaveReportController extends AccountBaseController
 
         if (request()->ajax() && $view != '') {
             $this->view = 'reports.leave.ajax.show';
-
             return $this->returnAjax($this->view);
         }
 
         return view('reports.leave.show', $this->data);
     }
 
+    /**
+     * Display the leave quota report using a DataTable.
+     * Validates user permissions and sets default year and month for filtering.
+     *
+     * @param \App\DataTables\LeaveQuotaReportDataTable $dataTable
+     * @return mixed
+     */
     public function leaveQuota(LeaveQuotaReportDataTable $dataTable)
     {
         $viewPermission = user()->permission('view_leave_report');
@@ -86,39 +107,47 @@ class LeaveReportController extends AccountBaseController
         return $dataTable->render('reports.leave-quota.index', $this->data);
     }
 
+    /**
+     * Display leave quota details for a specific employee for a given year and month.
+     * Calculates leave quotas based on company settings and employee details.
+     *
+     * @param int $id
+     * @param int $year
+     * @param int $month
+     * @return \Illuminate\View\View
+     */
     public function employeeLeaveQuota($id, $year, $month)
     {
         $forMontDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $thisMonthStartDate = now()->startOfMonth();
 
         $this->employee = User::with([
-        'employeeDetail',
-         'employeeDetail.designation',
-         'employeeDetail.department',
-         'country',
-         'employee',
-         'roles'
-         ])
+            'employeeDetail',
+            'employeeDetail.designation',
+            'employeeDetail.department',
+            'country',
+            'employee',
+            'roles'
+        ])
             ->onlyEmployee()
-            ->when(!$thisMonthStartDate->eq($forMontDate), function($query) use($forMontDate) {
+            ->when(!$thisMonthStartDate->eq($forMontDate), function ($query) use ($forMontDate) {
                 $query->with([
-                'leaveQuotaHistory' => function($query) use($forMontDate) {
-                    $query->where('for_month', $forMontDate);
-                },
-                'leaveQuotaHistory.leaveType',
-                ])->whereHas('leaveQuotaHistory', function($query) use($forMontDate) {
+                    'leaveQuotaHistory' => function ($query) use ($forMontDate) {
+                        $query->where('for_month', $forMontDate);
+                    },
+                    'leaveQuotaHistory.leaveType',
+                ])->whereHas('leaveQuotaHistory', function ($query) use ($forMontDate) {
                     $query->where('for_month', $forMontDate);
                 });
             })
-        ->when($thisMonthStartDate->eq($forMontDate), function($query) {
-            $query->with([
-                'leaveTypes',
-                'leaveTypes.leaveType',
-            ]);
-        })
-        ->withoutGlobalScope(ActiveScope::class)
-        ->findOrFail($id);
-
+            ->when($thisMonthStartDate->eq($forMontDate), function ($query) {
+                $query->with([
+                    'leaveTypes',
+                    'leaveTypes.leaveType',
+                ]);
+            })
+            ->withoutGlobalScope(ActiveScope::class)
+            ->findOrFail($id);
 
         $settings = company();
         $now = Carbon::now();
@@ -126,65 +155,51 @@ class LeaveReportController extends AccountBaseController
         $leaveStartDate = null;
         $leaveEndDate = null;
 
-        if($settings && $settings->leaves_start_from == 'year_start'){
-
+        if ($settings && $settings->leaves_start_from == 'year_start') {
             if ($yearStartMonth > $now->month) {
-                // Not completed a year yet
                 $leaveStartDate = Carbon::create($now->year, $yearStartMonth, 1)->subYear();
                 $leaveEndDate = $leaveStartDate->copy()->addYear()->subDay();
-
             } else {
                 $leaveStartDate = Carbon::create($now->year, $yearStartMonth, 1);
                 $leaveEndDate = $leaveStartDate->copy()->addYear()->subDay();
             }
-
-        } elseif ($settings && $settings->leaves_start_from == 'joining_date'){
-
+        } elseif ($settings && $settings->leaves_start_from == 'joining_date') {
             $joiningDate = Carbon::parse($this->employee->employeedetails->joining_date->format((now(company()->timezone)->year) . '-m-d'));
             $joinMonth = $joiningDate->month;
             $joinDay = $joiningDate->day;
 
             if ($joinMonth > $now->month || ($joinMonth == $now->month && $now->day < $joinDay)) {
-                // Not completed a year yet
                 $leaveStartDate = $joiningDate->copy()->subYear();
                 $leaveEndDate = $joiningDate->copy()->subDay();
-
             } else {
-                // Completed a year
                 $leaveStartDate = $joiningDate;
                 $leaveEndDate = $joiningDate->copy()->addYear()->subDay();
             }
-
         }
 
         $this->employeeLeavesQuotas = $this->employee->leaveTypes;
-
         $hasLeaveQuotas = false;
         $totalLeaves = 0;
         $overUtilizedLeaves = 0;
         $leaveCounts = [];
-        $allowedEmployeeLeavesQuotas = []; // Leave Types Which employee can take according to leave type conditions
+        $allowedEmployeeLeavesQuotas = [];
 
         foreach ($this->employeeLeavesQuotas as $key => $leavesQuota) {
-
             if (
                 ($leavesQuota->leaveType->deleted_at == null || $leavesQuota->leaves_used > 0) &&
-                $leavesQuota->leaveType && ($leavesQuota->leaveType->leaveTypeCondition($leavesQuota->leaveType, $this->employee))) {
-
+                $leavesQuota->leaveType && ($leavesQuota->leaveType->leaveTypeCondition($leavesQuota->leaveType, $this->employee))
+            ) {
                 $hasLeaveQuotas = true;
                 $allowedEmployeeLeavesQuotas[] = $leavesQuota;
-
-                // $sum = ($leavesQuota->leaveType->deleted_at == null) ? $leavesQuota->leaves_remaining : 0;
-                // $totalLeaves = $totalLeaves + ($leavesQuota?->no_of_leaves ?: 0) - ($leaveCounts[$leavesQuota->leave_type_id] ?: 0);
                 $totalLeaves = $totalLeaves + ($leavesQuota?->leaves_remaining ?: 0);
             }
         }
-        
+
         $this->leaveCounts = $leaveCounts;
         $this->hasLeaveQuotas = $hasLeaveQuotas;
         $this->allowedEmployeeLeavesQuotas = $allowedEmployeeLeavesQuotas;
-        $this->allowedLeaves = $totalLeaves + $overUtilizedLeaves; // remining leaves
-    
+        $this->allowedLeaves = $totalLeaves + $overUtilizedLeaves;
+
         return view('reports.leave-quota.show', $this->data);
     }
 
