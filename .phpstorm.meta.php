@@ -5,13 +5,42 @@
 
 namespace PHPSTORM_META {
 
-   /**
-    * PhpStorm Meta file, to provide autocomplete information for PhpStorm
-    *
-    * @author Barry vd. Heuvel <barryvdh@gmail.com>
-    * @see https://github.com/barryvdh/laravel-ide-helper
-    */
-    override(new \Illuminate\Contracts\Container\Container, map([
+    /**
+     * PhpStorm Meta file, to provide autocomplete information for PhpStorm
+     *
+     * This file is generated (and typically updated) by the
+     * `barryvdh/laravel-ide-helper` package. It improves IDE autocompletion
+     * and type inference by mapping container keys, helper functions and
+     * other shortcuts to concrete classes.
+     *
+     * What this file contains (high-level):
+     *  - override(...) blocks: tell PhpStorm what concrete class is returned
+     *    by specific container calls (for example `app('cache')`).
+     *  - map([...]) arrays: key => class mappings used by `override` calls.
+     *
+     * Important notes / editing guidance:
+     *  - The file is only read by PhpStorm (no runtime effect). It's safe to
+     *    keep it in version control so all developers share the same IDE hints.
+     *  - Do not remove mappings unless you are certain they are obsolete.
+     *  - When adding custom mappings, prefer short comments above them to
+     *    explain why the mapping exists (e.g., adapter for a third-party
+     *    package).
+     *  - Regenerate this file when you add/update packages or change
+     *    service bindings: `php artisan ide-helper:meta`.
+     *
+     * @author Barry vd. Heuvel <barryvdh@gmail.com>
+     * @see https://github.com/barryvdh/laravel-ide-helper
+     */
+     // -------------------------------------------------------------------------
+     // IDE helper mappings (brief explanation)
+     // -------------------------------------------------------------------------
+     // The following override() call maps container resolution performed with
+     // `new \Illuminate\Contracts\Container\Container` to concrete classes
+     // based on the associative array below. This allows PhpStorm to provide
+     // accurate autocompletion and return types for calls like
+     // `app('mailer')`, `resolve('db')`, or `container->make('cache')`.
+     // -------------------------------------------------------------------------
+     override(new \Illuminate\Contracts\Container\Container, map([
         '' => '@',
             'Barryvdh\Debugbar\LaravelDebugbar' => \Barryvdh\Debugbar\LaravelDebugbar::class,
             'Barryvdh\Debugbar\SymfonyHttpDriver' => \Barryvdh\Debugbar\SymfonyHttpDriver::class,
