@@ -27,8 +27,10 @@ class NoticeController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of notices using a DataTable.
+     * Checks user permissions to view notices and renders the notice board index view.
      *
+     * @param  \App\DataTables\NoticeBoardDataTable  $dataTable
      * @return \Illuminate\Http\Response
      */
     public function index(NoticeBoardDataTable $dataTable)
@@ -37,11 +39,11 @@ class NoticeController extends AccountBaseController
         abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
 
         return $dataTable->render('notices.index', $this->data);
-
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new notice.
+     * Verifies user permission to add notices and prepares team, employee, and client data for the form.
      *
      * @return \Illuminate\Http\Response
      */
@@ -64,7 +66,10 @@ class NoticeController extends AccountBaseController
     }
 
     /**
-     * @param StoreNotice $request
+     * Store a new notice in the database.
+     * Saves the notice details and associates it with selected employees or clients, handling transactions for data consistency.
+     *
+     * @param  \App\Http\Requests\Notice\StoreNotice  $request
      * @return array|void
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -103,13 +108,13 @@ class NoticeController extends AccountBaseController
         DB::commit();
 
         return Reply::successWithData(__('messages.recordSaved'), ['noticeID' => $notice->id, 'redirectUrl' => route('notices.index')]);
-
     }
 
     /**
-     * Display the specified resource.
+     * Display the details of a specific notice.
+     * Checks view permissions, marks the notice as read for the user, and retrieves associated employees and clients.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -151,7 +156,6 @@ class NoticeController extends AccountBaseController
             return $value->read == 1;
         });
 
-
         $this->unReadMembers = $this->notice->member->filter(function ($value, $key) {
             return $value->read == 0;
         });
@@ -165,13 +169,13 @@ class NoticeController extends AccountBaseController
         }
 
         return view('notices.create', $this->data);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing notice.
+     * Verifies edit permissions and prepares team, employee, and client data for the edit form.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -207,12 +211,14 @@ class NoticeController extends AccountBaseController
         }
 
         return view('notices.create', $this->data);
-
     }
 
     /**
-     * @param StoreNotice $request
-     * @param int $id
+     * Update an existing notice in the database.
+     * Updates notice details and associated users, ensuring only new users are added to avoid duplicates.
+     *
+     * @param  \App\Http\Requests\Notice\StoreNotice  $request
+     * @param  int  $id
      * @return array|void
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -270,9 +276,10 @@ class NoticeController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific notice and its associated file, if any.
+     * Verifies delete permissions before removing the notice and its related data.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -297,9 +304,15 @@ class NoticeController extends AccountBaseController
 
         Notice::destroy($id);
         return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => route('notices.index')]);
-
     }
 
+    /**
+     * Handle bulk actions for notices, such as deletion.
+     * Processes the requested action type and delegates to the appropriate method.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function applyQuickAction(Request $request)
     {
         switch ($request->action_type) {
@@ -311,6 +324,13 @@ class NoticeController extends AccountBaseController
         }
     }
 
+    /**
+     * Delete multiple notice records based on provided IDs.
+     * Verifies delete permission and performs a forced deletion of the specified notices.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_notice') != 'all');

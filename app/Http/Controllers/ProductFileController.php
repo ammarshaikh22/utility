@@ -22,7 +22,10 @@ class ProductFileController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
+     * Store one or more files associated with a product.
+     * Uploads files, saves their details, and sets the default image for the product if specified.
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Throwable
@@ -59,6 +62,13 @@ class ProductFileController extends AccountBaseController
         return Reply::success(__('messages.fileUploaded'));
     }
 
+    /**
+     * Update images associated with a product.
+     * Uploads new files, saves their details, and updates the default image for the product if specified.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function updateImages(Request $request)
     {
         $defaultImage = null;
@@ -88,9 +98,12 @@ class ProductFileController extends AccountBaseController
     }
 
     /**
-     * @param Request $request
-     * @param int $id
-     * @return array|void
+     * Delete a specific product file from storage.
+     * Removes the file record associated with the given ID.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return array
      */
     public function destroy(Request $request, $id)
     {
@@ -99,6 +112,13 @@ class ProductFileController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Download a specific product file.
+     * Retrieves the file by ID and initiates a download from local or S3 storage.
+     *
+     * @param  int  $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function download($id)
     {
         $file = ProductFiles::findOrFail($id);

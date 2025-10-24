@@ -54,6 +54,14 @@ class AttendanceController extends AccountBaseController
         });
     }
 
+    /**
+     * Constructor
+     *
+     * Purpose: Initialize controller state, set page title and middleware to enforce module access.
+     * Inputs: none
+     * Outputs: none (controller state prepared)
+     */
+
     public function index(Request $request)
     {
         $attendance = Attendance::find($request->employee_id);
@@ -86,6 +94,16 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.index', $this->data);
     }
+
+    /**
+     * Attendance index page.
+     *
+     * Purpose: Show attendance listing UI. Validates view permissions and returns either
+     * a full view or AJAX summary data when requested.
+     * Inputs: Request (may include employee_id for scoped access)
+     * Outputs: attendance index view or summary AJAX payload
+     * Side effects: May abort with 403 on insufficient permissions.
+     */
 
     public function summaryData($request)
     {
@@ -333,6 +351,16 @@ class AttendanceController extends AccountBaseController
     }
 
     /**
+     * Prepare attendance summary data for a month/year.
+     *
+     * Purpose: Aggregate attendance, shifts, leaves and holidays for employees and
+     * build a day-by-day attendance matrix used by the frontend summary table.
+     * Inputs: request with year, month, department/designation filters, userId
+     * Outputs: JSON payload containing rendered HTML for summary table
+     * Side effects: Reads many related models; aborts earlier for permission checks.
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return \Illuminate\Http\Response
@@ -460,6 +488,14 @@ class AttendanceController extends AccountBaseController
         return view('attendances.ajax.edit', $this->data);
     }
 
+    /**
+     * Show attendance edit dialog for a specific attendance record.
+     *
+     * Purpose: Load attendance record and related settings so the UI can edit clock-in/out details.
+     * Inputs: $id attendance id
+     * Outputs: view fragment for editing attendance
+     */
+
     public function update(ClockInRequest $request, $id)
     {
         $attendance = Attendance::findOrFail($id);
@@ -535,6 +571,14 @@ class AttendanceController extends AccountBaseController
         return Reply::success(__('messages.attendanceSaveSuccess'));
     }
 
+    /**
+     * Update an existing attendance record.
+     *
+     * Purpose: Validate and apply manual edits to clock-in/out times, detect conflicts and persist changes.
+     * Inputs: ClockInRequest validated input and $id attendance id
+     * Outputs: JSON success or error via Reply helper
+     */
+
     public function mark(Request $request, $userid, $day, $month, $year)
     {
         $this->date = Carbon::createFromFormat('d-m-Y', $day . '-' . $month . '-' . $year)->format('Y-m-d');
@@ -578,6 +622,14 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.ajax.edit', $this->data);
     }
+
+    /**
+     * Prepare UI to mark attendance for a specific user and date.
+     *
+     * Purpose: Determine shift settings, existing attendances and render the add/edit attendance fragment.
+     * Inputs: $userid, day, month, year
+     * Outputs: view fragment for marking attendance
+     */
 
     public function store(StoreAttendance $request)
     {
@@ -750,6 +802,14 @@ class AttendanceController extends AccountBaseController
     }
 
     /**
+     * Store a new attendance entry (manual clock in/out).
+     *
+     * Purpose: Validate and create attendance records, handle clock-in/out conflicts, leave rejection and limits.
+     * Inputs: StoreAttendance validated request
+     * Outputs: JSON success or error via Reply helper
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return \Illuminate\Http\Response
@@ -772,6 +832,14 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.by_member', $this->data);
     }
+
+    /**
+     * Show the attendance-by-member page (UI to inspect an individual member's attendance).
+     *
+     * Purpose: Prepare employee list and defaults for the per-member attendance view.
+     * Inputs: none (uses permissions)
+     * Outputs: full view for attendance by member
+     */
 
     public function employeeData(Request $request, $startDate = null, $endDate = null, $userId = null)
     {
@@ -921,6 +989,14 @@ class AttendanceController extends AccountBaseController
     }
 
     /**
+     * Return attendance data for a member in a date range.
+     *
+     * Purpose: Aggregate attendances, holidays and leaves for a single user to build a per-day view used by the member UI.
+     * Inputs: Request with month/year and userId
+     * Outputs: JSON with rendered HTML and summary counters
+     */
+
+    /**
      * XXXXXXXXXXX
      *
      * @return \Illuminate\Http\Response
@@ -956,6 +1032,14 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.create', $this->data);
     }
+
+    /**
+     * Show bulk attendance marking UI.
+     *
+     * Purpose: Prepare lists (employees, departments, locations) used by the bulk attendance form.
+     * Inputs: none
+     * Outputs: AJAX fragment or full view for marking attendance
+     */
 
     /**
      * XXXXXXXXXXX
@@ -1133,6 +1217,15 @@ class AttendanceController extends AccountBaseController
         return Reply::redirect($redirectUrl, __('messages.attendanceSaveSuccess'));
     }
 
+    /**
+     * Mark attendance in bulk for multiple employees and a date range.
+     *
+     * Purpose: Iterate requested dates/users, reject overlapping leaves and insert attendance rows in bulk.
+     * Inputs: StoreBulkAttendance validated request
+     * Outputs: Redirect/JSON success or error
+     * Side effects: Writes many Attendance rows, may reject leaves
+     */
+
     public function checkHalfDay(Request $request)
     {
         $halfDayDurationEnded = null; // Yes  ? not on half day &  No ? on half day
@@ -1245,6 +1338,15 @@ class AttendanceController extends AccountBaseController
         }
     }
 
+    /**
+     * Check whether requested attendance falls into any half-day leaves.
+     *
+     * Purpose: Used by bulk or single marking flows to determine half-day constraints and whether a half-day
+     * duration has ended (based on shift times).
+     * Inputs: Request with user(s) and date(s)
+     * Outputs: JSON data describing half-day/full-day availability
+     */
+
     public function halfDayShiftCheck($leave, $shiftFound, $userShifts = null)
     {
 
@@ -1280,6 +1382,13 @@ class AttendanceController extends AccountBaseController
         return $halfDayDurationEnded;
     }
 
+    /**
+     * Determine if a half-day leave has ended based on shift timings.
+     *
+     * Inputs: $leave model, $shiftFound boolean, optional $userShifts collection
+     * Outputs: 'yes'|'no' indicating if half-day period has ended
+     */
+
     public function destroy($id)
     {
         $attendance = Attendance::findOrFail($id);
@@ -1290,6 +1399,14 @@ class AttendanceController extends AccountBaseController
 
         return Reply::success(__('messages.deleteSuccess'));
     }
+
+    /**
+     * Delete an attendance entry by id (permission-checked).
+     *
+     * Purpose: Remove a single Attendance record; used by UI delete action.
+     * Inputs: $id attendance id
+     * Outputs: JSON success reply
+     */
 
     public function importAttendance()
     {
@@ -1311,6 +1428,12 @@ class AttendanceController extends AccountBaseController
         return view('attendances.create', $this->data);
     }
 
+    /**
+     * Show import attendance UI.
+     *
+     * Purpose: Render import form for attendance Excel uploads.
+     */
+
     public function importStore(ImportRequest $request)
     {
         $rvalue = $this->importFileProcess($request, AttendanceImport::class);
@@ -1324,12 +1447,20 @@ class AttendanceController extends AccountBaseController
         return Reply::successWithData(__('messages.importUploadSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Handle uploaded attendance import file and return a progress view.
+     */
+
     public function importProcess(ImportProcessRequest $request)
     {
         $batch = $this->importJobProcess($request, AttendanceImport::class, ImportAttendanceJob::class);
 
         return Reply::successWithData(__('messages.importProcessStart'), ['batch' => $batch]);
     }
+
+    /**
+     * Kick off the background attendance import job.
+     */
 
     public function exportAttendanceByMember($year, $month, $id)
     {
@@ -1343,6 +1474,14 @@ class AttendanceController extends AccountBaseController
         return Excel::download(new AttendanceByMemberExport($year, $month, $id, $obj->name, $startDate, $endDate), $obj->name . '_' . $startDate->format('d-m-Y') . '_To_' . $date->format('d-m-Y') . '.xlsx');
     }
 
+    /**
+     * Export attendance for a single member to Excel.
+     *
+     * Purpose: Build export for given member and month/year and download as XLSX.
+     * Inputs: $year, $month, $id user id
+     * Outputs: Excel download response
+     */
+
     public function exportAllAttendance($year, $month, $id, $department, $designation)
     {
         abort_403(!canDataTableExport());
@@ -1354,6 +1493,12 @@ class AttendanceController extends AccountBaseController
 
         return Excel::download(new AttendanceExport($year, $month, $id, $department, $designation, $startDate, $endDate), 'Attendance_From_' . $startDate->format('d-m-Y') . '_To_' . $date->format('d-m-Y') . '.xlsx');
     }
+
+    /**
+     * Export attendance for all users (filtered) to Excel.
+     *
+     * Purpose: Prepare export for a month with optional filters and trigger download.
+     */
 
     public function byHour(Request $request)
     {
@@ -1392,6 +1537,10 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.by_hour', $this->data);
     }
+
+    /**
+     * Show attendance-by-hour UI and prepare employee list.
+     */
 
     public function hourSummaryData($request)
     {
@@ -1612,6 +1761,14 @@ class AttendanceController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $view]);
     }
 
+    /**
+     * Prepare hour-based attendance summary (total hours per day) for employees.
+     *
+     * Purpose: Aggregate total minutes worked per day for each employee and render the hour summary fragment.
+     * Inputs: request with month/year and filters
+     * Outputs: JSON rendered HTML
+     */
+
     public function byMapLocation(Request $request)
     {
         abort_403(!(in_array($this->viewAttendancePermission, ['all', 'added', 'owned', 'both'])));
@@ -1625,6 +1782,10 @@ class AttendanceController extends AccountBaseController
 
         return view('attendances.by_map_location', $this->data);
     }
+
+    /**
+     * Show map-location view for attendances (UI to inspect GPS locations by date).
+     */
 
     protected function byMapLocationData($request)
     {
@@ -1660,6 +1821,13 @@ class AttendanceController extends AccountBaseController
 
         return Reply::dataOnly(['status' => 'success', 'data' => $view]);
     }
+
+    /**
+     * Return attendances with GPS coordinates for a given date and filters.
+     *
+     * Inputs: request with attendance_date, department, userId, late flag
+     * Outputs: JSON with rendered view fragment
+     */
 
     public function attendanceShift($defaultAttendanceSettings, $userId, $date, $clockInTime)
     {
@@ -1699,6 +1867,13 @@ class AttendanceController extends AccountBaseController
         return $attendanceSettings->shift;
     }
 
+    /**
+     * Decide applicable attendance shift for a user based on default settings and scheduled shifts.
+     *
+     * Inputs: defaultAttendanceSettings (shift object), userId, date (Carbon), clockInTime (string)
+     * Outputs: shift model to be used for the attendance
+     */
+
     public function addAttendance($userID, $day, $month, $year)
     {
         $this->date = Carbon::createFromFormat('d-m-Y', $day . '-' . $month . '-' . $year)->format('Y-m-d');
@@ -1719,6 +1894,10 @@ class AttendanceController extends AccountBaseController
         return view('attendances.ajax.add_user_attendance', $this->data);
     }
 
+    /**
+     * Render UI to add a user's attendance for a specific date.
+     */
+
     public function qrCodeStatus(Request $request)
     {
 
@@ -1733,6 +1912,13 @@ class AttendanceController extends AccountBaseController
 
         return Reply::success('Success');
     }
+
+    /**
+     * Toggle QR code based clock-in/out status in attendance settings.
+     *
+     * Inputs: request->qr_status (1|0)
+     * Outputs: JSON success or error
+     */
 
     public function qrClockInOut(Request $request, $hash)
     {
@@ -1952,6 +2138,14 @@ class AttendanceController extends AccountBaseController
         return view('attendance-settings.ajax.qrview', compact('message', 'intimeDate', 'outtimeDate', 'totalWorkingTime', 'todayAttendance', 'time', 'notAuthorize', 'qrClockIn'));
     }
 
+    /**
+     * Handle QR-based clock in/out for authenticated users.
+     *
+     * Purpose: Validate QR clock-in conditions (leave/holiday/shift/time/radius/IP), then clock in or clock out user.
+     * Inputs: Request (may include current location), $hash company identifier
+     * Outputs: View fragment summarizing result (success/error) for the QR modal
+     */
+
     private function clockInUser($user, $request)
     {
         $now = now();
@@ -2151,6 +2345,14 @@ class AttendanceController extends AccountBaseController
         // ]);
     }
 
+    /**
+     * Perform the actual clock-in action for a user (used by QR and UI flows).
+     *
+     * Inputs: $user model, Request with optional latitude/longitude
+     * Outputs: array or Reply response indicating success or error
+     * Side effects: Inserts Attendance record and handles late/half-day flags
+     */
+
     private function clockOutUser($attendance)
     {
         $user = user();
@@ -2162,6 +2364,13 @@ class AttendanceController extends AccountBaseController
         // Update clock-out time
         $attendance->update(['clock_out_time' => now(), 'clock_out_time_work_from_type' => 'office', 'clock_out_time_location_id' => $companyAddress->id]);
     }
+
+    /**
+     * Clock out a user by updating the attendance clock_out_time and related fields.
+     *
+     * Inputs: $attendance model
+     * Outputs: none (updates record)
+     */
 
     public function attendanceShiftqr($defaultAttendanceSettings)
     {
@@ -2202,4 +2411,8 @@ class AttendanceController extends AccountBaseController
 
         return $attendanceSettings->shift;
     }
+
+    /**
+     * Determine attendance shift for QR flows (uses current time and scheduled shifts).
+     */
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Helper\Files;
 use App\Helper\Reply;
 use App\Models\VisaDetail;
-use Doctrine\DBAL\Schema\View;
 use App\Http\Requests\StoreVisaRequest;
 use App\Http\Requests\UpdateVisaRequest;
 use Carbon\Carbon;
@@ -13,31 +12,36 @@ use Carbon\Carbon;
 class EmployeeVisaController extends AccountBaseController
 {
     /**
-     * Display a listing of the resource.
+     * EmployeeVisaController constructor.
      *
-     * @return \Illuminate\Http\Response
+     * Initializes page title and ensures only users with access
+     * to the "employees" module can proceed.
      */
-
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = __('modules.employees.visaDetails');
         $this->middleware(function ($request, $next) {
             abort_403(!in_array('employees', $this->user->modules));
-
             return $next($request);
         });
     }
 
+    /**
+     * Redirect to the employees listing since visa details
+     * are handled per employee profile.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function index()
     {
         return redirect()->route('employees.index');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new visa record.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -45,10 +49,17 @@ class EmployeeVisaController extends AccountBaseController
         return view('employees.ajax.create-visa-modal', $this->data);
     }
 
+    /**
+     * Store a newly created visa record in storage.
+     *
+     * @param  StoreVisaRequest  $request
+     * @return array JSON response with success message
+     */
     public function store(StoreVisaRequest $request)
     {
         $visa = new VisaDetail();
         $userId = request()->emp_id;
+
         $visa->visa_number = $request->visa_number;
         $visa->user_id = $userId;
         $visa->company_id = company()->id;
@@ -57,7 +68,7 @@ class EmployeeVisaController extends AccountBaseController
         $visa->added_by = user()->id;
         $visa->country_id = $request->country;
 
-        if($request->has('file')) {
+        if ($request->has('file')) {
             $visa->file = Files::uploadLocalOrS3($request->file, VisaDetail::FILE_PATH);
         }
 
@@ -67,12 +78,11 @@ class EmployeeVisaController extends AccountBaseController
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified visa record.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id Visa ID
+     * @return \Illuminate\Http\Response|\Illuminate\Contracts\View\View
      */
-
     public function show($id)
     {
         $this->visa = VisaDetail::findOrFail($id);
@@ -86,33 +96,43 @@ class EmployeeVisaController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing visa record.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id Visa ID
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
         $this->countries = countries();
         $this->visa = VisaDetail::findOrFail($id);
+
         return view('employees.ajax.edit-visa-modal', $this->data);
     }
 
+    /**
+     * Update the specified visa record in storage.
+     *
+     * @param  UpdateVisaRequest  $request
+     * @param  int  $id Visa ID
+     * @return array JSON response with success message
+     */
     public function update(UpdateVisaRequest $request, $id)
     {
         $visa = VisaDetail::findOrFail($id);
+
         $visa->visa_number = $request->visa_number;
         $visa->issue_date = Carbon::createFromFormat($this->company->date_format, $request->issue_date);
         $visa->expiry_date = Carbon::createFromFormat($this->company->date_format, $request->expiry_date);
         $visa->country_id = $request->country;
 
-        if($request->file_delete == 'yes')
-        {
+        // Delete existing file if requested
+        if ($request->file_delete == 'yes') {
             Files::deleteFile($visa->image, VisaDetail::FILE_PATH);
             $visa->file = null;
         }
 
-        if($request->has('file')) {
+        // Replace with new uploaded file
+        if ($request->has('file')) {
             Files::deleteFile($visa->image, VisaDetail::FILE_PATH);
             $visa->file = Files::uploadLocalOrS3($request->file, VisaDetail::FILE_PATH);
         }
@@ -123,10 +143,10 @@ class EmployeeVisaController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified visa record from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id Visa ID
+     * @return array JSON response with success message
      */
     public function destroy($id)
     {
@@ -138,5 +158,4 @@ class EmployeeVisaController extends AccountBaseController
 
         return Reply::success(__('messages.deleteSuccess'));
     }
-
 }

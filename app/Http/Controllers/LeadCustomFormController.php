@@ -19,21 +19,28 @@ class LeadCustomFormController extends AccountBaseController
         });
     }
 
+    /**
+     * Display a listing of lead custom form fields.
+     * Validates user permissions and retrieves all lead custom form fields.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
     {
-
         $manageLeadFormPermission = user()->permission('manage_lead_custom_forms');
         abort_403($manageLeadFormPermission != 'all');
 
         $this->leadFormFields = LeadCustomForm::get();
-
         return view('leads.lead-form.index', $this->data);
     }
 
     /**
-     * @param Request $request
+     * Update the status of a lead custom form field.
+     * Updates the status of the specified form field based on the request.
+     *
+     * @param \Illuminate\Http\Request $request
      * @param int $id
-     * @return array
+     * @return \App\Helper\Reply
      */
     public function update(Request $request, $id)
     {
@@ -45,9 +52,10 @@ class LeadCustomFormController extends AccountBaseController
     }
 
     /**
-     * sort fields order
+     * Sort the order of lead custom form fields.
+     * Updates the field order based on the provided sorted values.
      *
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function sortFields()
     {

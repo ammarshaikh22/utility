@@ -29,7 +29,11 @@ class MyCalendarController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the user's calendar with events, tasks, tickets, leaves, and follow-ups.
+     * Fetches and formats data for the specified date range and type, filtered by user permissions.
+     * Returns an array of calendar events for AJAX requests or renders the calendar view.
+     *
+     * @return array|\Illuminate\Http\Response
      */
     public function index()
     {
@@ -74,7 +78,6 @@ class MyCalendarController extends AccountBaseController
                     $model->whereBetween('start_date_time', [$startDate->toDateString(), $endDate->toDateString()]);
 
                     $events = $model->get();
-
 
                     foreach ($events as $event) {
                         $eventData[] = [
@@ -195,7 +198,6 @@ class MyCalendarController extends AccountBaseController
                     })
                         ->whereBetween(DB::raw('DATE(next_follow_up_date)'), [$startDate->startOfDay()->toDateTimeString(), $endDate->endOfDay()->toDateTimeString()])
                         ->get();
-
 
                     foreach ($followUps as $followUp) {
                         $eventData[] = [

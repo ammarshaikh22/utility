@@ -12,7 +12,8 @@ class ProductCategoryController extends AccountBaseController
 {
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new product category.
+     * Retrieves all existing categories and renders the create category view.
      *
      * @return \Illuminate\Http\Response
      */
@@ -23,7 +24,10 @@ class ProductCategoryController extends AccountBaseController
     }
 
     /**
-     * @param StoreProductCategory $request
+     * Store a new product category in the database.
+     * Saves the category name and returns updated category options and related subcategory data.
+     *
+     * @param  \App\Http\Requests\Product\StoreProductCategory  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -41,8 +45,11 @@ class ProductCategoryController extends AccountBaseController
     }
 
     /**
-     * @param StoreProductCategory $request
-     * @param int $id
+     * Update an existing product category in the database.
+     * Updates the category name and returns updated category options.
+     *
+     * @param  \App\Http\Requests\Product\StoreProductCategory  $request
+     * @param  int  $id
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -59,9 +66,10 @@ class ProductCategoryController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific product category from the database.
+     * Removes the category and returns the updated list of categories.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)

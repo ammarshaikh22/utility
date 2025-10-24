@@ -22,7 +22,10 @@ class LeadStageSettingController extends AccountBaseController
     }
 
     /**
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     * Show the form for creating a new pipeline stage.
+     * Retrieves all pipelines for the form.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -31,19 +34,20 @@ class LeadStageSettingController extends AccountBaseController
     }
 
     /**
-     * @param StoreLeadStatus $request
-     * @return array
+     * Store a new pipeline stage in storage.
+     * Creates a stage for each selected pipeline with the highest priority.
+     *
+     * @param \App\Http\Requests\LeadSetting\StoreLeadStage $request
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function store(StoreLeadStage $request)
     {
         $stages = PipelineStage::all();
-
         $pipelines = $request->pipeline;
 
-        foreach($pipelines as $pipeline)
-        {
-            $maxPriority = $stages->filter(function ($value, $key) use($pipeline) {
+        foreach ($pipelines as $pipeline) {
+            $maxPriority = $stages->filter(function ($value, $key) use ($pipeline) {
                 return $value->lead_pipeline_id == $pipeline;
             })->max('priority');
 
@@ -55,15 +59,15 @@ class LeadStageSettingController extends AccountBaseController
             $stage->save();
         }
 
-
         return Reply::success(__('messages.recordSaved'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing pipeline stage.
+     * Retrieves pipelines, the stage to edit, and its neighboring stages for priority management.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
@@ -87,38 +91,35 @@ class LeadStageSettingController extends AccountBaseController
     }
 
     /**
-     * @param UpdateLeadStatus $request
+     * Update an existing pipeline stage in storage.
+     * Updates stage details and adjusts priorities of other stages as needed.
+     *
+     * @param \App\Http\Requests\LeadSetting\UpdateLeadStage $request
      * @param int $id
-     * @return array
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function update(UpdateLeadStage $request, $id)
     {
-
         $stage = PipelineStage::findOrFail($id);
         $oldPosition = $stage->priority;
         $newPosition = $request->priority;
 
-        if($request->has('before'))
-        {
+        if ($request->has('before')) {
             PipelineStage::where('priority', '<', $oldPosition)
                 ->where('priority', '>=', $newPosition)
                 ->orderBy('priority', 'asc')
                 ->increment('priority');
 
             $stage->priority = $request->priority;
-        }
-        elseif($oldPosition > $newPosition)
-        {
+        } elseif ($oldPosition > $newPosition) {
             PipelineStage::where('priority', '<', $oldPosition)
                 ->where('priority', '>', $newPosition)
                 ->orderBy('priority', 'asc')
                 ->increment('priority');
 
             $stage->priority = $request->priority + 1;
-        }
-        else
-        {
+        } else {
             PipelineStage::where('priority', '>', $oldPosition)
                 ->where('priority', '<=', $newPosition)
                 ->orderBy('priority', 'asc')
@@ -134,19 +135,22 @@ class LeadStageSettingController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Set a pipeline stage as the default for its pipeline.
+     * Updates all stages in the pipeline to remove default status and sets the specified stage as default.
+     *
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function statusUpdate($id)
     {
         $stage = PipelineStage::find($id);
-        $allPipelineStage = PipelineStage::select('id', 'default')->where('lead_pipeline_id', $stage->lead_pipeline_id)->get();
+        $allPipelineStage = PipelineStage::select('id', 'default')
+            ->where('lead_pipeline_id', $stage->lead_pipeline_id)
+            ->get();
 
-        foreach($allPipelineStage as $leadStage){
-            if($leadStage->id == $id ){
-                $leadStage->default = '1';
-            }
-            else{
-                $leadStage->default = '0';
-            }
-
+        foreach ($allPipelineStage as $leadStage) {
+            $leadStage->default = ($leadStage->id == $id) ? '1' : '0';
             $leadStage->save();
         }
 
@@ -154,10 +158,11 @@ class LeadStageSettingController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a pipeline stage from storage.
+     * Adjusts priorities of subsequent stages and removes associated user leaderboard settings.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {

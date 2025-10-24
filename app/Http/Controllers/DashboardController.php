@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ModuleStatusChanged;
 use App\Helper\Reply;
 use App\Models\DashboardWidget;
 use App\Models\DealFollowUp;
@@ -31,36 +32,40 @@ use Froiden\Envato\Traits\AppBoot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-
 class DashboardController extends AccountBaseController
 {
-
     use AppBoot, CurrencyExchange, OverviewDashboard, EmployeeDashboard, ProjectDashboard, ClientDashboard, HRDashboard, TicketDashboard, FinanceDashboard, ClientPanelDashboard;
 
+    /**
+     * Constructor for the DashboardController.
+     * Initializes the parent controller, sets the page title, and applies middleware to restrict access to non-superadmin users.
+     */
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = 'app.menu.dashboard';
 
         $this->middleware(function ($request, $next) {
-            // WORKSUITESAAS
+            // Restrict access for superadmin users
             abort_403(user()->is_superadmin);
 
             return $next($request);
         });
-
     }
 
     /**
+     * Displays the appropriate dashboard based on user role.
+     * Redirects employees to the employee dashboard and clients to the client panel dashboard.
+     *
      * @return array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response|mixed|void
      */
     public function index()
     {
-
         $this->isCheckScript();
         session()->forget(['qr_clock_in']);
-        if (in_array('employee', user_roles())) {
 
+        if (in_array('employee', user_roles())) {
+            // Fetch permissions for various dashboard views
             $this->viewOverviewDashboard = user()->permission('view_overview_dashboard');
             $this->viewProjectDashboard = user()->permission('view_project_dashboard');
             $this->viewClientDashboard = user()->permission('view_client_dashboard');
@@ -68,14 +73,24 @@ class DashboardController extends AccountBaseController
             $this->viewTicketDashboard = user()->permission('view_ticket_dashboard');
             $this->viewFinanceDashboard = user()->permission('view_finance_dashboard');
 
+            // Render employee dashboard
             return $this->employeeDashboard();
         }
 
         if (in_array('client', user_roles())) {
+            // Render client panel dashboard
             return $this->clientPanelDashboard();
         }
     }
 
+    /**
+     * Updates the visibility status of dashboard widgets.
+     * Resets all widgets for the specified dashboard type and enables the selected ones.
+     *
+     * @param Request $request The request containing widget data.
+     * @param string $dashboardType The type of dashboard (e.g., employee, admin).
+     * @return array JSON response with success message.
+     */
     public function widget(Request $request, $dashboardType)
     {
         $data = $request->except('_token');
@@ -92,30 +107,47 @@ class DashboardController extends AccountBaseController
                 ->update(['status' => 1]);
         }
 
+        // Return success response
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Displays the admin checklist view.
+     * Only accessible to users with the admin role.
+     *
+     * @return \Illuminate\Contracts\View\View|void
+     */
     public function checklist()
     {
         if (in_array('admin', user_roles())) {
-
             return view('dashboard.checklist', $this->data);
         }
     }
 
     /**
+     * Displays the employee dashboard for users with the employee role.
+     * Restricts access to employees only.
+     *
      * @return array|\Illuminate\Http\Response
      */
     public function memberDashboard()
     {
+        // Restrict access to users with the employee role
         abort_403(!in_array('employee', user_roles()));
 
+        // Render employee dashboard
         return $this->employeeDashboard();
     }
 
+    /**
+     * Displays the advanced dashboard based on user permissions and selected tab.
+     * Supports multiple dashboard types (overview, project, client, hr, ticket, finance).
+     *
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
     public function advancedDashboard()
     {
-
+        // Check if user has admin role or specific dashboard view permissions
         if (in_array('admin', user_roles()) || $this->sidebarUserPermissions['view_overview_dashboard'] == 4
             || $this->sidebarUserPermissions['view_project_dashboard'] == 4
             || $this->sidebarUserPermissions['view_client_dashboard'] == 4
@@ -125,6 +157,7 @@ class DashboardController extends AccountBaseController
 
             $tab = request('tab');
 
+            // Map widgets to their corresponding modules
             $this->widgetToModuleMap = [
                 'total_clients' => 'clients',
                 'total_employees' => 'employees',
@@ -142,12 +175,10 @@ class DashboardController extends AccountBaseController
                 'project_activity_timeline' => 'projects',
                 'user_activity_timeline' => 'users',
                 'timelogs' => 'timelogs',
-
                 'total_project' => 'projects',
                 'total_overdue_project' => 'projects',
                 'status_wise_project' => 'projects',
                 'pending_milestone' => 'projects',
-
                 'total_leads' => 'leads',
                 'total_lead_conversions' => 'leads',
                 'total_contracts_generated' => 'contracts',
@@ -159,7 +190,6 @@ class DashboardController extends AccountBaseController
                 'latest_client' => 'leads',
                 'recent_login_activities' => 'clients',
                 'total_deals' => 'leads',
-
                 'total_leaves_approved' => 'leaves',
                 'total_new_employee' => 'employees',
                 'total_employee_exits' => 'employees',
@@ -173,13 +203,11 @@ class DashboardController extends AccountBaseController
                 'headcount' => 'employees',
                 'joining_vs_attrition' => 'employees',
                 'birthday' => 'employees',
-
                 'total_tickets' => 'tickets',
                 'total_unassigned_ticket' => 'tickets',
                 'type_wise_ticket' => 'tickets',
                 'status_wise_ticket' => 'tickets',
                 'channel_wise_ticket' => 'tickets',
-
                 'total_paid_invoices' => 'invoices',
                 'total_expenses' => 'expenses',
                 'total_earnings' => 'invoices',
@@ -189,76 +217,80 @@ class DashboardController extends AccountBaseController
                 'proposal_overview' => 'leads',
                 'earnings_by_client' => 'clients',
                 'earnings_by_projects' => 'projects',
-
             ];
 
+            // Handle specific dashboard tabs
             switch ($tab) {
-            case 'project':
-                $this->projectDashboard();
-                break;
-            case 'client':
-                $this->clientDashboard();
-                break;
-            case 'hr':
-                $this->hrDashboard();
-                break;
-            case 'ticket':
-                $this->ticketDashboard();
-                break;
-            case 'finance':
-                $this->financeDashboard();
-                break;
-            default:
-                if (in_array('admin', user_roles()) || $this->sidebarUserPermissions['view_overview_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'overview';
-                    $this->overviewDashboard();
-
-                }
-                elseif ($this->sidebarUserPermissions['view_project_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'project';
+                case 'project':
                     $this->projectDashboard();
-
-                }
-                elseif ($this->sidebarUserPermissions['view_client_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'client';
+                    break;
+                case 'client':
                     $this->clientDashboard();
-
-                }
-                elseif ($this->sidebarUserPermissions['view_hr_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'hr';
+                    break;
+                case 'hr':
                     $this->hrDashboard();
-
-                }
-                elseif ($this->sidebarUserPermissions['view_finance_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'finance';
+                    break;
+                case 'ticket':
                     $this->ticketDashboard();
-
-                }
-                else if ($this->sidebarUserPermissions['view_ticket_dashboard'] == 4) {
-                    $this->activeTab = $tab ?: 'finance';
+                    break;
+                case 'finance':
                     $this->financeDashboard();
-                }
-
-                break;
+                    break;
+                default:
+                    // Default to appropriate dashboard based on permissions
+                    if (in_array('admin', user_roles()) || $this->sidebarUserPermissions['view_overview_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'overview';
+                        $this->overviewDashboard();
+                    } elseif ($this->sidebarUserPermissions['view_project_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'project';
+                        $this->projectDashboard();
+                    } elseif ($this->sidebarUserPermissions['view_client_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'client';
+                        $this->clientDashboard();
+                    } elseif ($this->sidebarUserPermissions['view_hr_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'hr';
+                        $this->hrDashboard();
+                    } elseif ($this->sidebarUserPermissions['view_finance_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'finance';
+                        $this->ticketDashboard();
+                    } else if ($this->sidebarUserPermissions['view_ticket_dashboard'] == 4) {
+                        $this->activeTab = $tab ?: 'finance';
+                        $this->financeDashboard();
+                    }
+                    break;
             }
 
+            // Handle AJAX requests
             if (request()->ajax()) {
                 return $this->returnAjax($this->view);
             }
 
+            // Set default active tab if not set
             if (!isset($this->activeTab)) {
                 $this->activeTab = $tab ?: 'overview';
             }
 
+            // Render the admin dashboard view
             return view('dashboard.admin', $this->data);
         }
     }
 
+    /**
+     * Displays the account unverified page.
+     *
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
     public function accountUnverified()
     {
         return view('dashboard.unverified', $this->data);
     }
 
+    /**
+     * Retrieves weekly timelog data for the logged-in user.
+     * Calculates timelogs and breaks for a specific date and week, and renders the week timelog view.
+     *
+     * @return array JSON response with the rendered timelog HTML.
+     */
     public function weekTimelog()
     {
         $now = now(company()->timezone);
@@ -266,26 +298,35 @@ class DashboardController extends AccountBaseController
         $this->timelogDate = $timelogDate = Carbon::parse(request()->date);
         $this->weekStartDate = $now->copy()->startOfWeek($attndcSetting->week_start_from);
         $this->weekEndDate = $this->weekStartDate->copy()->addDays(7);
-        $this->weekPeriod = CarbonPeriod::create($this->weekStartDate, $this->weekStartDate->copy()->addDays(6)); // Get All Dates from start to end date
+        $this->weekPeriod = CarbonPeriod::create($this->weekStartDate, $this->weekStartDate->copy()->addDays(6));
 
+        // Fetch daily and weekly timelogs and breaks
         $this->dateWiseTimelogs = ProjectTimeLog::dateWiseTimelogs($timelogDate->toDateString(), user()->id);
         $this->dateWiseTimelogBreak = ProjectTimeLogBreak::dateWiseTimelogBreak($timelogDate->toDateString(), user()->id);
-
-        $this->weekWiseTimelogs = ProjectTimeLog::weekWiseTimelogs($this->weekStartDate->copy()->toDateString(), $this->weekEndDate->copy()->toDateString(), user()->id);
+        $this->weekWiseTimelogs = ProjectTimeLog::weekWiseTimelogs($this->weekStartDate->toDateString(), $this->weekEndDate->toDateString(), user()->id);
         $this->weekWiseTimelogBreak = ProjectTimeLogBreak::weekWiseTimelogBreak($this->weekStartDate->toDateString(), $this->weekEndDate->toDateString(), user()->id);
 
+        // Calculate total minutes
         $this->dayMinutes = $this->dateWiseTimelogs->sum('total_minutes');
         $this->dayBreakMinutes = $this->dateWiseTimelogBreak->sum('total_minutes');
         $loggedMinutes = $this->dayMinutes - $this->dayBreakMinutes;
 
+        // Format total minutes and break minutes
         $this->totalDayMinutes = $this->formatTime($loggedMinutes);
         $this->totalDayBreakMinutes = $this->formatTime($this->dayBreakMinutes);
 
+        // Render the week timelog view
         $html = view('dashboard.employee.week_timelog', $this->data)->render();
 
         return Reply::dataOnly(['html' => $html]);
     }
 
+    /**
+     * Formats total minutes into a human-readable string (e.g., "2h 30m").
+     *
+     * @param int $totalMinutes The total minutes to format.
+     * @return string The formatted time string.
+     */
     private function formatTime($totalMinutes)
     {
         $hours = intdiv($totalMinutes, 60);
@@ -296,8 +337,15 @@ class DashboardController extends AccountBaseController
             : ($minutes > 0 ? sprintf('%dm', $minutes) : '0s');
     }
 
+    /**
+     * Retrieves calendar events for the logged-in user based on permissions and filters.
+     * Fetches events, holidays, tasks, tickets, leaves, and follow-ups within a date range.
+     *
+     * @return array Array of calendar events.
+     */
     public function privateCalendar()
     {
+        // Update calendar view filter if provided
         if (request()->filter) {
             $employee_details = EmployeeDetails::where('user_id', user()->id)->first();
             $employee_details->calendar_view = request()->filter ? request()->filter : null;
@@ -307,268 +355,252 @@ class DashboardController extends AccountBaseController
 
         $startDate = Carbon::parse(request('start'));
         $endDate = Carbon::parse(request('end'));
-
-        // get calendar view current logined user
         $calendar_filter_array = explode(',', user()->employeeDetail->calendar_view);
+        $eventData = [];
 
-        $eventData = array();
-
+        // Fetch events if permitted and included in filter
         $viewEventPerm = user()->permission('view_events');
-
-        if (!is_null($viewEventPerm) && $viewEventPerm != 'none') {
-
-            if (in_array('events', $calendar_filter_array)) {
-                // Events
-                $model = Event::with('attendee', 'attendee.user');
-
-                $model->where(function ($query) {
+        if (!is_null($viewEventPerm) && $viewEventPerm != 'none' && in_array('events', $calendar_filter_array)) {
+            $model = Event::with('attendee', 'attendee.user')
+                ->where(function ($query) {
                     $query->whereHas('attendee', function ($query) {
                         $query->where('user_id', user()->id);
-                    });
-                    $query->orWhere('added_by', user()->id);
-                });
+                    })->orWhere('added_by', user()->id);
+                })
+                ->whereBetween('start_date_time', [$startDate->toDateString(), $endDate->toDateString()]);
+            $events = $model->get();
 
-                $model->whereBetween('start_date_time', [$startDate->toDateString(), $endDate->toDateString()]);
-
-                $events = $model->get();
-
-                foreach ($events as $event) {
-                    $eventData[] = [
-                        'id' => $event->id,
-                        'title' => $event->event_name,
-                        'start' => $event->start_date_time,
-                        'end' => $event->end_date_time,
-                        'event_type' => 'event',
-                        'extendedProps' => ['bg_color' => $event->label_color, 'color' => '#fff', 'icon' => 'fa-calendar']
-                    ];
-                }
+            foreach ($events as $event) {
+                $eventData[] = [
+                    'id' => $event->id,
+                    'title' => $event->event_name,
+                    'start' => $event->start_date_time,
+                    'end' => $event->end_date_time,
+                    'event_type' => 'event',
+                    'extendedProps' => ['bg_color' => $event->label_color, 'color' => '#fff', 'icon' => 'fa-calendar']
+                ];
             }
-
         }
-        $user = user();
-        $viewHolidayPerm = user()->permission('view_holiday');
 
-        if (!is_null($viewHolidayPerm) && $viewHolidayPerm != 'none') {
-            if (in_array('holiday', $calendar_filter_array)) {
-                // holiday
-                $holidays = Holiday::whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                    ->where(function ($query) use ($user) {
-                        $query->where(function ($subquery) use ($user) {
-                                $subquery->where(function ($q) use ($user) {
-                                    $q->where('department_id_json', 'like', '%"' . $user->employeeDetail->department_id . '"%')
-                                        ->orWhereNull('department_id_json');
-                                });
-                                $subquery->where(function ($q) use ($user) {
-                                    $q->where('designation_id_json', 'like', '%"' . $user->employeeDetail->designation_id . '"%')
-                                        ->orWhereNull('designation_id_json');
-                                });
-                                $subquery->where(function ($q) use ($user) {
-                                    $q->where('employment_type_json', 'like', '%"' . $user->employeeDetail->employment_type . '"%')
-                                        ->orWhereNull('employment_type_json');
-                                });
+        // Fetch holidays if permitted and included in filter
+        $viewHolidayPerm = user()->permission('view_holiday');
+        if (!is_null($viewHolidayPerm) && $viewHolidayPerm != 'none' && in_array('holiday', $calendar_filter_array)) {
+            $user = user();
+            $holidays = Holiday::whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->where(function ($query) use ($user) {
+                    $query->where(function ($subquery) use ($user) {
+                        $subquery->where(function ($q) use ($user) {
+                            $q->where('department_id_json', 'like', '%"' . $user->employeeDetail->department_id . '"%')
+                                ->orWhereNull('department_id_json');
+                        });
+                        $subquery->where(function ($q) use ($user) {
+                            $q->where('designation_id_json', 'like', '%"' . $user->employeeDetail->designation_id . '"%')
+                                ->orWhereNull('designation_id_json');
+                        });
+                        $subquery->where(function ($q) use ($user) {
+                            $q->where('employment_type_json', 'like', '%"' . $user->employeeDetail->employment_type . '"%')
+                                ->orWhereNull('employment_type_json');
                         });
                     });
-                $holidays = $holidays->get();
+                })->get();
 
-                foreach ($holidays as $holiday) {
-                    $eventData[] = [
-                        'id' => $holiday->id,
-                        'title' => $holiday->occassion,
-                        'start' => $holiday->date,
-                        'end' => $holiday->date,
-                        'event_type' => 'holiday',
-                        'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-star']
-                    ];
-                }
+            foreach ($holidays as $holiday) {
+                $eventData[] = [
+                    'id' => $holiday->id,
+                    'title' => $holiday->occassion,
+                    'start' => $holiday->date,
+                    'end' => $holiday->date,
+                    'event_type' => 'holiday',
+                    'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-star']
+                ];
             }
-
         }
 
+        // Fetch tasks if permitted and included in filter
         $viewTaskPerm = user()->permission('view_tasks');
-
-        if (!is_null($viewTaskPerm) && $viewTaskPerm != 'none') {
-
-            if (in_array('task', $calendar_filter_array)) {
-                // tasks
-                $completedTaskColumn = TaskboardColumn::completeColumn();
-
-                $tasks = Task::with('boardColumn')
-                    ->where('board_column_id', '<>', $completedTaskColumn->id)
-                    ->whereHas('users', function ($query) {
-                        $query->where('user_id', user()->id);
-                    })
-                    ->where(function ($q) use ($startDate, $endDate) {
-                        $q->whereBetween(DB::raw('DATE(tasks.`due_date`)'), [$startDate->toDateString(), $endDate->toDateString()]);
-
-                        $q->orWhereBetween(DB::raw('DATE(tasks.`start_date`)'), [$startDate->toDateString(), $endDate->toDateString()]);
-                    })->get();
-
-                foreach ($tasks as $task) {
-                    $eventData[] = [
-                        'id' => $task->id,
-                        'title' => $task->heading,
-                        'start' => $task->start_date,
-                        'end' => $task->due_date ?: $task->start_date,
-                        'event_type' => 'task',
-                        'extendedProps' => ['bg_color' => $task->boardColumn->label_color, 'color' => '#fff', 'icon' => 'fa-list']
-                    ];
-                }
-            }
-        }
-
-        $viewTicketPerm = user()->permission('view_tickets');
-
-        if (!is_null($viewTicketPerm) && $viewTicketPerm != 'none') {
-
-            if (in_array('tickets', $calendar_filter_array)) {
-                $userid = user()->id;
-
-                // tickets
-                $tickets = Ticket::where(function ($query) use ($userid) {
-                    $query->where('tickets.user_id', '=', $userid)->orWhere('agent_id', '=', $userid);
-                })->whereBetween(DB::raw('DATE(tickets.`created_at`)'), [$startDate->toDateTimeString(), $endDate->endOfDay()->toDateTimeString()])->get();
-
-                foreach ($tickets as $ticket) {
-                    $startTime = $ticket->created_at->timezone($this->company->timezone);
-                    $endTime = $ticket->created_at->timezone($this->company->timezone);
-
-                    $eventData[] = [
-                        'id' => $ticket->ticket_number,
-                        'title' => $ticket->subject,
-                        'start' => $startTime?->toDateTimeString(),
-                        'end' => $endTime?->toDateTimeString(),
-                        'event_type' => 'ticket',
-                        'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-ticket-alt']
-                    ];
-                }
-            }
-
-        }
-
-        $viewleavePerm = user()->permission('view_leave');
-
-        if (!is_null($viewleavePerm) && $viewleavePerm != 'none') {
-
-            if (in_array('leaves', $calendar_filter_array)) {
-                // approved leaves of all emoloyees with employee name
-                $leaves = Leave::join('leave_types', 'leave_types.id', 'leaves.leave_type_id')
-                    ->where('leaves.status', 'approved')
-                    ->select('leaves.id', 'leaves.leave_date', 'leaves.status', 'leave_types.type_name', 'leave_types.color', 'leaves.leave_date', 'leaves.duration', 'leaves.status', 'leaves.user_id')
-                    ->with('user')
-                    ->whereBetween(DB::raw('DATE(leaves.`leave_date`)'), [$startDate->toDateString(), $endDate->toDateString()])
-                    ->get();
-
-                foreach ($leaves as $leave) {
-                    $duration = ($leave->duration == 'half day') ? '( ' . __('app.halfday') . ' )' : '';
-
-                    $eventData[] = [
-                        'id' => $leave->id,
-                        'title' => $duration . ' ' . $leave->user->name,
-                        'start' => $leave->leave_date->toDateString(),
-                        'end' => $leave->leave_date->toDateString(),
-                        'event_type' => 'leave',
-                        /** @phpstan-ignore-next-line */
-                        'extendedProps' => ['name' => 'Leave : ' . $leave->user->name, 'bg_color' => $leave->color, 'color' => '#fff', 'icon' => 'fa-plane-departure']
-                    ];
-                }
-            }
-        }
-
-        $viewDealPerm = user()->permission('view_deals');
-
-        if (!is_null($viewDealPerm) && $viewDealPerm != 'none') {
-
-            if (in_array('follow_ups', $calendar_filter_array)) {
-                // follow ups
-                $followUps = DealFollowUp::with('lead')->whereHas('lead.leadAgent', function ($query) {
-                        $query->where('user_id', user()->id);
+        if (!is_null($viewTaskPerm) && $viewTaskPerm != 'none' && in_array('task', $calendar_filter_array)) {
+            $completedTaskColumn = TaskboardColumn::completeColumn();
+            $tasks = Task::with('boardColumn')
+                ->where('board_column_id', '<>', $completedTaskColumn->id)
+                ->whereHas('users', function ($query) {
+                    $query->where('user_id', user()->id);
                 })
-                    ->whereBetween(DB::raw('DATE(next_follow_up_date)'), [$startDate->startOfDay()->toDateTimeString(), $endDate->endOfDay()->toDateTimeString()])
-                    ->get();
+                ->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween(DB::raw('DATE(tasks.`due_date`)'), [$startDate->toDateString(), $endDate->toDateString()])
+                        ->orWhereBetween(DB::raw('DATE(tasks.`start_date`)'), [$startDate->toDateString(), $endDate->toDateString()]);
+                })->get();
 
-                foreach ($followUps as $followUp) {
-                    $eventData[] = [
-                        'id' => $followUp->deal_id,
-                        'title' => $followUp->lead->name,
-                        'start' => $followUp->next_follow_up_date->timezone(company()->timezone),
-                        'end' => $followUp->next_follow_up_date->timezone(company()->timezone),
-                        'event_type' => 'follow_up',
-                        'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-thumbs-up']
-                    ];
-                }
+            foreach ($tasks as $task) {
+                $eventData[] = [
+                    'id' => $task->id,
+                    'title' => $task->heading,
+                    'start' => $task->start_date,
+                    'end' => $task->due_date ?: $task->start_date,
+                    'event_type' => 'task',
+                    'extendedProps' => ['bg_color' => $task->boardColumn->label_color, 'color' => '#fff', 'icon' => 'fa-list']
+                ];
             }
+        }
 
+        // Fetch tickets if permitted and included in filter
+        $viewTicketPerm = user()->permission('view_tickets');
+        if (!is_null($viewTicketPerm) && $viewTicketPerm != 'none' && in_array('tickets', $calendar_filter_array)) {
+            $userid = user()->id;
+            $tickets = Ticket::where(function ($query) use ($userid) {
+                $query->where('tickets.user_id', '=', $userid)->orWhere('agent_id', '=', $userid);
+            })->whereBetween(DB::raw('DATE(tickets.`created_at`)'), [$startDate->toDateTimeString(), $endDate->endOfDay()->toDateTimeString()])->get();
+
+            foreach ($tickets as $ticket) {
+                $startTime = $ticket->created_at->timezone($this->company->timezone);
+                $endTime = $ticket->created_at->timezone($this->company->timezone);
+
+                $eventData[] = [
+                    'id' => $ticket->ticket_number,
+                    'title' => $ticket->subject,
+                    'start' => $startTime?->toDateTimeString(),
+                    'end' => $endTime?->toDateTimeString(),
+                    'event_type' => 'ticket',
+                    'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-ticket-alt']
+                ];
+            }
+        }
+
+        // Fetch leaves if permitted and included in filter
+        $viewleavePerm = user()->permission('view_leave');
+        if (!is_null($viewleavePerm) && $viewleavePerm != 'none' && in_array('leaves', $calendar_filter_array)) {
+            $leaves = Leave::join('leave_types', 'leave_types.id', 'leaves.leave_type_id')
+                ->where('leaves.status', 'approved')
+                ->select('leaves.id', 'leaves.leave_date', 'leaves.status', 'leave_types.type_name', 'leave_types.color', 'leaves.leave_date', 'leaves.duration', 'leaves.status', 'leaves.user_id')
+                ->with('user')
+                ->whereBetween(DB::raw('DATE(leaves.`leave_date`)'), [$startDate->toDateString(), $endDate->toDateString()])
+                ->get();
+
+            foreach ($leaves as $leave) {
+                $duration = ($leave->duration == 'half day') ? '( ' . __('app.halfday') . ' )' : '';
+                $eventData[] = [
+                    'id' => $leave->id,
+                    'title' => $duration . ' ' . $leave->user->name,
+                    'start' => $leave->leave_date->toDateString(),
+                    'end' => $leave->leave_date->toDateString(),
+                    'event_type' => 'leave',
+                    'extendedProps' => ['name' => 'Leave : ' . $leave->user->name, 'bg_color' => $leave->color, 'color' => '#fff', 'icon' => 'fa-plane-departure']
+                ];
+            }
+        }
+
+        // Fetch deal follow-ups if permitted and included in filter
+        $viewDealPerm = user()->permission('view_deals');
+        if (!is_null($viewDealPerm) && $viewDealPerm != 'none' && in_array('follow_ups', $calendar_filter_array)) {
+            $followUps = DealFollowUp::with('lead')->whereHas('lead.leadAgent', function ($query) {
+                $query->where('user_id', user()->id);
+            })
+                ->whereBetween(DB::raw('DATE(next_follow_up_date)'), [$startDate->startOfDay()->toDateTimeString(), $endDate->endOfDay()->toDateTimeString()])
+                ->get();
+
+            foreach ($followUps as $followUp) {
+                $eventData[] = [
+                    'id' => $followUp->deal_id,
+                    'title' => $followUp->lead->name,
+                    'start' => $followUp->next_follow_up_date->timezone(company()->timezone),
+                    'end' => $followUp->next_follow_up_date->timezone(company()->timezone),
+                    'event_type' => 'follow_up',
+                    'extendedProps' => ['bg_color' => '#1d82f5', 'color' => '#fff', 'icon' => 'fa-thumbs-up']
+                ];
+            }
         }
 
         return $eventData;
     }
 
+    /**
+     * Retrieves lead stage data for a specific pipeline and date range.
+     * Renders the lead-by-pipeline view with lead status chart data.
+     *
+     * @param int $pipelineId The ID of the lead pipeline.
+     * @return array JSON response with the rendered lead stage HTML.
+     */
     public function getLeadStage($pipelineId)
     {
+        // Set date range for lead status chart
         $this->startDate = (request('startDate') != '') ? Carbon::createFromFormat($this->company->date_format, request('startDate')) : now($this->company->timezone)->startOfMonth();
         $this->endDate = (request('endDate') != '') ? Carbon::createFromFormat($this->company->date_format, request('endDate')) : now($this->company->timezone);
         $startDate = $this->startDate->toDateString();
         $endDate = $this->endDate->toDateString();
 
+        // Fetch lead pipelines and status chart data
         $this->leadPipelines = LeadPipeline::all();
-
         $this->leadStatusChart = $this->leadStatusChart($startDate, $endDate, $pipelineId);
 
+        // Render the lead-by-pipeline view
         return $this->returnAjax('dashboard.ajax.lead-by-pipeline');
-
     }
 
+    /**
+     * Generates a Pusher Beams authentication token for push notifications.
+     * Verifies user ID consistency and returns a token if valid.
+     *
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
+     */
     public function beamAuth()
     {
-        $userID = 'wrkst-'.user()->id;
+        $userID = 'wrkst-' . user()->id;
         $userIDInQueryParam = request()->user_id;
 
+        // Verify user ID consistency
         if ($userID != $userIDInQueryParam) {
             return response('Inconsistent request', 401);
-
-        } else {
-            $beamsClient = new \Pusher\PushNotifications\PushNotifications([
-                'instanceId' => push_setting()->instance_id,
-                'secretKey' => push_setting()->beam_secret,
-            ]);
-
-            $beamsToken = $beamsClient->generateToken($userID);
-            return response()->json($beamsToken);
         }
 
+        // Generate Pusher Beams token
+        $beamsClient = new \Pusher\PushNotifications\PushNotifications([
+            'instanceId' => push_setting()->instance_id,
+            'secretKey' => push_setting()->beam_secret,
+        ]);
+
+        $beamsToken = $beamsClient->generateToken($userID);
+        return response()->json($beamsToken);
     }
 
+    /**
+     * Sends push notifications to specified users.
+     * Uses Pusher Beams to send notifications if enabled and user IDs are provided.
+     *
+     * @param array $usersIDs Array of user IDs to send notifications to.
+     * @param string $title The notification title.
+     * @param string $body The notification body.
+     * @return bool True if successful.
+     */
     public function sendPushNotifications($usersIDs, $title, $body)
     {
         $setting = PushNotificationSetting::first();
+
+        // Send notifications if enabled and user IDs are provided
         if ($setting->beams_push_status && count($usersIDs) > 0) {
             $beamsClient = new \Pusher\PushNotifications\PushNotifications([
-            'instanceId' =>  $setting->instance_id,
-            'secretKey' =>  $setting->beam_secret,
+                'instanceId' => $setting->instance_id,
+                'secretKey' => $setting->beam_secret,
             ]);
 
-
             $pushIDs = [];
-
             foreach ($usersIDs[0] as $key => $uid) {
                 $pushIDs[] = 'wrkst-' . $uid;
             }
 
-            $publishResponse = $beamsClient->publishToUsers(
-            $pushIDs,
-            array(
-              'web' => array(
-                'notification' => array(
-                  'title' => $title,
-                  'body' => $body,
-                  'icon' => companyOrGlobalSetting()->logo_url
-                  )
-              )
-            ));
+            // Publish notification to users
+            $beamsClient->publishToUsers(
+                $pushIDs,
+                [
+                    'web' => [
+                        'notification' => [
+                            'title' => $title,
+                            'body' => $body,
+                            'icon' => companyOrGlobalSetting()->logo_url
+                        ]
+                    ]
+                ]
+            );
         }
 
         return true;
     }
-
-
 }

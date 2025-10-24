@@ -20,7 +20,11 @@ class InvoiceFilesController extends AccountBaseController
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store one or more uploaded files for an invoice.
+     * Handles file uploads, saves file metadata, and stores files locally or on S3.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
      */
     public function store(Request $request)
     {
@@ -46,7 +50,11 @@ class InvoiceFilesController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specified invoice file from storage.
+     * Checks user permissions, deletes the file from storage, and updates the file list view.
+     *
+     * @param int $id
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
@@ -64,6 +72,13 @@ class InvoiceFilesController extends AccountBaseController
         return Reply::successWithData(__('messages.deleteSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Download a specified invoice file.
+     * Verifies user permissions and initiates file download from local storage or S3.
+     *
+     * @param string $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+     */
     public function download($id)
     {
         $file = InvoiceFiles::whereRaw('md5(id) = ?', $id)->firstOrFail();

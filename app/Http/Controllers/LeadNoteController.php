@@ -23,6 +23,13 @@ class LeadNoteController extends AccountBaseController
         });
     }
 
+    /**
+     * Display a listing of lead notes using a DataTable.
+     * Validates user permissions before rendering the notes index view.
+     *
+     * @param \App\DataTables\LeadNotesDataTable $dataTable
+     * @return mixed
+     */
     public function index(LeadNotesDataTable $dataTable)
     {
         abort_403(!(in_array(user()->permission('view_lead_note'), ['all', 'added'])));
@@ -30,15 +37,19 @@ class LeadNoteController extends AccountBaseController
         return $dataTable->render('lead-contact.notes.index', $this->data);
     }
 
+    /**
+     * Show the form for creating a new lead note.
+     * Validates user permissions and retrieves employees for the form.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
         abort_403(!in_array(user()->permission('add_lead_note'), ['all', 'added', 'both']));
 
         $this->employees = User::allEmployees();
-
         $this->pageTitle = __('app.addLeadNote');
         $this->leadId = request('lead');
-
         $this->view = 'lead-contact.notes.create';
 
         if (request()->ajax()) {
@@ -48,23 +59,27 @@ class LeadNoteController extends AccountBaseController
         return view('lead-contact.create', $this->data);
     }
 
+    /**
+     * Display a specific lead note.
+     * Validates user permissions based on note ownership or membership.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
     public function show($id)
     {
         $this->note = LeadNote::findOrFail($id);
-
-        /** @phpstan-ignore-next-line */
         $this->noteMembers = $this->note->members->pluck('user_id')->toArray();
         $this->employees = User::whereIn('id', $this->noteMembers)->get();
 
         $viewClientNotePermission = user()->permission('view_lead_note');
-        $memberIds = $this->note->members->pluck('user_id')->toArray(); /** @phpstan-ignore-line */
+        $memberIds = $this->note->members->pluck('user_id')->toArray();
 
         abort_403(!($viewClientNotePermission == 'all'
             || ($viewClientNotePermission == 'added' && $this->note->added_by == user()->id)
             || ($viewClientNotePermission == 'owned' && in_array(user()->id, $memberIds) && in_array('employee', user_roles()))
             || ($viewClientNotePermission == 'both' && (in_array(user()->id, $memberIds) || $this->note->added_by == user()->id))
-            )
-        );
+        ));
 
         $this->pageTitle = __('app.lead') . ' ' . __('app.note');
         $this->view = 'lead-contact.notes.show';
@@ -74,9 +89,15 @@ class LeadNoteController extends AccountBaseController
         }
 
         return view('lead-contact.create', $this->data);
-
     }
 
+    /**
+     * Store a new lead note in storage.
+     * Validates permissions, saves the note, and associates users if the note is private.
+     *
+     * @param \App\Http\Requests\Lead\StoreLeadNote $request
+     * @return \App\Helper\Reply
+     */
     public function store(StoreLeadNote $request)
     {
         abort_403(!in_array(user()->permission('add_lead_note'), ['all', 'added', 'both']));
@@ -89,9 +110,8 @@ class LeadNoteController extends AccountBaseController
         $note->details = $request->details;
         $note->type = $request->type;
         $note->ask_password = $request->ask_password ? $request->ask_password : '';
-
         $note->save();
-        /* if note type is private */
+
         if ($request->type == 1) {
             $users = $request->user_id;
 
@@ -108,13 +128,19 @@ class LeadNoteController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => route('lead-contact.show', $note->lead_id) . '?tab=notes']);
     }
 
+    /**
+     * Show the form for editing a lead note.
+     * Validates user permissions based on note ownership or membership.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
     public function edit($id)
     {
         $this->pageTitle = __('app.editLeadNote');
-
         $this->note = LeadNote::findOrFail($id);
         $editClientNotePermission = user()->permission('view_lead_note');
-        $memberIds = $this->note->members->pluck('user_id')->toArray(); /** @phpstan-ignore-line */
+        $memberIds = $this->note->members->pluck('user_id')->toArray();
 
         abort_403(!($editClientNotePermission == 'all'
             || ($editClientNotePermission == 'added' && user()->id == $this->note->added_by)
@@ -123,10 +149,8 @@ class LeadNoteController extends AccountBaseController
         ));
 
         $this->employees = User::allEmployees();
-        /** @phpstan-ignore-next-line */
         $this->noteMembers = $this->note->members->pluck('user_id')->toArray();
         $this->leadId = $this->note->lead_id;
-
         $this->view = 'lead-contact.notes.edit';
 
         if (request()->ajax()) {
@@ -134,9 +158,16 @@ class LeadNoteController extends AccountBaseController
         }
 
         return view('lead-contact.create', $this->data);
-
     }
 
+    /**
+     * Update an existing lead note in storage.
+     * Validates permissions, updates note details, and manages user associations for private notes.
+     *
+     * @param \App\Http\Requests\Lead\StoreLeadNote $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function update(StoreLeadNote $request, $id)
     {
         $note = LeadNote::findOrFail($id);
@@ -146,9 +177,7 @@ class LeadNoteController extends AccountBaseController
         $note->ask_password = $request->ask_password ?: '';
         $note->save();
 
-        /* if note type is private */
         if ($request->type == 1) {
-            // delete all data of this lead_note_id from lead_user_notes
             LeadUserNote::where('lead_note_id', $note->id)->delete();
 
             $users = $request->user_id;
@@ -166,22 +195,36 @@ class LeadNoteController extends AccountBaseController
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('lead-contact.show', $note->lead_id) . '?tab=notes']);
     }
 
+    /**
+     * Delete a lead note from storage.
+     * Validates user permissions based on note ownership or membership before deletion.
+     *
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function destroy($id)
     {
         $this->note = LeadNote::findOrFail($id);
         $this->deletePermission = user()->permission('delete_lead_note');
-        $memberIds = $this->note->members->pluck('user_id')->toArray(); /** @phpstan-ignore-line */
+        $memberIds = $this->note->members->pluck('user_id')->toArray();
 
         abort_403(!($this->deletePermission == 'all'
-            || ($this->deletePermission == 'added' && $this->note->added_by == user()->id))
+            || ($this->deletePermission == 'added' && $this->note->added_by == user()->id)
             || ($this->deletePermission == 'owned' && in_array(user()->id, $memberIds) && in_array('employee', user_roles()))
             || ($this->deletePermission == 'both' && ($this->note->added_by == user()->id || in_array(user()->id, $memberIds)))
-        );
-        $this->note->delete();
+        ));
 
+        $this->note->delete();
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Perform bulk actions on lead notes.
+     * Currently supports bulk deletion with appropriate permission checks.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function applyQuickAction(Request $request)
     {
         if ($request->action_type == 'delete') {
@@ -192,6 +235,13 @@ class LeadNoteController extends AccountBaseController
         return Reply::error(__('messages.selectAction'));
     }
 
+    /**
+     * Delete multiple lead notes based on provided IDs.
+     * Validates user permissions before performing bulk deletion.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return bool
+     */
     protected function deleteRecords($request)
     {
         abort_403(!(user()->permission('delete_lead_note') == 'all'));
@@ -200,12 +250,26 @@ class LeadNoteController extends AccountBaseController
         return true;
     }
 
+    /**
+     * Display the password verification form for a lead note.
+     * Renders the view to verify password access for restricted notes.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
     public function askForPassword($id)
     {
         $this->note = LeadNote::findOrFail($id);
         return view('lead-contact.notes.verify-password', $this->data);
     }
 
+    /**
+     * Verify the provided password for accessing a restricted lead note.
+     * Compares the input password with the user's stored password.
+     *
+     * @param \Illuminate\Http\Request $return
+     * @return \App\Helper\Reply
+     */
     public function checkPassword(Request $request)
     {
         $this->client = User::findOrFail($this->user->id);

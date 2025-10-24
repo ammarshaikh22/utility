@@ -21,6 +21,13 @@ class MessageFileController extends AccountBaseController
         });
     }
 
+    /**
+     * Store one or more files attached to a chat message.
+     * Uploads files to local storage or S3, saves file metadata, and updates the message list view.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
         if ($request->hasFile('file')) {
@@ -47,6 +54,14 @@ class MessageFileController extends AccountBaseController
         return Reply::successWithData(__('messages.fileUploaded'), ['message_list' => $messageList]);
     }
 
+    /**
+     * Delete a specific file attached to a chat message.
+     * Removes the file from storage and deletes its metadata from the database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroy(Request $request, $id)
     {
         $file = UserchatFile::findOrFail($id);
@@ -59,10 +74,12 @@ class MessageFileController extends AccountBaseController
     }
 
     /**
-     * @param int $id
+     * Download a specific file attached to a chat message.
+     * Retrieves the file from local storage or S3 using its hashed ID and returns it as a response.
+     *
+     * @param  int  $id
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse
      */
-    // phpcs:ignore
     public function download($id)
     {
         $file = UserchatFile::whereRaw('md5(id) = ?', $id)->firstOrFail();

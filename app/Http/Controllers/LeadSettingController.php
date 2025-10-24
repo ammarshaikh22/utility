@@ -26,9 +26,10 @@ class LeadSettingController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the lead settings index with different tabs (source, pipeline, agent, category, method).
+     * Retrieves necessary data for pipelines, sources, stages, agents, categories, and employees.
      *
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function index()
     {
@@ -64,30 +65,30 @@ class LeadSettingController extends AccountBaseController
         }
 
         return view('lead-settings.index', $this->data);
-
     }
 
     /**
-     * Update the lead setting.
+     * Update the lead setting status for a company.
+     * Creates or updates the lead setting with the provided status and user ID.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
      */
     public function updateLeadSettingStatus($id, Request $request)
     {
         $leadSetting = LeadSetting::where('company_id', $id)->first();
 
-        if(!$leadSetting){
+        if (!$leadSetting) {
             $leadSetting = new LeadSetting;
             $leadSetting->company_id = $id;
             $leadSetting->user_id = $request->userId;
         }
 
         $leadSetting->status = $request->lead_setting_status;
-
         $leadSetting->save();
 
-        return reply::success(__('messages.updateSuccess'));
+        return Reply::success(__('messages.updateSuccess'));
     }
 
 }

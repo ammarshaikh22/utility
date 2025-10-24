@@ -248,6 +248,12 @@ class EstimateRequestController extends AccountBaseController
         return view('estimate-requests.ajax.send-request', $this->data);
     }
 
+    /**
+     * Sends an estimate request invitation email to a specified client.
+     *
+     * @param Request $request The HTTP request containing the client ID.
+     * @return \App\Helper\Reply Returns a JSON response indicating success or failure of the email sending process.
+     */
     public function sendEstimateMail(Request $request)
     {
         if ($request->client_id == '') {

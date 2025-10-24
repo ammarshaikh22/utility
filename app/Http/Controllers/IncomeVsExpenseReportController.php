@@ -19,6 +19,12 @@ class IncomeVsExpenseReportController extends AccountBaseController
         $this->pageTitle = 'app.menu.incomeVsExpenseReport';
     }
 
+    /**
+     * Display the income vs expense report index page or return chart data via AJAX.
+     * Checks user permission, sets default date range, and renders view or JSON response.
+     *
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
     public function index()
     {
         abort_403(user()->permission('view_income_expense_report') != 'all');
@@ -35,6 +41,13 @@ class IncomeVsExpenseReportController extends AccountBaseController
         return view('reports.income-expense.index', $this->data);
     }
 
+    /**
+     * Generate data for income vs expense chart.
+     * Fetches payments and expenses within date range, converts to company currency,
+     * and formats data for graph display.
+     *
+     * @return array
+     */
     public function getGraphData()
     {
         $graphData = [];
@@ -65,7 +78,6 @@ class IncomeVsExpenseReportController extends AccountBaseController
             ]);
 
         foreach ($invoices as $invoice) {
-
             if((is_null($invoice->default_currency_id) && is_null($invoice->exchange_rate)) ||
             (!is_null($invoice->default_currency_id) && Company()->currency_id != $invoice->default_currency_id))
             {
@@ -104,7 +116,6 @@ class IncomeVsExpenseReportController extends AccountBaseController
             ]);
 
         foreach ($expenseResults as $expenseResult) {
-
             if((is_null($expenseResult->default_currency_id) && is_null($expenseResult->exchange_rate)) ||
             (!is_null($expenseResult->default_currency_id) && Company()->currency_id != $expenseResult->default_currency_id))
             {
@@ -127,7 +138,6 @@ class IncomeVsExpenseReportController extends AccountBaseController
                 $expenses[$expenseResult->date] += floatval($expenseResult->price);
             }
         }
-
 
         $dates = array_keys(array_merge($incomes, $expenses));
 

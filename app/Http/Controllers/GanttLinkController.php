@@ -5,59 +5,86 @@ namespace App\Http\Controllers;
 use App\Models\GanttLink;
 use App\Models\Task;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class GanttLinkController extends Controller
 {
-
-    public function store(Request $request)
+    /**
+     * Store a newly created Gantt link.
+     */
+    public function store(Request $request): JsonResponse
     {
-        $link = new GanttLink();
- 
-        $link->type = $request->type;
-        $link->project_id = $request->project;
-        $link->source = $request->source;
-        $link->target = $request->target;
- 
-        $link->save();
- 
+        $validated = $request->validate([
+            'type' => 'required|string',
+            'project' => 'required|integer',
+            'source' => 'required|integer',
+            'target' => 'required|integer',
+        ]);
+
+        $link = GanttLink::create([
+            'type' => $validated['type'],
+            'project_id' => $validated['project'],
+            'source' => $validated['source'],
+            'target' => $validated['target'],
+        ]);
+
         return response()->json([
             'action' => 'inserted',
-            'tid' => $link->id
+            'tid' => $link->id,
         ]);
     }
 
-    public function update($id, Request $request)
+    /**
+     * Update the specified Gantt link.
+     */
+    public function update(int $id, Request $request): JsonResponse
     {
-        $link = GanttLink::find($id);
- 
-        $link->type = $request->type;
-        $link->source = $request->source;
-        $link->target = $request->target;
- 
-        $link->save();
- 
+        $validated = $request->validate([
+            'type' => 'required|string',
+            'source' => 'required|integer',
+            'target' => 'required|integer',
+        ]);
+
+        $link = GanttLink::findOrFail($id);
+        $link->update($validated);
+
         return response()->json([
-            'action' => 'updated'
+            'action' => 'updated',
         ]);
     }
- 
-    public function destroy($id)
+
+    /**
+     * Remove the specified Gantt link.
+     */
+    public function destroy(int $id): JsonResponse
     {
-        $link = GanttLink::find($id);
+        $link = GanttLink::findOrFail($id);
         $link->delete();
- 
+
         return response()->json([
-            'action' => 'deleted'
+            'action' => 'deleted',
         ]);
     }
 
-    public function taskUpdateController()
+    /**
+     * Update a task's start and due dates from Gantt chart interaction.
+     */
+    public function taskUpdateController(Request $request): JsonResponse
     {
-        Task::where('id', request()->id)->update(['start_date' => Carbon::parse(request()->start_date), 'due_date' => Carbon::parse(request()->end_date)->subDay()]);
+        $validated = $request->validate([
+            'id' => 'required|integer|exists:tasks,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+        ]);
+
+        Task::where('id', $validated['id'])->update([
+            'start_date' => Carbon::parse($validated['start_date']),
+            'due_date' => Carbon::parse($validated['end_date'])->subDay(),
+        ]);
+
         return response()->json([
-            'action' => 'updated'
+            'action' => 'updated',
         ]);
     }
-    
 }

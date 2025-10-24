@@ -17,15 +17,19 @@ use Nwidart\Modules\Facades\Module;
 
 class CustomModuleController extends AccountBaseController
 {
-
     use ModuleVerify;
 
+    /**
+     * Constructor for the CustomModuleController.
+     * Initializes the parent controller, sets the page title and active setting menu, and applies middleware to restrict access to super admins with custom module management permissions.
+     */
     public function __construct()
     {
         parent::__construct();
         $this->pageTitle = 'app.menu.moduleSettings';
         $this->activeSettingMenu = 'module_settings';
         $this->middleware(function ($request, $next) {
+            // Restrict access to super admins with permission to manage custom module settings
             abort_403(GlobalSetting::validateSuperAdmin('manage_superadmin_custom_module_settings'));
 
             return $next($request);
@@ -33,7 +37,8 @@ class CustomModuleController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Displays the custom module settings index page.
+     * Retrieves all custom modules, filters out the UniversalBundle, and renders the index view.
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
@@ -41,29 +46,32 @@ class CustomModuleController extends AccountBaseController
     {
         $this->type = 'custom';
         $this->updateFilePath = config('froiden_envato.tmp_path');
-        /** @phpstan-ignore-next-line */
+
+        // Fetch all modules, excluding UniversalBundle
         $this->allModules = Module::toCollection()->filter(function ($module, $key) {
             return $key !== 'UniversalBundle';
         });
 
-        /** @phpstan-ignore-next-line */
+        // Fetch the UniversalBundle module separately
         $this->universalBundle = Module::find('UniversalBundle');
 
         $this->view = 'custom-modules.ajax.custom';
         $this->activeTab = 'custom';
         $this->plugins = collect(EnvatoUpdate::plugins());
 
+        // Handle AJAX requests by rendering the custom module view
         if (request()->ajax()) {
             $html = view($this->view, $this->data)->render();
-
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle, 'activeTab' => $this->activeTab]);
         }
 
+        // Render the main module settings index view
         return view('module-settings.index', $this->data);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Displays the form for installing a new custom module.
+     * Sets the page title and type, and renders the install view.
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
@@ -73,30 +81,33 @@ class CustomModuleController extends AccountBaseController
         $this->type = 'custom';
         $this->updateFilePath = config('froiden_envato.tmp_path');
 
+        // Render the install module view
         return view('custom-modules.install', $this->data);
     }
 
     /**
-     * @param Request $request
-     * @return array
+     * Stores a new custom module by processing an uploaded zip file.
+     * Validates the PHP-ZIP extension, extracts the module, validates compatibility, and installs it if valid.
+     *
+     * @param Request $request The request containing the module zip file path.
+     * @return array JSON response with success or error message.
      * @throws \Exception
      */
     public function store(Request $request)
     {
+        // Check if PHP-ZIP extension is available
         if (!extension_loaded('zip')) {
             return Reply::error('<b>PHP-ZIP</b> extension is missing on your server. Please install the extension.');
         }
 
+        // Indicate installation completion
         File::put(public_path() . '/install-version.txt', 'complete');
 
         $filePath = $request->filePath;
-
         $zip = Zip::open($filePath);
-
         $zipName = $this->getZipName($filePath);
 
-        // Extract the files to storage folder first for checking the right plugin
-        // Filename Like codecanyon-0gOuGKoY-zoom-meeting-module-for-worksuite.zip
+        // Handle codecanyon zip files
         if (str_contains($zipName, 'codecanyon-')) {
             $zipName = $this->unzipCodecanyon($zip);
         } else {
@@ -105,45 +116,56 @@ class CustomModuleController extends AccountBaseController
 
         $moduleName = str_replace('.zip', '', $zipName);
 
-
+        // Validate the module
         $validateModule = $this->validateModule($moduleName);
 
         if ($validateModule['status'] == true) {
-            // Move files to Modules if modules belongs to this product
+            // Move module files to the Modules directory
             File::moveDirectory(storage_path('app') . '/Modules/' . $moduleName, base_path() . '/Modules/' . $moduleName, true);
 
+            // Clear module cache
             cache()->forget('laravel-modules');
 
-            // Delete Modules Directory after moving files
+            // Delete temporary Modules directory
             File::deleteDirectory(storage_path('app') . '/Modules/');
 
+            // Update module version if enabled
             if (module_enabled($moduleName)) {
                 $this->updateVersion($moduleName);
             }
 
-            // if module is universal bundle module then activate the module
+            // Handle UniversalBundle module activation
             if ($moduleName == 'UniversalBundle') {
-                /** @phpstan-ignore-next-line */
                 $module = Module::findOrFail($moduleName);
                 $module->enable();
-                Artisan::call('module:migrate', array($moduleName, '--force' => true));
+                Artisan::call('module:migrate', [$moduleName, '--force' => true]);
                 event(new ModuleStatusChanged($module, 'active'));
             }
 
+            // Clear cache and session data
             $this->flushData();
 
+            // Return success response
             return Reply::success('Installed successfully.');
         }
 
+        // Return error response if validation fails
         return Reply::error($validateModule['message']);
     }
 
+    /**
+     * Validates a module for compatibility with the application.
+     * Checks for PHP-ZIP extension, module configuration, and compatibility with the application's version and product.
+     *
+     * @param string $moduleName The name of the module to validate.
+     * @return array Validation result with status and message.
+     */
     public function validateModule($moduleName)
     {
         $appName = str_replace('-new', '', config('froiden_envato.envato_product_name'));
         $wrongMessage = 'The zip that you are trying to install is not compatible with ' . $appName . ' version';
 
-        // Check if PHP-ZIP extension is missing
+        // Check for PHP-ZIP extension
         if (!extension_loaded('zip')) {
             return [
                 'status' => false,
@@ -163,7 +185,7 @@ class CustomModuleController extends AccountBaseController
 
         $config = require_once $configPath;
 
-        // Check if parent_envato_id is defined and matches the application's envato_id
+        // Check parent_envato_id compatibility
         if (!isset($config['parent_envato_id']) || $config['parent_envato_id'] !== config('froiden_envato.envato_item_id')) {
             return [
                 'status' => false,
@@ -171,7 +193,7 @@ class CustomModuleController extends AccountBaseController
             ];
         }
 
-        // Parent envato id is different from module envato id
+        // Check parent_envato_id again for redundancy
         if ($config['parent_envato_id'] !== config('froiden_envato.envato_item_id')) {
             return [
                 'status' => false,
@@ -182,14 +204,13 @@ class CustomModuleController extends AccountBaseController
         // Check if parent_min_version is defined
         if (!isset($config['parent_min_version'])) {
             $errorMessage = App::environment('codecanyon') ? 'Please download and install the latest version of the module.' : 'Minimum version of <b>' . $appName . ' main application</b> is not defined in the Module.';
-
             return [
                 'status' => false,
                 'message' => $errorMessage
             ];
         }
 
-        // Check if the application version is lower than the required minimum version
+        // Check application version compatibility
         if ($config['parent_min_version'] >= File::get('version.txt')) {
             return [
                 'status' => false,
@@ -197,8 +218,7 @@ class CustomModuleController extends AccountBaseController
             ];
         }
 
-
-        // Check if parent_product_name is defined and matches the application's product name
+        // Check parent_product_name compatibility
         if (!isset($config['parent_product_name']) || $config['parent_product_name'] !== config('froiden_envato.envato_product_name')) {
             return [
                 'status' => false,
@@ -212,24 +232,28 @@ class CustomModuleController extends AccountBaseController
         ];
     }
 
+    /**
+     * Clears cache, session data, and re-authenticates the user.
+     * Used after module installation or status changes to ensure a clean state.
+     */
     private function flushData()
     {
         Artisan::call('optimize:clear');
         Artisan::call('view:clear');
         $user = auth()->id();
-        // clear cache
+        // Clear cache and session
         cache()->flush();
-        // clear session
         session()->flush();
         auth()->logout();
-        // login user
+        // Re-authenticate the user
         auth()->loginUsingId($user);
     }
 
     /**
-     * Display the specified resource.
+     * Displays the module purchase verification page.
+     * Delegates to the verifyModulePurchase method from the ModuleVerify trait.
      *
-     * @param int $id
+     * @param int $id The module ID.
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function show($id)
@@ -237,50 +261,67 @@ class CustomModuleController extends AccountBaseController
         return $this->verifyModulePurchase($id);
     }
 
+    /**
+     * Updates the status of a module (enable/disable).
+     * Updates module settings, runs migrations if enabled, and clears cache/session data.
+     *
+     * @param Request $request The request containing the module status.
+     * @param string $moduleName The name of the module to update.
+     * @return array JSON response with success message and redirect URL.
+     */
     public function update(Request $request, $moduleName)
     {
-        /** @phpstan-ignore-next-line */
         $module = Module::findOrFail($moduleName);
-
         $status = $request->status;
 
+        // Delete existing module settings
         ModuleSetting::where('module_name', $moduleName)->delete();
 
+        // Enable or disable the module
         ($status == 'active') ? $module->enable() : $module->disable();
 
+        // Trigger module status change event
         event(new ModuleStatusChanged($moduleName, $status));
 
-        // We are registering the module to run the commands
+        // Register the module
         $module->register();
 
-        /** @phpstan-ignore-next-line */
         $plugins = \Nwidart\Modules\Facades\Module::allEnabled();
 
+        // Run migrations for active modules
         if ($status == 'active') {
             $this->runModuleMigrateCommand($moduleName);
-
-            // We will call the module function php artisan asset:activate, zoom:active , etc
             $this->runActivateCommand(strtolower($moduleName));
         }
 
+        // Clear cache and session data
         $this->flushData();
-        // WORKSUITESAAS
+
+        // Handle specific module activations (e.g., subdomain)
         if (strtolower($moduleName) == 'subdomain' && ($status == 'active')) {
             \session(['subdomain_module_activated' => true]);
         }
 
+        // Update cached user modules and plugins
         cache()->forget('user_modules');
-        /** @phpstan-ignore-next-line */
         cache(['worksuite_plugins' => array_keys($plugins)]);
 
-
+        // Handle languagepack module activation
         if (strtolower($moduleName) == 'languagepack' && $status == 'active') {
             session(['languagepack_module_activated' => true]);
         }
 
+        // Return success response with redirect
         return Reply::redirect(route('custom-modules.index') . '?tab=custom', 'Status Changed. Reloading');
     }
 
+    /**
+     * Verifies the purchase code for a module.
+     * Validates the purchase code and delegates to the modulePurchaseVerified method from the ModuleVerify trait.
+     *
+     * @param Request $request The request containing the purchase code and module name.
+     * @return mixed Result from module purchase verification.
+     */
     public function verifyingModulePurchase(Request $request)
     {
         $request->validate([
@@ -294,21 +335,24 @@ class CustomModuleController extends AccountBaseController
     }
 
     /**
+     * Extracts a codecanyon zip file to retrieve the module zip.
+     * Processes nested zip files within codecanyon packages.
+     *
+     * @param Zip $zip The zip file object.
+     * @return string|bool The name of the extracted module zip or false if not found.
      * @throws \Exception
      */
     private function unzipCodecanyon($zip)
     {
         $codeCanyonPath = storage_path('app') . '/Modules/Codecanyon';
         $zip->extract($codeCanyonPath);
-        $files = File::allfiles($codeCanyonPath);
+        $files = File::allFiles($codeCanyonPath);
 
         foreach ($files as $file) {
-
             if (str_contains($file->getRelativePathname(), '.zip')) {
                 $filePath = $file->getRelativePathname();
                 $zip = Zip::open($codeCanyonPath . '/' . $filePath);
                 $zip->extract(storage_path('app') . '/Modules');
-
                 return $this->getZipName($filePath);
             }
         }
@@ -316,16 +360,23 @@ class CustomModuleController extends AccountBaseController
         return false;
     }
 
+    /**
+     * Extracts the zip file name from the file path.
+     *
+     * @param string $filePath The path to the zip file.
+     * @return string The name of the zip file.
+     */
     private function getZipName($filePath)
     {
         $array = explode('/', str_replace('\\', '/', $filePath));
-
         return end($array);
     }
 
     /**
-     * @param $moduleName
-     * This will update the version of on server
+     * Updates the version of a module.
+     * Verifies the purchase code if available in the module's settings.
+     *
+     * @param string $moduleName The name of the module.
      */
     private function updateVersion($moduleName)
     {
@@ -333,8 +384,7 @@ class CustomModuleController extends AccountBaseController
             $config = require base_path() . '/Modules/' . $moduleName . '/Config/config.php';
             $setting = (new $config['setting'])::first();
 
-            // When module migrations are not run
-
+            // Verify purchase code if it exists
             if ($setting?->purchase_code) {
                 $this->modulePurchaseVerified(strtolower($moduleName), $setting->purchase_code);
             }
@@ -343,15 +393,24 @@ class CustomModuleController extends AccountBaseController
         }
     }
 
+    /**
+     * Runs the migration command for a module.
+     *
+     * @param string $moduleName The name of the module.
+     */
     private function runModuleMigrateCommand($moduleName)
     {
         Artisan::call('module:migrate', [$moduleName, '--force' => true]);
     }
 
+    /**
+     * Runs the module-specific activation command if it exists.
+     *
+     * @param string $moduleName The name of the module.
+     */
     private function runActivateCommand($moduleName)
     {
         $command = $moduleName . ':activate';
-
         $artisanCommands = \Artisan::all();
 
         if (array_has($artisanCommands, $command)) {

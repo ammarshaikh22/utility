@@ -21,11 +21,9 @@ use App\Http\Requests\ProposalTemplate\StoreRequest;
 class ProposalTemplateController extends AccountBaseController
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Initialize the controller with default settings.
+     * Sets the page title and applies middleware to restrict access to users with the 'leads' module.
      */
-
     public function __construct()
     {
         parent::__construct();
@@ -37,6 +35,13 @@ class ProposalTemplateController extends AccountBaseController
         });
     }
 
+    /**
+     * Display a listing of proposal templates using a DataTable.
+     * Checks manage permission and renders the proposal template index view.
+     *
+     * @param  \App\DataTables\ProposalTemplateDataTable  $dataTable
+     * @return \Illuminate\Http\Response
+     */
     public function index(ProposalTemplateDataTable $dataTable)
     {
         abort_403(user()->permission('manage_proposal_template') == 'none');
@@ -44,6 +49,12 @@ class ProposalTemplateController extends AccountBaseController
         return $dataTable->render('proposal-template.index', $this->data);
     }
 
+    /**
+     * Show the form for creating a new proposal template.
+     * Verifies add permission, retrieves taxes, units, currencies, products, and categories, and renders the create view.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
         $this->pageTitle = __('modules.proposal.createProposalTemplate');
@@ -69,6 +80,13 @@ class ProposalTemplateController extends AccountBaseController
         return view('proposals.create', $this->data);
     }
 
+    /**
+     * Store a new proposal template in the database.
+     * Validates item data, saves template details, logs the search entry, and redirects to the specified URL or index page.
+     *
+     * @param  \App\Http\Requests\ProposalTemplate\StoreRequest  $request
+     * @return array
+     */
     public function store(StoreRequest $request)
     {
         $this->manageProjectTemplatePermission = user()->permission('manage_proposal_template');
@@ -130,6 +148,13 @@ class ProposalTemplateController extends AccountBaseController
         return Reply::redirect($redirectUrl, __('messages.recordSaved'));
     }
 
+    /**
+     * Display the details of a specific proposal template.
+     * Verifies manage permission, calculates discounts and taxes, and renders the show view with template details.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $this->manageProposalTemplatePermission = user()->permission('manage_project_template');
@@ -157,26 +182,19 @@ class ProposalTemplateController extends AccountBaseController
             ->get();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = ProposalTemplateItem::taxbyid($tax)->first();
 
                 if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
-                    /** @phpstan-ignore-next-line */
                     if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
-                    } else{
+                    } else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                     }
-
                 }
                 else {
-                    /** @phpstan-ignore-next-line */
                     if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
-
                     } else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
                     }
@@ -192,6 +210,13 @@ class ProposalTemplateController extends AccountBaseController
         return view('proposal-template.show', $this->data);
     }
 
+    /**
+     * Show the form for editing an existing proposal template.
+     * Verifies manage permission, retrieves template details, taxes, currencies, products, categories, and units, then renders the edit view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
         $this->manageProposalTemplatePermission = user()->permission('manage_proposal_template');
@@ -215,6 +240,14 @@ class ProposalTemplateController extends AccountBaseController
         return view('proposal-template.create', $this->data);
     }
 
+    /**
+     * Update an existing proposal template in the database.
+     * Validates item data, updates template details, and redirects to the template show page.
+     *
+     * @param  \App\Http\Requests\ProposalTemplate\StoreRequest  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(StoreRequest $request, $id)
     {
         $items = $request->item_name;
@@ -264,12 +297,26 @@ class ProposalTemplateController extends AccountBaseController
         return Reply::redirect(route('proposal-template.show', $proposalTemplate->id), __('messages.updateSuccess'));
     }
 
+    /**
+     * Delete a specific proposal template from the database.
+     * Removes the template record and returns a success message.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function destroy($id)
     {
         ProposalTemplate::findOrFail($id)->delete();
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Delete an image associated with a proposal template item.
+     * Removes the image file from storage and deletes the corresponding database record.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function deleteProposalItemImage(Request $request)
     {
         $item = ProposalTemplateItemImage::where('proposal_template_item_id', $request->invoice_item_id)->first();
@@ -282,6 +329,13 @@ class ProposalTemplateController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Download a proposal template as a PDF file.
+     * Verifies manage permission, generates a PDF using DomPDF, and initiates the download.
+     *
+     * @param  int  $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function download($id)
     {
         $this->proposalTemplate = ProposalTemplate::findOrFail($id);
@@ -294,6 +348,13 @@ class ProposalTemplateController extends AccountBaseController
         return $pdf->download($filename . '.pdf');
     }
 
+    /**
+     * Generate a DomPDF object for downloading a proposal template.
+     * Prepares template data, calculates discounts and taxes, and loads the PDF view with custom settings.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function domPdfObjectForDownload($id)
     {
         $this->invoiceSetting = invoice_setting();
@@ -321,21 +382,16 @@ class ProposalTemplateController extends AccountBaseController
         $this->invoiceSetting = invoice_setting();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = ProposalTemplateItem::taxbyid($tax)->first();
 
                 if ($this->tax) {
                     if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
-                        /** @phpstan-ignore-next-line */
                         if ($this->proposalTemplate->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->proposalTemplate->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
-                        } else{
+                        } else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                         }
-
                     }
                     else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
@@ -353,7 +409,6 @@ class ProposalTemplateController extends AccountBaseController
         $pdf->setOption('isHtml5ParserEnabled', true);
         $pdf->setOption('isRemoteEnabled', true);
 
-
         $pdf->loadView('proposal-template.pdf.invoice-5', $this->data);
 
         $filename = __('modules.lead.proposal') . '-' . $this->proposalTemplate->id;
@@ -364,6 +419,13 @@ class ProposalTemplateController extends AccountBaseController
         ];
     }
 
+    /**
+     * Add a product item to a proposal template form.
+     * Retrieves product details, converts price based on exchange rate, and renders the add item view.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function addItem(Request $request)
     {
         $this->items = Product::findOrFail($request->id);
@@ -383,7 +445,6 @@ class ProposalTemplateController extends AccountBaseController
                 $this->items->price = floor($this->items->total_amount / $exRate);
             }
             else {
-
                 $this->items->price = floatval($this->items->price) / floatval($exRate);
             }
         }

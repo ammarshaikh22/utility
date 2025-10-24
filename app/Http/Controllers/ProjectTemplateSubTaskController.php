@@ -21,8 +21,10 @@ class ProjectTemplateSubTaskController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new subtask for a project template task.
+     * Retrieves the task ID and renders the create/edit view for the subtask.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request)
@@ -33,7 +35,10 @@ class ProjectTemplateSubTaskController extends AccountBaseController
     }
 
     /**
-     * @param SubTaskStoreRequest $request
+     * Store a new subtask for a project template task.
+     * Creates or retrieves a subtask with the specified title and task ID, then returns a success message.
+     *
+     * @param  \App\Http\Requests\TemplateTasks\SubTaskStoreRequest  $request
      * @return array
      */
     public function store(SubTaskStoreRequest $request)
@@ -46,10 +51,11 @@ class ProjectTemplateSubTaskController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific subtask from a project template task.
+     * Removes the subtask record from the database and returns a success message.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return array
      */
     public function destroy($id)
     {

@@ -23,9 +23,10 @@ class LeadAgentSettingController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new lead agent.
+     * Retrieves employees and lead categories for selection in the form.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -40,11 +41,18 @@ class LeadAgentSettingController extends AccountBaseController
             ->where('roles.name', 'employee')
             ->get();
 
-            $this->leadCategories = LeadCategory::get();
+        $this->leadCategories = LeadCategory::get();
 
         return view('lead-settings.create-agent-modal', $this->data);
     }
 
+    /**
+     * Store a new lead agent with associated categories.
+     * Validates permissions, creates lead agent entries for each selected category, and optionally returns agent options for a specific deal category.
+     *
+     * @param \App\Http\Requests\LeadSetting\StoreLeadAgent $request
+     * @return \App\Helper\Reply
+     */
     public function store(StoreLeadAgent $request)
     {
         $this->addPermission = user()->permission('add_lead_agent');
@@ -75,15 +83,14 @@ class LeadAgentSettingController extends AccountBaseController
             return Reply::successWithData(__('messages.recordSaved'), ['data' => $option]);
         }
         return Reply::success(__('messages.recordSaved'));
-
-
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a lead agent and their associated category mappings.
+     * Validates user permissions before deletion.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
@@ -97,6 +104,14 @@ class LeadAgentSettingController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Update the lead categories associated with a lead agent.
+     * Deletes existing category mappings and creates new ones based on the request.
+     *
+     * @param int $id
+     * @param \App\Http\Requests\LeadSetting\UpdateLeadAgent $request
+     * @return \App\Helper\Reply
+     */
     public function updateCategory($id, UpdateLeadAgent $request)
     {
         LeadAgent::where('user_id', $id)->delete();
@@ -113,6 +128,14 @@ class LeadAgentSettingController extends AccountBaseController
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update the status of a lead agent.
+     * Updates the status for all category mappings of the specified lead agent.
+     *
+     * @param int $id
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function updateStatus($id, Request $request)
     {
         LeadAgent::where('user_id', $id)->update(['status' => $request->status]);
@@ -120,17 +143,21 @@ class LeadAgentSettingController extends AccountBaseController
         return reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Retrieve lead categories not assigned to a specific lead agent.
+     * Returns available categories for assignment, excluding those already assigned to the agent.
+     *
+     * @return \App\Helper\Reply
+     */
     public function agentCategories()
     {
         $leadAgentCategory = LeadAgent::where('user_id', request()->agent_id)->pluck('lead_category_id')->toArray();
 
         if(!empty($leadAgentCategory))
         {
-
             $leadCategory = LeadCategory::whereNotIn('id', $leadAgentCategory)->get();
 
             return Reply::dataOnly(['data' => $leadCategory]);
-
         }
         else
         {

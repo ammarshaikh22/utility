@@ -9,42 +9,49 @@ use App\Models\PurposeConsent;
 use App\Models\PurposeConsentUser;
 use App\Models\User;
 use App\Models\RemovalRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class GdprController extends AccountBaseController
 {
+    protected ?GdprSetting $gdprSetting = null;
 
     public function __construct()
     {
         parent::__construct();
+
         $this->pageTitle = 'app.menu.gdpr';
         $this->gdprSetting = GdprSetting::first();
 
-         $this->middleware(function ($request, $next) {
-            abort_403(!(user()->permission('manage_gdpr_setting') == 'all' || in_array('client', user_roles())));
+        $this->middleware(function ($request, $next) {
+            abort_403(!(
+                user()->permission('manage_gdpr_setting') === 'all' ||
+                in_array('client', user_roles(), true)
+            ));
             return $next($request);
         });
     }
 
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Display the GDPR settings dashboard.
      */
-    public function index()
+    public function index(Request $request): View|JsonResponse
     {
-        $this->view = 'gdpr.ajax.right-to-informed';
-
         $this->user = User::findOrFail($this->user->id);
 
-        $this->consents = PurposeConsent::with(['user' => function($query) {
-            $query->where('client_id', $this->user->id)
-                ->orderByDesc('created_at');
-        }])->get();
+        $this->consents = PurposeConsent::with([
+            'user' => fn($query) => $query
+                ->where('client_id', $this->user->id)
+                ->orderByDesc('created_at')
+        ])->get();
 
-        $this->removalRequest = RemovalRequest::where('user_id', $this->user->id)->where('status', 'pending')->first();
+        $this->removalRequest = RemovalRequest::where('user_id', $this->user->id)
+            ->where('status', 'pending')
+            ->first();
 
-        $tab = request('tab');
+        $tab = $request->get('tab', 'right-to-informed');
 
         $this->view = match ($tab) {
             'right-to-erasure' => 'gdpr.ajax.right-to-erasure',
@@ -54,60 +61,85 @@ class GdprController extends AccountBaseController
             default => 'gdpr.ajax.right-to-informed',
         };
 
-        $this->activeTab = $tab ?: 'right-to-informed';
+        $this->activeTab = $tab;
 
-        if (request()->ajax()) {
+        if ($request->ajax()) {
             $html = view($this->view, $this->data)->render();
-            return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle, 'activeTab' => $this->activeTab]);
+
+            return Reply::dataOnly([
+                'status' => 'success',
+                'html' => $html,
+                'title' => $this->pageTitle,
+                'activeTab' => $this->activeTab,
+            ]);
         }
 
         return view('gdpr.index', $this->data);
     }
 
-    public function updateClientConsent(Request $request)
+    /**
+     * Update client consent preferences.
+     */
+    public function updateClientConsent(Request $request): JsonResponse
     {
-        $allConsents = $request->has('consent_customer') ? $request->consent_customer : [];
+        $consents = $request->input('consent_customer', []);
 
-        foreach ($allConsents as $allConsentId => $allConsentStatus)
-        {
-            $newConsentLead = new PurposeConsentUser();
-            $newConsentLead->client_id = $this->user->id;
-            $newConsentLead->updated_by_id = $this->user->id;
-            $newConsentLead->purpose_consent_id = $allConsentId;
-            $newConsentLead->status = $allConsentStatus;
-            $newConsentLead->ip = $request->ip();
-            $newConsentLead->save();
-
+        foreach ($consents as $consentId => $status) {
+            PurposeConsentUser::create([
+                'client_id' => $this->user->id,
+                'updated_by_id' => $this->user->id,
+                'purpose_consent_id' => $consentId,
+                'status' => $status,
+                'ip' => $request->ip(),
+            ]);
         }
 
         return Reply::success(__('messages.gdprUpdated'));
     }
 
-    public function updateConsentBlock(Request $request)
+    /**
+     * Update user's GDPR data removal request.
+     */
+    public function updateConsentBlock(Request $request): JsonResponse
     {
-        $removalRequest = RemovalRequest::where('company_id', company()->id)->where('user_id', $this->user->id)->where('status', 'pending')->first();
+        $validated = $request->validate([
+            'consent_block' => 'required|string|max:5000',
+        ]);
 
-        if (!$removalRequest) {
-            $removalRequest = new RemovalRequest;
-        }
-        $removalRequest->user_id = $this->user->id;
-        $removalRequest->name = $this->user->name;
-        $removalRequest->company_id = company()->id;
-        $removalRequest->description = $request->consent_block;
-        $removalRequest->save();
+        $removalRequest = RemovalRequest::firstOrNew([
+            'company_id' => company()->id,
+            'user_id' => $this->user->id,
+            'status' => 'pending',
+        ]);
+
+        $removalRequest->fill([
+            'name' => $this->user->name,
+            'description' => $validated['consent_block'],
+        ])->save();
+
         return Reply::success(__('messages.gdprRequestUpdated'));
     }
 
-    public function downloadJson(Request $request)
+    /**
+     * Download the user's stored data as a JSON file.
+     */
+    public function downloadJson(): BinaryFileResponse
     {
-        $table = User::with('clientDetails', 'attendance', 'employee', 'employeeDetail', 'projects', 'member', 'group')->findOrFail(user()->id);
-        $filename = Files::UPLOAD_FOLDER.'/user.json';
-        $handle = fopen($filename, 'w+');
-        fputs($handle, $table->toJson(JSON_PRETTY_PRINT));
-        fclose($handle);
-        $headers = array('Content-type' => 'application/json');
+        $userData = User::with([
+            'clientDetails',
+            'attendance',
+            'employee',
+            'employeeDetail',
+            'projects',
+            'member',
+            'group',
+        ])->findOrFail(user()->id);
 
-        return response()->download($filename, 'user.json', $headers);
+        $filePath = Files::UPLOAD_FOLDER . '/user.json';
+        file_put_contents($filePath, $userData->toJson(JSON_PRETTY_PRINT));
+
+        return response()->download($filePath, 'user.json', [
+            'Content-Type' => 'application/json',
+        ]);
     }
-
 }

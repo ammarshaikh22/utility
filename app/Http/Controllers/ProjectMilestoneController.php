@@ -11,7 +11,6 @@ use App\Models\ProjectMilestone;
 use Carbon\CarbonInterval;
 use Illuminate\Http\Request;
 
-
 class ProjectMilestoneController extends AccountBaseController
 {
 
@@ -27,7 +26,8 @@ class ProjectMilestoneController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Show the form for creating a new project milestone.
+     * Verifies add permission for milestones and retrieves the project to render the create view.
      *
      * @return \Illuminate\Http\Response
      */
@@ -45,7 +45,10 @@ class ProjectMilestoneController extends AccountBaseController
     }
 
     /**
-     * @param StoreMilestone $request
+     * Store a new project milestone in the database.
+     * Saves milestone details, updates project budget if applicable, and logs the activity.
+     *
+     * @param  \App\Http\Requests\Milestone\StoreMilestone  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -77,9 +80,10 @@ class ProjectMilestoneController extends AccountBaseController
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing project milestone.
+     * Retrieves the milestone and available currencies for the edit view.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -91,8 +95,11 @@ class ProjectMilestoneController extends AccountBaseController
     }
 
     /**
-     * @param StoreMilestone $request
-     * @param int $id
+     * Update an existing project milestone in the database.
+     * Updates milestone details, adjusts project budget if applicable, and logs the activity.
+     *
+     * @param  \App\Http\Requests\Milestone\StoreMilestone  $request
+     * @param  int  $id
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -121,7 +128,6 @@ class ProjectMilestoneController extends AccountBaseController
 
         // Update the project budget if the add_to_budget flag is set to 'yes'
         if ($milestone->add_to_budget == 'yes') {
-
             // Update project budget
             $project->project_budget += $costDifference;
             $project->save();
@@ -133,10 +139,11 @@ class ProjectMilestoneController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific project milestone from the database.
+     * Removes the milestone, adjusts the project budget if applicable, and logs the activity.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id
+     * @return array
      */
     public function destroy($id)
     {
@@ -157,6 +164,13 @@ class ProjectMilestoneController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Display the details of a specific project milestone.
+     * Verifies view permission, retrieves milestone details with tasks and project data, and renders the show view.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $viewMilestonePermission = user()->permission('view_project_milestones');
@@ -188,6 +202,13 @@ class ProjectMilestoneController extends AccountBaseController
         return view('projects.milestone.show', $this->data);
     }
 
+    /**
+     * Retrieve milestone options for a specific project.
+     * Returns HTML options for milestones that are not completed, for use in a dropdown.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function byProject($id)
     {
         if ($id == 0) {
@@ -201,6 +222,14 @@ class ProjectMilestoneController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $options]);
     }
 
+    /**
+     * Update the status of a project milestone.
+     * Updates the milestone's status and returns a success response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function updateStatus(Request $request, $id)
     {
         $milestone = ProjectMilestone::findOrFail($id);

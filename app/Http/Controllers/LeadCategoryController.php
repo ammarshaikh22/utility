@@ -11,9 +11,10 @@ class LeadCategoryController extends AccountBaseController
 {
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new lead category.
+     * Checks user permissions and retrieves existing categories for display.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -25,8 +26,11 @@ class LeadCategoryController extends AccountBaseController
     }
 
     /**
-     * @param StoreLeadCategory $request
-     * @return array|void
+     * Store a new lead category in storage.
+     * Validates user permissions, saves the category, and returns updated category options.
+     *
+     * @param \App\Http\Requests\Lead\StoreLeadCategory $request
+     * @return \App\Helper\Reply
      */
     public function store(StoreLeadCategory $request)
     {
@@ -46,14 +50,14 @@ class LeadCategoryController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $list]);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing lead category.
+     * Validates user permissions before displaying the edit form.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
@@ -62,15 +66,15 @@ class LeadCategoryController extends AccountBaseController
         abort_403(!($this->editPermission == 'all' || ($this->editPermission == 'added' && $this->category->added_by == user()->id)));
 
         return view('lead-settings.edit-category-modal', $this->data);
-
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update an existing lead category in storage.
+     * Validates user permissions, updates the category name, and returns updated category data.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param \App\Http\Requests\Lead\UpdateLeadCategory $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function update(UpdateLeadCategory $request, $id)
     {
@@ -83,14 +87,14 @@ class LeadCategoryController extends AccountBaseController
 
         $categoryData = LeadCategory::all();
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $categoryData]);
-
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a lead category from storage.
+     * Validates user permissions before deletion and returns updated category data.
      *
      * @param int $id
-     * @return array
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
@@ -102,9 +106,14 @@ class LeadCategoryController extends AccountBaseController
         LeadCategory::destroy($id);
         $categoryData = LeadCategory::all();
         return Reply::successWithData(__('messages.deleteSuccess'), ['data' => $categoryData]);
-
     }
 
+    /**
+     * Set a lead category as the default.
+     * Resets the default status of other categories for the company and sets the specified category as default.
+     *
+     * @return \App\Helper\Reply
+     */
     public function updateLeadCategory()
     {
         LeadCategory::where('is_default', 1)->where('company_id', company()->id)->update(['is_default' => 0]);
@@ -115,6 +124,5 @@ class LeadCategoryController extends AccountBaseController
 
         $categoryData = LeadCategory::all();
         return Reply::successWithData(__('messages.recordSaved'), ['data' => $categoryData]);
-
     }
 }

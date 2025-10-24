@@ -12,12 +12,6 @@ use App\Models\KnowledgeBaseCategory;
 
 class KnowledgeBaseFileController extends AccountBaseController
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-
     use IconTrait;
 
     public function __construct()
@@ -28,10 +22,11 @@ class KnowledgeBaseFileController extends AccountBaseController
     }
 
     /**
-     * Store a newly crea   ted resource in storage.
+     * Store one or more uploaded files for a knowledge base article.
+     * Handles file uploads, saves file metadata, and stores files locally or on S3.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
      */
     public function store(Request $request)
     {
@@ -47,13 +42,20 @@ class KnowledgeBaseFileController extends AccountBaseController
                 $file->hashname = $filename;
                 $file->size = $fileData->getSize();
                 $file->save();
-
             }
         }
 
         return Reply::success(__('messages.fileUploaded'));
     }
 
+    /**
+     * Delete a specified knowledge base file from storage.
+     * Checks user permissions, deletes the file, and updates the file list view.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function destroy(Request $request, $id)
     {
         abort_403(!in_array(user()->permission('edit_knowledgebase'), ['all', 'added']));
@@ -73,11 +75,17 @@ class KnowledgeBaseFileController extends AccountBaseController
         return Reply::successWithData(__('messages.deleteSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Download a specified knowledge base file.
+     * Retrieves the file using its hashed ID and initiates download from local storage or S3.
+     *
+     * @param string $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+     */
     public function download($id)
     {
         $file = KnowledgeBaseFile::whereRaw('md5(id) = ?', $id)->firstOrFail();
         return download_local_s3($file, KnowledgeBaseFile::FILE_PATH . '/' . $file->knowledge_base_id . '/' . $file->hashname);
-
     }
 
 }

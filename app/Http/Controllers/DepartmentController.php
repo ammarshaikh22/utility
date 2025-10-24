@@ -20,32 +20,36 @@ class DepartmentController extends AccountBaseController
         parent::__construct();
         $this->pageTitle = __('app.menu.department');
 
+        // Apply middleware to restrict access to users with 'employees' module
         $this->middleware(function ($request, $next) {
             abort_403(!in_array('employees', $this->user->modules));
-
             return $next($request);
         });
     }
 
     /**
+     * Show all departments using DataTable
+     *
      * @param DepartmentDataTable $dataTable
-     * @return mixed|void
+     * @return mixed
      */
-
     public function index(DepartmentDataTable $dataTable)
     {
         $viewPermission = user()->permission('view_department');
         abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
 
         $this->departments = Team::with('childs')->get();
-
         return $dataTable->render('departments.index', $this->data);
     }
 
+    /**
+     * Show create department form
+     *
+     * @return mixed
+     */
     public function create()
     {
         $this->departments = Team::allDepartments();
-
         $this->view = 'departments.ajax.create';
 
         if (request()->model == true) {
@@ -60,13 +64,13 @@ class DepartmentController extends AccountBaseController
     }
 
     /**
+     * Store a newly created department
+     *
      * @param StoreDepartment $request
      * @return array
-     * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function store(StoreDepartment $request)
     {
-
         $group = new Team();
         $group->team_name = $request->team_name;
         $group->parent_id = $request->parent_id;
@@ -74,21 +78,24 @@ class DepartmentController extends AccountBaseController
 
         $this->departments = Team::allDepartments();
 
-        $redirectUrl = urldecode($request->redirect_url);
+        $redirectUrl = urldecode($request->redirect_url) ?: route('departments.index');
 
-        if ($redirectUrl == '') {
-            $redirectUrl = route('departments.index');
-        }
-
-        return Reply::successWithData(__('messages.recordSaved'), ['departments' => $this->departments, 'redirectUrl' => $redirectUrl]);
+        return Reply::successWithData(__('messages.recordSaved'), [
+            'departments' => $this->departments,
+            'redirectUrl' => $redirectUrl
+        ]);
     }
 
+    /**
+     * Display details of a department
+     *
+     * @param int $id
+     * @return mixed
+     */
     public function show($id)
     {
         $this->department = Team::findOrFail($id);
         $this->parent = Team::where('id', $this->department->parent_id)->first();
-
-
         $this->view = 'departments.ajax.show';
 
         if (request()->ajax()) {
@@ -98,17 +105,22 @@ class DepartmentController extends AccountBaseController
         return view('departments.create', $this->data);
     }
 
+    /**
+     * Show edit form for a department
+     *
+     * @param int $id
+     * @return mixed
+     */
     public function edit($id)
     {
         $this->department = Team::findOrFail($id);
         $departments = Team::where('id', '!=', $this->department->id)->get();
 
         $childDepartments = $departments->where('parent_id', $this->department->id)->pluck('id')->toArray();
-
         $departments = $departments->where('parent_id', '!=', $this->department->id);
 
-        // remove child departments
-        $this->departments = $departments->filter(function ($value, $key) use ($childDepartments) {
+        // Exclude child departments from available list
+        $this->departments = $departments->filter(function ($value) use ($childDepartments) {
             return !in_array($value->parent_id, $childDepartments);
         });
 
@@ -122,10 +134,11 @@ class DepartmentController extends AccountBaseController
     }
 
     /**
+     * Update department data
+     *
      * @param UpdateDepartment $request
      * @param int $id
      * @return array
-     * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function update(UpdateDepartment $request, $id)
     {
@@ -137,21 +150,30 @@ class DepartmentController extends AccountBaseController
         $group->parent_id = $request->parent_id ?? null;
         $group->save();
 
-        $redirectUrl = route('departments.index');
-
-        return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => $redirectUrl]);
+        return Reply::successWithData(__('messages.updateSuccess'), [
+            'redirectUrl' => route('departments.index')
+        ]);
     }
 
+    /**
+     * Delete a department
+     *
+     * @param int $id
+     * @return array
+     */
     public function destroy($id)
     {
         $deletePermission = user()->permission('delete_department');
         abort_403($deletePermission != 'all');
 
+        // Remove employees from department
         EmployeeDetails::where('department_id', $id)->update(['department_id' => null]);
+
+        // Reassign child departments
         $department = Team::where('parent_id', $id)->get();
         $parent = Team::findOrFail($id);
 
-        if (count($department) > 0) {
+        if ($department->count() > 0) {
             foreach ($department as $item) {
                 $child = Team::findOrFail($item->id);
                 $child->parent_id = $parent->parent_id;
@@ -161,11 +183,17 @@ class DepartmentController extends AccountBaseController
 
         Team::destroy($id);
 
-        $redirectUrl = route('departments.index');
-
-        return Reply::successWithData(__('messages.deleteSuccess'), ['redirectUrl' => $redirectUrl]);
+        return Reply::successWithData(__('messages.deleteSuccess'), [
+            'redirectUrl' => route('departments.index')
+        ]);
     }
 
+    /**
+     * Apply bulk actions like delete
+     *
+     * @param Request $request
+     * @return array
+     */
     public function applyQuickAction(Request $request)
     {
         if ($request->action_type == 'delete') {
@@ -174,29 +202,30 @@ class DepartmentController extends AccountBaseController
         }
 
         return Reply::error(__('messages.selectAction'));
-
     }
 
+    /**
+     * Bulk delete departments
+     *
+     * @param Request $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         $deletePermission = user()->permission('delete_department');
         abort_403($deletePermission != 'all');
 
-        $item = explode(',', $request->row_ids);
+        $item = array_filter(explode(',', $request->row_ids), fn($id) => $id !== 'on');
 
-        if (($key = array_search('on', $item)) !== false) {
-            unset($item[$key]);
-        }
-
-        foreach($item as $id)
-        {
+        foreach ($item as $id) {
             EmployeeDetails::where('department_id', $id)->update(['department_id' => null]);
-            $department = Team::where('parent_id', $id)->get();
-            $parent = Team::findOrFail( $id);
 
-            if (count($department) > 0) {
-                foreach ($department as $item) {
-                    $child = Team::findOrFail($item->id);
+            $department = Team::where('parent_id', $id)->get();
+            $parent = Team::findOrFail($id);
+
+            if ($department->count() > 0) {
+                foreach ($department as $childDept) {
+                    $child = Team::findOrFail($childDept->id);
                     $child->parent_id = $parent->parent_id;
                     $child->save();
                 }
@@ -204,9 +233,13 @@ class DepartmentController extends AccountBaseController
 
             Team::where('id', $id)->delete();
         }
-
     }
 
+    /**
+     * Display department hierarchy
+     *
+     * @return mixed
+     */
     public function hierarchyData()
     {
         $viewPermission = user()->permission('view_department');
@@ -224,31 +257,31 @@ class DepartmentController extends AccountBaseController
         return view('departments-hierarchy.index', $this->data);
     }
 
+    /**
+     * Change parent of a department or move child nodes
+     *
+     * @return array
+     */
     public function changeParent()
     {
         $editPermission = user()->permission('edit_department');
         abort_403($editPermission != 'all');
 
         $childIds = request('values');
-        $parentId = request('newParent') ? request('newParent') : request('parent_id');
-
+        $parentId = request('newParent') ?: request('parent_id');
         $department = Team::findOrFail($parentId);
 
-        // Root node again
+        // If moved to root
         if (request('newParent') && $department) {
             $department->parent_id = null;
             $department->save();
         }
-        else if ($department && !is_null($childIds)) // update child Node
-        {
+        // Update child node
+        else if ($department && !is_null($childIds)) {
             foreach ($childIds as $childId) {
                 $child = Team::findOrFail($childId);
-
-                if ($child) {
-                    $child->parent_id = $parentId;
-                    $child->save();
-                }
-
+                $child->parent_id = $parentId;
+                $child->save();
             }
         }
 
@@ -257,11 +290,21 @@ class DepartmentController extends AccountBaseController
         $html = view('departments-hierarchy.chart_tree', $this->data)->render();
         $organizational = view('departments-hierarchy.chart_organization', $this->data)->render();
 
-        return Reply::dataOnly(['status' => 'success', 'html' => $html, 'organizational' => $organizational]);
+        return Reply::dataOnly([
+            'status' => 'success',
+            'html' => $html,
+            'organizational' => $organizational
+        ]);
     }
 
-    // Search filter start
+    // ----------------- Search filter start -----------------
 
+    /**
+     * Search department by name in hierarchy
+     *
+     * @param Request $request
+     * @return array
+     */
     public function searchDepartment(Request $request)
     {
         $text = $request->searchText;
@@ -270,25 +313,22 @@ class DepartmentController extends AccountBaseController
             $searchParent = Team::with('childs')->where('team_name', 'like', '%' . $text . '%')->get();
 
             $id = [];
-
             foreach ($searchParent as $item) {
-                array_push($id, $item->parent_id);
+                $id[] = $item->parent_id;
             }
 
             $item = $searchParent->whereIn('id', $id)->pluck('id');
             $this->chartDepartments = $searchParent;
 
-            if ($text != '' && !is_null($item)) {
-                foreach ($this->chartDepartments as $item) {
-                    $item['parent_id'] = null;
+            if (!is_null($item)) {
+                foreach ($this->chartDepartments as $dept) {
+                    $dept['parent_id'] = null;
                 }
             }
 
-            $parent = array();
-
+            $parent = [];
             foreach ($this->chartDepartments as $department) {
-                array_push($parent, $department->id);
-
+                $parent[] = $department->id;
                 if ($department->childs) {
                     $this->child($department->childs);
                 }
@@ -297,49 +337,64 @@ class DepartmentController extends AccountBaseController
             $this->children = Team::whereIn('id', $this->arr)->get(['id', 'team_name', 'parent_id']);
             $this->parents = Team::whereIn('id', $parent)->get(['id', 'team_name']);
             $this->chartDepartments = $this->parents->merge($this->children);
-        }
-        else {
+        } else {
             $this->chartDepartments = Team::get(['id', 'team_name', 'parent_id']);
-
         }
 
-        $this->departments = ($text != '') ? Team::with('childs')->where('team_name', 'like', '%' . $text . '%')->get() : Team::with('childs')->where('parent_id', null)->get();
+        $this->departments = ($text != '') ?
+            Team::with('childs')->where('team_name', 'like', '%' . $text . '%')->get() :
+            Team::with('childs')->where('parent_id', null)->get();
+
         $html = view('departments-hierarchy.chart_tree', $this->data)->render();
         $organizational = view('departments-hierarchy.chart_organization', $this->data)->render();
 
         return Reply::dataOnly(['status' => 'success', 'html' => $html, 'organizational' => $organizational]);
     }
 
+    /**
+     * Recursive function to collect child IDs
+     *
+     * @param mixed $child
+     * @return void
+     */
     public function child($child)
     {
         foreach ($child as $item) {
-            array_push($this->arr, $item->id);
-
+            $this->arr[] = $item->id;
             if ($item->childs) {
                 $this->child($item->childs);
             }
         }
     }
 
-    // Search filter end
+    // ----------------- Search filter end -----------------
 
+    /**
+     * Get members of a department
+     *
+     * @param int $id
+     * @return array
+     */
     public function getMembers($id)
     {
-
         $options = '';
         $userData = [];
         $userId = explode(',', request()->get('userId'));
 
         if ($id == 0) {
-            $members = User::allEmployees(null,true);
+            // Fetch all employees
+            $members = User::allEmployees(null, true);
 
             foreach ($members as $item) {
-                $self_select = (user() && user()->id == $item->id) ? '<span class=\'ml-2 badge badge-secondary\'>' . __('app.itsYou') . '</span>' : '';
+                $self_select = (user() && user()->id == $item->id)
+                    ? '<span class=\'ml-2 badge badge-secondary\'>' . __('app.itsYou') . '</span>'
+                    : '';
 
-                $options .= '<option  data-content="<span class=\'badge badge-pill badge-light border\'><div class=\'d-inline-block mr-1\'><img class=\'taskEmployeeImg rounded-circle\' src=' . $item->image_url . ' ></div> ' . $item->name . '</span>' . $self_select . '" value="' . $item->id . '"> ' . $item->name . '</option>';
+                $options .= '<option data-content="<span class=\'badge badge-pill badge-light border\'><div class=\'d-inline-block mr-1\'><img class=\'taskEmployeeImg rounded-circle\' src='
+                    . $item->image_url . ' ></div> ' . $item->name . '</span>' . $self_select
+                    . '" value="' . $item->id . '"> ' . $item->name . '</option>';
             }
-        }
-        else {
+        } else {
             $members = collect([]);
             $departmentIds = explode(',', $id);
 
@@ -348,25 +403,27 @@ class DepartmentController extends AccountBaseController
             }
 
             foreach ($members as $item) {
-                $selected = '';
+                $selected = (isset($userId) && in_array($item->id, $userId)) ? 'selected' : '';
 
-                if (isset($userId)){
-                    if (in_array($item->id, $userId)) {
-                        $selected = 'selected';
-                    }
-                }
+                $self_select = (user() && user()->id == $item->id)
+                    ? '<span class=\'ml-2 badge badge-secondary\'>' . __('app.itsYou') . '</span>'
+                    : '';
 
-                $self_select = (user() && user()->id == $item->id) ? '<span class=\'ml-2 badge badge-secondary\'>' . __('app.itsYou') . '</span>' : '';
+                $options .= '<option ' . $selected . ' data-content="<span class=\'badge badge-pill badge-light border\'><div class=\'d-inline-block mr-1\'><img class=\'taskEmployeeImg rounded-circle\' src='
+                    . $item->image_url . ' ></div>  ' . $item->name . '</span>' . $self_select
+                    . '" value="' . $item->id . '"> ' . $item->name . ' </option>';
 
-                $options .= '<option ' . $selected . ' data-content="<span class=\'badge badge-pill badge-light border\'><div class=\'d-inline-block mr-1\'><img class=\'taskEmployeeImg rounded-circle\' src=' . $item->image_url . ' ></div>  ' . $item->name . '</span>' . $self_select . '" value="' . $item->id . '"> ' . $item->name . ' </option>';
                 $url = route('employees.show', [$item->id]);
 
-                $userData[] = ['id' => $item->id, 'value' => $item->name, 'image' => $item->image_url, 'link' => $url];
-
+                $userData[] = [
+                    'id' => $item->id,
+                    'value' => $item->name,
+                    'image' => $item->image_url,
+                    'link' => $url
+                ];
             }
         }
 
         return Reply::dataOnly(['status' => 'success', 'data' => $options, 'userData' => $userData]);
     }
-
 }

@@ -37,9 +37,15 @@ class PaymentController extends AccountBaseController
         });
     }
 
+    /**
+     * Display a listing of payments using a DataTable.
+     * Checks view permissions and prepares project and client data for the index view.
+     *
+     * @param  \App\DataTables\PaymentsDataTable  $dataTable
+     * @return \Illuminate\Http\Response
+     */
     public function index(PaymentsDataTable $dataTable)
     {
-
         $viewPermission = user()->permission('view_payments');
         abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
 
@@ -58,8 +64,10 @@ class PaymentController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Handle bulk actions for payments, such as deletion or status change.
+     * Delegates to specific methods based on the requested action type.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function applyQuickAction(Request $request)
@@ -78,6 +86,13 @@ class PaymentController extends AccountBaseController
         }
     }
 
+    /**
+     * Delete multiple payment records based on provided IDs.
+     * Verifies delete permission and removes the specified payments.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         abort_403(user()->permission('delete_payments') != 'all');
@@ -94,6 +109,13 @@ class PaymentController extends AccountBaseController
         }
     }
 
+    /**
+     * Update the status of multiple payment records.
+     * Verifies edit permission and updates the status of the specified payments.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function changeStatus($request)
     {
         abort_403(user()->permission('edit_payments') != 'all');
@@ -101,6 +123,12 @@ class PaymentController extends AccountBaseController
         Payment::whereIn('id', explode(',', $request->row_ids))->update(['status' => $request->status]);
     }
 
+    /**
+     * Show the form for creating a new payment.
+     * Prepares project, invoice, currency, and bank account data based on user permissions and request parameters.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
         $this->addPermission = user()->permission('add_payments');
@@ -140,7 +168,6 @@ class PaymentController extends AccountBaseController
             $this->currencyCode = $this->invoice->currency->currency_code;
             $this->exchangeRate = $this->invoice->currency->exchange_rate;
 
-
             if ($this->invoice->project_id) {
                 $this->project = Project::findOrFail($this->invoice->project_id);
             }
@@ -176,7 +203,6 @@ class PaymentController extends AccountBaseController
             $bankAccountQuery = $bankAccountQuery->where('status', 1)->where('currency_id', company()->currency_id);
         }
 
-
         if ($this->viewBankAccountPermission == 'added') {
             $bankAccountQuery = $bankAccountQuery->where('added_by', user()->id);
             /* @phpstan-ignore-line */
@@ -201,6 +227,13 @@ class PaymentController extends AccountBaseController
         return view('payments.create', $this->data);
     }
 
+    /**
+     * Store a new payment record in the database.
+     * Validates and saves payment details, including project, invoice, and optional file, and logs employee activity.
+     *
+     * @param  \App\Http\Requests\Payments\StorePayment  $request
+     * @return array
+     */
     public function store(StorePayment $request)
     {
         $payment = new Payment();
@@ -263,6 +296,13 @@ class PaymentController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl]);
     }
 
+    /**
+     * Delete a specific payment record from the database.
+     * Verifies delete permission before removing the payment.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function destroy($id)
     {
         $payment = Payment::with('invoice')->findOrFail($id);
@@ -281,6 +321,13 @@ class PaymentController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Show the form for editing an existing payment.
+     * Verifies edit permission and prepares project, invoice, currency, and bank account data for the edit form.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
         $this->payment = Payment::with('invoice', 'offlineMethods')->findOrFail($id);
@@ -331,9 +378,16 @@ class PaymentController extends AccountBaseController
         return view('payments.create', $this->data);
     }
 
+    /**
+     * Update an existing payment record in the database.
+     * Updates payment details, handles file deletion or replacement, and adjusts invoice status if applicable.
+     *
+     * @param  \App\Http\Requests\Payments\UpdatePayments  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(UpdatePayments $request, $id)
     {
-
         $payment = Payment::findOrFail($id);
 
         if ($request->project_id != '' && $request->project_id != '0') {
@@ -402,6 +456,13 @@ class PaymentController extends AccountBaseController
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => route('payments.index')]);
     }
 
+    /**
+     * Display the details of a specific payment.
+     * Verifies view permission and loads payment details, including related invoice, project, and transactions.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
         $this->payment = Payment::with(['invoice', 'project', 'currency', 'offlineMethods', 'transactions' => function ($q) {
@@ -428,6 +489,13 @@ class PaymentController extends AccountBaseController
         return view('payments.create', $this->data);
     }
 
+    /**
+     * Download a PDF of a specific payment.
+     * Verifies view permission and generates a downloadable PDF with payment details.
+     *
+     * @param  int  $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
     public function download($id)
     {
         $this->invoiceSetting = invoice_setting();
@@ -449,6 +517,13 @@ class PaymentController extends AccountBaseController
         return $pdf->download($filename . '.pdf');
     }
 
+    /**
+     * Generate a PDF object for downloading a payment.
+     * Prepares payment data and settings, then loads the PDF view for the specified payment.
+     *
+     * @param  int  $id
+     * @return array
+     */
     public function domPdfObjectForDownload($id)
     {
         $this->invoiceSetting = invoice_setting();
@@ -468,6 +543,13 @@ class PaymentController extends AccountBaseController
         ];
     }
 
+    /**
+     * Retrieve a list of bank accounts for a given currency.
+     * Filters accounts based on user permissions and returns HTML options for a dropdown.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function accountList(Request $request)
     {
         $options = '<option value="">--</option>';
@@ -502,6 +584,12 @@ class PaymentController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $options, 'exchangeRate' => $exchangeRate]);
     }
 
+    /**
+     * Retrieve all offline payment methods.
+     * Returns a list of available offline payment methods.
+     *
+     * @return array
+     */
     public function offlineMethods()
     {
         $offlineMethod = OfflinePaymentMethod::all();
@@ -509,6 +597,12 @@ class PaymentController extends AccountBaseController
         return Reply::dataOnly(['status' => 'success', 'data' => $offlineMethod]);
     }
 
+    /**
+     * Show the form for adding multiple payments in bulk.
+     * Prepares pending invoices and bank account data based on user permissions and client/project filters.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function addBulkPayments()
     {
         $this->addPermission = user()->permission('add_payments');
@@ -572,6 +666,13 @@ class PaymentController extends AccountBaseController
         return view('payments.create', $this->data);
     }
 
+    /**
+     * Store multiple payment records in bulk.
+     * Validates and saves payments for selected invoices, ensuring amounts do not exceed due amounts, and updates invoice statuses.
+     *
+     * @param  \App\Http\Requests\Payments\StoreBulkPayments  $request
+     * @return array
+     */
     public function saveBulkPayments(StoreBulkPayments $request)
     {
         $invoiceIds = $request->invoice_number;

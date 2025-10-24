@@ -29,8 +29,10 @@ class ProjectTemplateController extends AccountBaseController
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of project templates.
+     * Verifies view and manage permissions, retrieves categories, and renders the DataTable view.
      *
+     * @param  \App\DataTables\ProjectTemplatesDataTable  $dataTable
      * @return \Illuminate\Http\Response
      */
     public function index(ProjectTemplatesDataTable $dataTable)
@@ -44,13 +46,13 @@ class ProjectTemplateController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new project template.
+     * Verifies manage permission, retrieves categories and employees, and renders the create view.
      *
      * @return \Illuminate\Http\Response
      */
     public function create()
     {
-
         $this->manageProjectTemplatePermission = user()->permission('manage_project_template');
         abort_403(!in_array($this->manageProjectTemplatePermission, ['all', 'added']));
 
@@ -67,13 +69,15 @@ class ProjectTemplateController extends AccountBaseController
     }
 
     /**
-     * @param StoreProject $request
-     * @return mixed|void
+     * Store a new project template in the database.
+     * Verifies manage permission, saves template details, and returns the created template's ID.
+     *
+     * @param  \App\Http\Requests\ProjectTemplate\StoreProject  $request
+     * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function store(StoreProject $request)
     {
-
         $this->manageProjectTemplatePermission = user()->permission('manage_project_template');
 
         abort_403(!in_array($this->manageProjectTemplatePermission, ['all', 'added']));
@@ -122,13 +126,13 @@ class ProjectTemplateController extends AccountBaseController
 
         $project->save();
         return Reply::dataOnly(['projectID' => $project->id]);
-
     }
 
     /**
-     * Display the specified resource.
+     * Display the details of a specific project template.
+     * Verifies view and manage permissions, retrieves template data, and renders the appropriate tab view (overview, members, milestones, or tasks).
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -144,18 +148,17 @@ class ProjectTemplateController extends AccountBaseController
         switch ($tab) {
         case 'members':
             $this->view = 'project-templates.ajax.members';
-                break;
+            break;
         case 'milestones':
-
             $this->project =  $this->template;
             $this->view = 'project-templates.ajax.milestones';
             break;
         case 'tasks':
             $this->taskBoardStatus = TaskboardColumn::all();
-                return $this->tasks();
+            return $this->tasks();
         default:
             $this->view = 'project-templates.ajax.overview';
-                break;
+            break;
         }
 
         if (request()->ajax()) {
@@ -165,13 +168,16 @@ class ProjectTemplateController extends AccountBaseController
         $this->activeTab = $tab ?: 'overview';
 
         return view('project-templates.show', $this->data);
-
-
     }
 
+    /**
+     * Display the tasks associated with a project template.
+     * Verifies permissions, sets the active tab, and renders the tasks view with a DataTable.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function tasks()
     {
-
         $manageProjectTemplatePermission = user()->permission('manage_project_template');
 
         abort_403(in_array($this->viewProjectTemplatePermission, ['none']) && in_array($this->manageProjectTemplatePermission, ['none', 'both']));
@@ -182,13 +188,13 @@ class ProjectTemplateController extends AccountBaseController
 
         $dataTable = new ProjectTemplateTasksDataTable();
         return $dataTable->render('project-templates.show', $this->data);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing project template.
+     * Verifies manage permission, retrieves template and category data, and renders the edit view.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -204,7 +210,7 @@ class ProjectTemplateController extends AccountBaseController
         if (!is_null($this->template->category_id)) {
             $this->categoryData = ProjectSubCategory::where('category_id', $this->template->category_id)->get();
         }
-        
+
         $this->categories = ProjectCategory::all();
         $this->view = 'project-templates.ajax.edit';
 
@@ -213,12 +219,14 @@ class ProjectTemplateController extends AccountBaseController
         }
 
         return view('project-templates.create', $this->data);
-
     }
 
     /**
-     * @param StoreProject $request
-     * @param int $id
+     * Update an existing project template in the database.
+     * Verifies the request, updates template details, and redirects to the template index.
+     *
+     * @param  \App\Http\Requests\ProjectTemplate\StoreProject  $request
+     * @param  int  $id
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -241,10 +249,9 @@ class ProjectTemplateController extends AccountBaseController
 
         if ($request->sub_category_id != '') {
             $project->sub_category_id = $request->sub_category_id;
-        }else{
+        } else {
             $project->sub_category_id = null;
         }
-
 
         if ($request->client_view_task) {
             $project->client_view_task = 'enable';
@@ -275,17 +282,17 @@ class ProjectTemplateController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a specific project template from the database.
+     * Verifies manage permission and removes the template if authorized.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id
+     * @return array
      */
     public function destroy($id)
     {
         $this->manageProjectTemplatePermission = user()->permission('manage_project_template');
 
-        if(!in_array($this->manageProjectTemplatePermission, ['all', 'added'])) {
-
+        if (!in_array($this->manageProjectTemplatePermission, ['all', 'added'])) {
             return Reply::error(__('messages.permissionDenied'));
         }
 
@@ -293,14 +300,20 @@ class ProjectTemplateController extends AccountBaseController
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Handle quick actions for project templates.
+     * Processes bulk actions like deletion based on the specified action type.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function applyQuickAction(Request $request)
     {
         switch ($request->action_type) {
         case 'delete':
             $this->manageProjectTemplatePermission = user()->permission('manage_project_template');
 
-            if(!in_array($this->manageProjectTemplatePermission, ['all', 'added'])) {
-
+            if (!in_array($this->manageProjectTemplatePermission, ['all', 'added'])) {
                 return Reply::error(__('messages.permissionDenied'));
             }
 
@@ -308,10 +321,17 @@ class ProjectTemplateController extends AccountBaseController
             return Reply::success(__('messages.deleteSuccess'));
 
         default:
-                return Reply::error(__('messages.selectAction'));
+            return Reply::error(__('messages.selectAction'));
         }
     }
 
+    /**
+     * Delete multiple project templates from the database.
+     * Removes the specified templates based on the provided IDs.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     protected function deleteRecords($request)
     {
         ProjectTemplate::whereIn('id', explode(',', $request->row_ids))->delete();

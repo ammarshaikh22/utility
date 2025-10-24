@@ -12,10 +12,11 @@ class ProjectRatingController extends AccountBaseController
 {
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new project rating in the database.
+     * Verifies add permission, saves the rating details, triggers a project event, and notifies project members.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param  \App\Http\Requests\Project\StoreRating  $request
+     * @return array
      */
     public function store(StoreRating $request)
     {
@@ -36,19 +37,18 @@ class ProjectRatingController extends AccountBaseController
         event(new NewProjectEvent($rating->project, $members, 'ProjectRating'));
 
         return Reply::success(__('messages.recordSaved'));
-
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update an existing project rating in the database.
+     * Verifies edit permission and updates the rating details, including the user who made the update.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  \App\Http\Requests\Project\StoreRating  $request
+     * @param  int  $id
+     * @return array
      */
     public function update(StoreRating $request, $id)
     {
-
         $addProjectRatingPermission = user()->permission('edit_project_rating');
         abort_403(!in_array($addProjectRatingPermission, ['all', 'added', 'owned', 'both']));
 
@@ -62,13 +62,20 @@ class ProjectRatingController extends AccountBaseController
         $rating->save();
 
         return Reply::success(__('messages.updateSuccess'));
-
     }
 
+    /**
+     * Delete a specific project rating from the database.
+     * Verifies delete permission based on user roles and project association, then removes the rating.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return array
+     */
     public function destroy(Request $request, $id)
     {
         $deleteRatingPermission = user()->permission('delete_project_rating');
-        $rating  = ProjectRating::findOrFail($id);
+        $rating = ProjectRating::findOrFail($id);
         $memberIds = $rating->project->members->pluck('user_id')->toArray();
 
         abort_403(
@@ -82,7 +89,6 @@ class ProjectRatingController extends AccountBaseController
 
         ProjectRating::destroy($id);
         return Reply::success(__('messages.deleteSuccess'));
-        
     }
 
 }

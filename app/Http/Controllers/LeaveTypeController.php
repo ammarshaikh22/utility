@@ -22,9 +22,10 @@ class LeaveTypeController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new leave type.
+     * Retrieves teams, designations, and roles for the form.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -36,8 +37,11 @@ class LeaveTypeController extends AccountBaseController
     }
 
     /**
-     * @param StoreLeaveType $request
-     * @return array
+     * Store a new leave type in storage.
+     * Saves leave type details and generates options for select input.
+     *
+     * @param \App\Http\Requests\LeaveType\StoreLeaveType $request
+     * @return \App\Helper\Reply
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
     public function store(StoreLeaveType $request)
@@ -48,11 +52,10 @@ class LeaveTypeController extends AccountBaseController
         $leaveType->color = $request->color;
         $leaveType->paid = $request->paid;
 
-        if($request->leavetype == 'monthly'){
+        if ($request->leavetype == 'monthly') {
             $leaveType->no_of_leaves = $request->monthly_leave_number;
             $leaveType->monthly_limit = 0;
-
-        }else{
+        } else {
             $leaveType->no_of_leaves = $request->yearly_leave_number;
             $leaveType->monthly_limit = $request->monthly_limit;
         }
@@ -72,17 +75,17 @@ class LeaveTypeController extends AccountBaseController
         $leaveType->save();
 
         $leaveTypes = LeaveType::get();
-
         $options = BaseModel::options($leaveTypes, $leaveType, 'type_name');
 
         return Reply::successWithData(__('messages.leaveTypeAdded'), ['data' => $options, 'page_reload' => $request->page_reload]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing an existing leave type.
+     * Retrieves leave type details, teams, designations, roles, and decoded JSON fields.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
@@ -100,9 +103,16 @@ class LeaveTypeController extends AccountBaseController
         return view('leave-settings.edit-leave-setting-type-modal', $this->data);
     }
 
+    /**
+     * Update an existing leave type in storage.
+     * Validates leave count, updates leave type details, and synchronizes related leave records.
+     *
+     * @param \App\Http\Requests\LeaveType\StoreLeaveType $request
+     * @param int $id
+     * @return \App\Helper\Reply
+     */
     public function update(StoreLeaveType $request, $id)
     {
-
         if ($request->leaves < 0) {
             return Reply::error('messages.leaveTypeValueError');
         }
@@ -116,23 +126,20 @@ class LeaveTypeController extends AccountBaseController
         $leaveType->type_name = $request->type_name;
         $leaveType->color = $request->color;
         $leaveType->paid = $request->paid;
-        
-        // need values later no of leaves early one
-        session([
-                'old_leaves' => $leaveType->no_of_leaves,
-                'old_leavetype' => $leaveType->leavetype
-            ]);
 
-        if($leaveType->leavetype == 'monthly'){
+        session([
+            'old_leaves' => $leaveType->no_of_leaves,
+            'old_leavetype' => $leaveType->leavetype
+        ]);
+
+        if ($leaveType->leavetype == 'monthly') {
             $leaveType->no_of_leaves = $request->monthly_leave_number;
             $leaveType->monthly_limit = 0;
-
-        }else{
+        } else {
             $leaveType->no_of_leaves = $request->yearly_leave_number;
             $leaveType->monthly_limit = $request->monthly_limit;
         }
 
-        $leaveType->monthly_limit = $request->monthly_limit;
         $leaveType->effective_after = $request->effective_after;
         $leaveType->effective_type = $request->effective_type;
         $leaveType->encashed = $request->encashed;
@@ -150,10 +157,11 @@ class LeaveTypeController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete, archive, or restore a leave type.
+     * Handles soft delete, permanent delete, or restoration based on request parameters.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {

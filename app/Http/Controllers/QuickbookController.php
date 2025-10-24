@@ -141,7 +141,7 @@ class QuickbookController extends AccountBaseController
                 ]
             ];
         }
-
+        
         $invoiceData = [
             'Line' => $itemsData,
             'CustomerRef' => [

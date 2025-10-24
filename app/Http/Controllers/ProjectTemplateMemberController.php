@@ -25,7 +25,8 @@ class ProjectTemplateMemberController extends AccountBaseController
     }
 
     /**
-     * XXXXXXXXXXX
+     * Show the form for adding members to a project template.
+     * Retrieves the project template and employees not already assigned to it, then renders the create view.
      *
      * @return \Illuminate\Http\Response
      */
@@ -49,7 +50,10 @@ class ProjectTemplateMemberController extends AccountBaseController
     }
 
     /**
-     * @param StoreProjectMembers $request
+     * Add members to a project template.
+     * Creates new project template member records for each specified user ID.
+     *
+     * @param  \App\Http\Requests\ProjectMembers\StoreProjectMembers  $request
      * @return array
      * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
      */
@@ -68,10 +72,11 @@ class ProjectTemplateMemberController extends AccountBaseController
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove a member from a project template.
+     * Deletes the specified project template member record.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param  int  $id
+     * @return array
      */
     public function destroy($id)
     {
@@ -82,10 +87,16 @@ class ProjectTemplateMemberController extends AccountBaseController
         return Reply::success(__('messages.memberRemovedFromProject'));
     }
 
+    /**
+     * Add a group of members to a project template based on department.
+     * Assigns all active employees from the specified departments to the project template, avoiding duplicates.
+     *
+     * @param  \App\Http\Requests\ProjectMembers\SaveGroupMembers  $request
+     * @return array
+     */
     public function storeGroup(SaveGroupMembers $request)
     {
         foreach ($request->group_id as $group) {
-
             $members = EmployeeDetails::join('users', 'users.id', '=', 'employee_details.user_id')
                 ->where('employee_details.department_id', $group)
                 ->where('users.status', 'active')

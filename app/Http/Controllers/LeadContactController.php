@@ -31,7 +31,6 @@ use Illuminate\Support\Facades\Session;
 
 class LeadContactController extends AccountBaseController
 {
-
     use ImportExcel;
 
     public function __construct()
@@ -40,17 +39,22 @@ class LeadContactController extends AccountBaseController
         $this->pageTitle = 'modules.leadContact.leadContacts';
         $this->middleware(function ($request, $next) {
             abort_403(!in_array('leads', $this->user->modules));
-
             return $next($request);
         });
     }
 
+    /**
+     * Display a listing of lead contacts using a DataTable.
+     * Checks user permissions and retrieves categories, sources, and employees for filtering.
+     *
+     * @param \App\DataTables\LeadContactDataTable $dataTable
+     * @return mixed
+     */
     public function index(LeadContactDataTable $dataTable)
     {
         $this->destroySession();
         $this->viewLeadPermission = $viewPermission = user()->permission('view_lead');
-
-        abort_403(!in_array($viewPermission, ['all','added','owned','both']));
+        abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
 
         if (!request()->ajax()) {
             $this->categories = LeadCategory::get();
@@ -59,23 +63,24 @@ class LeadContactController extends AccountBaseController
         }
 
         return $dataTable->render('lead-contact.index', $this->data);
-
     }
 
+    /**
+     * Display details of a specific lead contact.
+     * Handles different tabs (profile, deals, notes) based on request parameters.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
     public function show($id)
     {
         $this->leadContact = Lead::findOrFail($id)->withCustomFields();
-
         $this->viewPermission = user()->permission('view_lead');
-
-        abort_403(!in_array($this->viewPermission, ['all','added','owned','both']));
+        abort_403(!in_array($this->viewPermission, ['all', 'added', 'owned', 'both']));
 
         $this->pageTitle = $this->leadContact->client_name_salutation;
-
         $this->categories = LeadCategory::all();
-
         $this->leadFormFields = LeadCustomForm::with('customField')->where('status', 'active')->where('custom_fields_id', '!=', 'null')->get();
-
         $this->leadId = $id;
 
         $getCustomFieldGroupsWithFields = $this->leadContact->getCustomFieldGroupsWithFields();
@@ -103,41 +108,46 @@ class LeadContactController extends AccountBaseController
         }
 
         $this->activeTab = $tab ?: 'profile';
-
         return view('lead-contact.show', $this->data);
-
     }
 
+    /**
+     * Display notes for a specific lead contact using a DataTable.
+     * Validates user permissions before rendering the notes view.
+     *
+     * @return mixed
+     */
     public function notes()
     {
         $dataTable = new LeadNotesDataTable();
         $viewPermission = user()->permission('view_deals');
-
-        abort_403(!($viewPermission == 'all' || $viewPermission == 'added' || $viewPermission == 'both'));
+        abort_403(!in_array($viewPermission, ['all', 'added', 'both']));
 
         $tab = request('tab');
         $this->activeTab = $tab ?: 'profile';
-
         $this->view = 'lead-contact.ajax.notes';
 
         return $dataTable->render('lead-contact.show', $this->data);
     }
 
+    /**
+     * Display deals associated with a specific lead contact using a DataTable.
+     * Validates user permissions and retrieves pipeline stages for rendering.
+     *
+     * @return mixed
+     */
     public function deals()
     {
         $viewPermission = user()->permission('view_deals');
-
         abort_403(!in_array($viewPermission, ['all', 'added', 'both', 'owned']));
 
         $tab = request('tab');
         $this->pipelines = LeadPipeline::all();
-
         $defaultPipeline = $this->pipelines->filter(function ($value, $key) {
             return $value->default == 1;
         })->first();
 
         $this->stages = PipelineStage::where('lead_pipeline_id', $defaultPipeline->id)->get();
-
         $this->activeTab = $tab ?: 'profile';
         $this->view = 'lead-contact.ajax.deal';
         $dataTable = new DealsDataTable();
@@ -146,19 +156,18 @@ class LeadContactController extends AccountBaseController
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new lead contact.
+     * Retrieves necessary data for form fields and checks user permissions.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
         $this->pageTitle = __('modules.leadContact.createTitle');
-
         $this->addPermission = user()->permission('add_lead');
         abort_403(!in_array($this->addPermission, ['all', 'added']));
 
         $this->employees = User::allEmployees(null, true);
-
         $defaultStatus = LeadStatus::where('default', '1')->first();
         $this->columnId = request('column_id') ?: $defaultStatus->id;
 
@@ -168,15 +177,13 @@ class LeadContactController extends AccountBaseController
 
         $this->leadAgentArray = $this->leadAgents->pluck('user_id')->toArray();
 
-
-        if ((in_array(user()->id, $this->leadAgentArray))) {
+        if (in_array(user()->id, $this->leadAgentArray)) {
             $this->myAgentId = $this->leadAgents->filter(function ($value, $key) {
                 return $value->user_id == user()->id;
             })->first()->id;
         }
 
         $leadContact = new Lead();
-
         $getCustomField = $leadContact->getCustomFieldGroupsWithFields();
 
         if ($getCustomField) {
@@ -187,14 +194,9 @@ class LeadContactController extends AccountBaseController
         $this->categories = LeadCategory::all();
         $this->countries = countries();
         $this->salutations = Salutation::cases();
-
-        // To create deal from lead
-
         $this->leadPipelines = LeadPipeline::orderBy('default', 'DESC')->get();
         $this->leadStages = PipelineStage::all();
-        $this->leadAgentArray = $this->leadAgents->pluck('user_id')->toArray();
         $this->products = Product::all();
-
 
         $this->view = 'lead-contact.ajax.create';
 
@@ -203,18 +205,18 @@ class LeadContactController extends AccountBaseController
         }
 
         return view('lead-contact.create', $this->data);
-
     }
 
     /**
-     * @param StoreRequest $request
-     * @return array|void
-     * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
+     * Store a new lead contact in storage.
+     * Validates user permissions, saves lead details, and optionally creates a deal.
+     *
+     * @param \App\Http\Requests\Lead\StoreRequest $request
+     * @return \App\Helper\Reply
      */
     public function store(StoreRequest $request)
     {
         $this->addPermission = user()->permission('add_lead');
-
         abort_403(!in_array($this->addPermission, ['all', 'added']));
 
         $existingUser = User::select('id')
@@ -256,12 +258,10 @@ class LeadContactController extends AccountBaseController
             $this->storeDeal($request, $leadContact);
         }
 
-        // To add custom fields data
         if ($request->custom_fields_data) {
             $leadContact->updateCustomFieldData($request->custom_fields_data);
         }
 
-        // Log search
         $this->logSearchEntry($leadContact->id, $leadContact->client_name, 'lead-contact.show', 'lead');
 
         if ($leadContact->client_email) {
@@ -272,7 +272,6 @@ class LeadContactController extends AccountBaseController
 
         if ($request->add_more == 'true') {
             $html = $this->create();
-
             return Reply::successWithData(__('messages.recordSaved'), ['html' => $html, 'add_more' => true]);
         }
 
@@ -281,27 +280,25 @@ class LeadContactController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl]);
-
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing a lead contact.
+     * Validates user permissions and retrieves necessary data for form fields.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply|\Illuminate\View\View
      */
     public function edit($id)
     {
         $this->leadContact = Lead::with('leadSource', 'category')->findOrFail($id)->withCustomFields();
         $this->deal = Deal::where('lead_id', $id)->first();
-
         $this->editPermission = user()->permission('edit_lead');
-
         abort_403(!($this->editPermission == 'all'
             || ($this->editPermission == 'added' && $this->leadContact->added_by == user()->id)
             || ($this->editPermission == 'owned' && $this->leadContact->lead_owner == user()->id)
-            || ($this->editPermission == 'both' && $this->leadContact->added_by == user()->id) || user()->id == $this->leadContact->lead_owner)
-        );
+            || ($this->editPermission == 'both' && ($this->leadContact->added_by == user()->id || user()->id == $this->leadContact->lead_owner))
+        ));
 
         $this->leadAgents = LeadAgent::with('user')->whereHas('user', function ($q) {
             $q->where('status', 'active');
@@ -329,38 +326,35 @@ class LeadContactController extends AccountBaseController
         $this->sources = LeadSource::all();
         $this->categories = LeadCategory::all();
         $this->countries = countries();
-
         $this->pageTitle = __('modules.leadContact.updateTitle');
         $this->salutations = Salutation::cases();
 
         if (request()->ajax()) {
             $html = view('lead-contact.ajax.edit', $this->data)->render();
-
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle]);
         }
 
         $this->view = 'lead-contact.ajax.edit';
-
         return view('lead-contact.create', $this->data);
-
     }
 
     /**
-     * @param UpdateRequest $request
+     * Update an existing lead contact in storage.
+     * Validates user permissions, updates lead details, and optionally updates associated deal.
+     *
+     * @param \App\Http\Requests\Lead\UpdateRequest $request
      * @param int $id
-     * @return array|void
-     * @throws \Froiden\RestAPI\Exceptions\RelatedResourceNotFoundException
+     * @return \App\Helper\Reply
      */
     public function update(UpdateRequest $request, $id)
     {
         $leadContact = Lead::findOrFail($id);
         $this->editPermission = user()->permission('edit_lead');
-
         abort_403(!($this->editPermission == 'all'
             || ($this->editPermission == 'added' && $leadContact->added_by == user()->id)
             || ($this->editPermission == 'owned' && $leadContact->lead_owner == user()->id)
-            || ($this->editPermission == 'both' && $leadContact->added_by == user()->id) || user()->id == $leadContact->lead_owner)
-        );
+            || ($this->editPermission == 'both' && ($leadContact->added_by == user()->id || user()->id == $leadContact->lead_owner))
+        ));
 
         $leadContact->salutation = $request->salutation;
         $leadContact->client_name = $request->client_name;
@@ -384,85 +378,107 @@ class LeadContactController extends AccountBaseController
         $clientCreated = $request->create_client == "on" ? '1' : '0';
         Deal::where('lead_id', $leadContact->id)->update(['create_client' => $clientCreated]);
 
-        // To add custom fields data
         if ($request->custom_fields_data) {
             $leadContact->updateCustomFieldData($request->custom_fields_data);
         }
 
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('lead-contact.index')]);
-
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a lead contact from storage.
+     * Validates user permissions before deletion.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \App\Helper\Reply
      */
     public function destroy($id)
     {
         $leadContact = Lead::findOrFail($id);
         $this->deletePermission = user()->permission('delete_lead');
-
         abort_403(!($this->deletePermission == 'all'
             || ($this->deletePermission == 'added' && $leadContact->added_by == user()->id)
             || ($this->deletePermission == 'owned' && $leadContact->lead_owner == user()->id)
-            || ($this->deletePermission == 'both' && $leadContact->added_by == user()->id) || user()->id == $leadContact->lead_owner)
-        );
+            || ($this->deletePermission == 'both' && ($leadContact->added_by == user()->id || user()->id == $leadContact->lead_owner))
+        ));
 
         Lead::destroy($id);
-
         return Reply::success(__('messages.deleteSuccess'));
-
     }
 
+    /**
+     * Perform bulk deletion of lead contacts.
+     * Deletes multiple lead contacts based on provided IDs.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \App\Helper\Reply
+     */
     public function applyQuickAction(Request $request)
     {
         Lead::whereIn('id', explode(',', $request->row_ids))->delete();
-
         return Reply::success(__('messages.deleteSuccess'));
     }
 
+    /**
+     * Show the form for importing lead contacts via Excel.
+     * Validates user permissions before rendering the import view.
+     *
+     * @return \App\Helper\Reply|\Illuminate\View\View
+     */
     public function importLead()
     {
         $this->pageTitle = __('app.importExcel') . ' ' . __('app.menu.lead');
-
         $this->addPermission = user()->permission('add_lead');
         abort_403(!in_array($this->addPermission, ['all', 'added']));
 
         if (request()->ajax()) {
             $html = view('leads.ajax.import', $this->data)->render();
-
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle]);
         }
 
         $this->view = 'leads.ajax.import';
-
         return view('leads.create', $this->data);
     }
 
+    /**
+     * Process the uploaded Excel file for importing leads.
+     * Initiates the import process and renders the import progress view.
+     *
+     * @param \App\Http\Requests\Admin\Employee\ImportRequest $request
+     * @return \App\Helper\Reply
+     */
     public function importStore(ImportRequest $request)
     {
         $rvalue = $this->importFileProcess($request, LeadImport::class);
 
-        if($rvalue == 'abort'){
+        if ($rvalue == 'abort') {
             return Reply::error(__('messages.abortAction'));
         }
 
         $view = view('leads.ajax.import_progress', $this->data)->render();
-
         return Reply::successWithData(__('messages.importUploadSuccess'), ['view' => $view]);
     }
 
+    /**
+     * Process the lead import job.
+     * Handles the background processing of the imported leads.
+     *
+     * @param \App\Http\Requests\Admin\Employee\ImportProcessRequest $request
+     * @return \App\Helper\Reply
+     */
     public function importProcess(ImportProcessRequest $request)
     {
         $batch = $this->importJobProcess($request, LeadImport::class, ImportLeadJob::class);
-
         return Reply::successWithData(__('messages.importProcessStart'), ['batch' => $batch]);
     }
 
-    public function destroySession(){
-
+    /**
+     * Clear session data related to lead imports and deal creation.
+     *
+     * @return void
+     */
+    public function destroySession()
+    {
         if (session()->has('is_imported')) {
             session()->forget('is_imported');
         }
@@ -475,23 +491,31 @@ class LeadContactController extends AccountBaseController
             session()->forget('leads_count');
         }
 
-        if(session()->has('total_leads')) {
+        if (session()->has('total_leads')) {
             session()->forget('total_leads');
         }
 
-        if(session()->has('create_deal_with_lead')) {
+        if (session()->has('create_deal_with_lead')) {
             session()->forget('create_deal_with_lead');
         }
 
-        if(session()->has('deal_name')) {
+        if (session()->has('deal_name')) {
             session()->forget('deal_name');
         }
 
-        if(session()->has('duplicate_leads')) {
+        if (session()->has('duplicate_leads')) {
             session()->forget('duplicate_leads');
         }
     }
 
+    /**
+     * Store a new deal associated with a lead contact.
+     * Validates user permissions and creates a deal with the provided details.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Lead $leadContact
+     * @return void
+     */
     public function storeDeal($request, $leadContact)
     {
         $this->addPermission = user()->permission('add_deals');
@@ -519,7 +543,6 @@ class LeadContactController extends AccountBaseController
         $deal->save();
 
         if (!is_null($request->product_id)) {
-
             $products = $request->product_id;
 
             foreach ($products as $product) {
@@ -530,5 +553,4 @@ class LeadContactController extends AccountBaseController
             }
         }
     }
-
 }

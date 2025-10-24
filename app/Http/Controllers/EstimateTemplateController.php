@@ -32,7 +32,6 @@ class EstimateTemplateController extends AccountBaseController
     {
         parent::__construct();
         $this->pageTitle = 'modules.estimates.estimateTemplate';
-
     }
 
     public function index(EstimateTemplateDataTable $dataTable)
@@ -51,11 +50,9 @@ class EstimateTemplateController extends AccountBaseController
         $this->pageTitle = __('modules.estimates.createestimateTemplate');
 
         $this->taxes = Tax::all();
-
         $this->currencies = Currency::all();
         $this->units = UnitType::all();
         $this->invoiceSetting = invoice_setting();
-
         $this->products = Product::all();
         $this->categories = ProductCategory::all();
 
@@ -116,7 +113,6 @@ class EstimateTemplateController extends AccountBaseController
         $estimate->added_by = $userId;
         $estimate->save();
 
-
         $redirectUrl = urldecode($request->redirect_url);
 
         if ($redirectUrl == '') {
@@ -154,38 +150,32 @@ class EstimateTemplateController extends AccountBaseController
 
         $taxList = array();
 
-
         $items = EstimateTemplateItem::whereNotNull('taxes')
             ->where('estimate_template_id', $this->invoice->id)
             ->get();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = EstimateTemplateItem::taxbyid($tax)->first();
 
-                if($this->tax){
-                    if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])){
+                if ($this->tax) {
+                    if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
                         /** @phpstan-ignore-next-line */
                         if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
-                        } else{
+                        } else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                         }
-
                     }
                     else {
                         /** @phpstan-ignore-next-line */
                         if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
-
                         } else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
                         }
                     }
                 }
-
             }
         }
 
@@ -352,21 +342,17 @@ class EstimateTemplateController extends AccountBaseController
         $this->invoiceSetting = invoice_setting();
 
         foreach ($items as $item) {
-
             foreach (json_decode($item->taxes) as $tax) {
                 $this->tax = EstimateTemplateItem::taxbyid($tax)->first();
 
                 if ($this->tax) {
                     if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
                         /** @phpstan-ignore-next-line */
                         if ($this->estimateTemplate->calculate_tax == 'after_discount' && $this->discount > 0) {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->estimateTemplate->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
-                        } else{
+                        } else {
                             $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
                         }
-
                     }
                     else {
                         $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
@@ -381,10 +367,8 @@ class EstimateTemplateController extends AccountBaseController
 
         $pdf = app('dompdf.wrapper');
 
-
         $pdf->setOption('enable_php', true);
         $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
-
 
         $pdf->loadView('estimates-templates.pdf.' . $this->invoiceSetting->template, $this->data);
 
@@ -396,6 +380,12 @@ class EstimateTemplateController extends AccountBaseController
         ];
     }
 
+    /**
+     * Adds a product item to an estimate template, handling currency conversion and rendering the item view.
+     *
+     * @param Request $request The HTTP request containing product ID, currency ID, and optional exchange rate.
+     * @return \App\Helper\Reply Returns a JSON response with the rendered view for the added item.
+     */
     public function addItem(Request $request)
     {
         $this->items = Product::findOrFail($request->id);
@@ -403,9 +393,9 @@ class EstimateTemplateController extends AccountBaseController
 
         $exchangeRate = Currency::findOrFail($request->currencyId);
 
-        if($exchangeRate->exchange_rate == $request->exchangeRate){
+        if ($exchangeRate->exchange_rate == $request->exchangeRate) {
             $exRate = $exchangeRate->exchange_rate;
-        }else{
+        } else {
             $exRate = floatval($request->exchangeRate ?: 1);
         }
 
@@ -415,7 +405,6 @@ class EstimateTemplateController extends AccountBaseController
                 $this->items->price = floor($this->items->total_amount / $exRate);
             }
             else {
-
                 $this->items->price = floatval($this->items->price) / floatval($exRate);
             }
         }

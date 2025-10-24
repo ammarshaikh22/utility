@@ -16,27 +16,33 @@ use Illuminate\Support\Facades\Hash;
 class ProfileController extends AccountBaseController
 {
 
-    // phpcs:ignore
+    /**
+     * Update a user's profile information.
+     * Handles updates to user details, profile image, password, and client/employee details, with session and redirect management.
+     *
+     * @param  \App\Http\Requests\User\UpdateProfile  $request
+     * @param  int  $id
+     * @return array
+     */
     public function update(UpdateProfile $request, $id)
     {
-
         $redirect = false;
-$logout = false;
+        $logout = false;
 
         //if (session()->has('clientContact') && session('clientContact')) {
-
         //     $clientContact = ClientContact::findOrFail(session('clientContact')->id);
         //     $clientContact->contact_name = $request->name;
         //     $clientContact->phone = $request->mobile;
         //     $clientContact->email = $request->email;
         //     $clientContact->save();
-
+        //
         //     session(['clientContact' => $clientContact]);
-
+        //
         //     $user = User::withoutGlobalScope(ActiveScope::class)->findOrFail(session('clientContact')->client_id);
         // }else{
             $user = user();
         // }
+
         // For profile image to be uploaded locally
         $user->name = $request->name;
         $user->email = $request->email;
@@ -70,12 +76,9 @@ $logout = false;
             $redirect = true;
         }
 
-
         // Update email in userauth also
         if ($user->isDirty('email')) {
-
             $userCount = User::withoutGlobalScopes([CompanyScope::class, ActiveScope::class])->where('user_auth_id', $user->user_auth_id)->count();
-
 
             if ($userCount > 1) {
                 $userAuth = $user->userAuth->replicate();
@@ -100,19 +103,15 @@ $logout = false;
 
         if ($user->clientDetails) {
             $fields = $request->only($user->clientDetails->getFillable());
-
             $user->clientDetails->fill($fields);
             $user->clientDetails->save();
-
         } else {
             // adding address to employee_details
             // WORKSUITESAAS move outside addEmployeeDetail for worksuitesaas
             if(!$user->is_superadmin) {
                 $this->addEmployeeDetail($request, $user);
             }
-
         }
-
 
         session()->forget('user');
         session()->forget('isRtl');
@@ -139,6 +138,14 @@ $logout = false;
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => $redirectUrl, 'redirect' => $redirect]);
     }
 
+    /**
+     * Add or update employee details for a user.
+     * Saves employee-specific information like date of birth, address, and marital status if applicable.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\User  $user
+     * @return void
+     */
     public function addEmployeeDetail($request, $user)
     {
         $employee = EmployeeDetails::where('user_id', $user->id)->first();
@@ -161,6 +168,13 @@ $logout = false;
         $employee->save();
     }
 
+    /**
+     * Toggle the dark theme setting for the user.
+     * Updates the user's dark theme preference and refreshes the session.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function darkTheme(Request $request)
     {
         $user = user();
@@ -170,6 +184,13 @@ $logout = false;
         return Reply::success(__('messages.updateSuccess'));
     }
 
+    /**
+     * Update the OneSignal player ID for the user.
+     * Saves the provided OneSignal ID for push notifications and refreshes the session.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
     public function updateOneSignalId(Request $request)
     {
         $user = user();
