@@ -10,6 +10,8 @@ class StoreNotice extends CoreRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * Always returns true, allowing any authenticated user to create a notice.
+     *
      * @return bool
      */
     public function authorize()
@@ -19,6 +21,11 @@ class StoreNotice extends CoreRequest
 
     /**
      * Get the validation rules that apply to the request.
+     *
+     * Validation rules:
+     * - 'heading' is required for every notice.
+     * - At least one employee must be selected if the notice is for employees.
+     * - At least one client must be selected if the notice is for clients.
      *
      * @return array
      */
@@ -31,6 +38,11 @@ class StoreNotice extends CoreRequest
         ];
     }
 
+    /**
+     * Custom error messages for validation rules.
+     *
+     * @return array
+     */
     public function messages()
     {
         return [

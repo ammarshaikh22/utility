@@ -14,6 +14,7 @@ class UpdateTicketChannel extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,8 @@ class UpdateTicketChannel extends CoreRequest
     public function rules()
     {
         return [
+            // Validate that 'channel_name' is required and unique for the current company,
+            // excluding the current ticket channel being updated
             'channel_name' => 'required|unique:ticket_channels,channel_name,'.$this->route('ticketChannel').',id,company_id,' . company()->id
         ];
     }

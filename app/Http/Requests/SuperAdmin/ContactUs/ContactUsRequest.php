@@ -9,7 +9,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ContactUsRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -23,21 +22,24 @@ class ContactUsRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function rules()
     {
         $global = GlobalSetting::first();
+
         $rules = [
             'name' => 'required',
             'email' => 'required|email',
             'message' => 'required',
         ];
 
-        if($global->google_recaptcha_v2_status == 'active'){
+        // Google reCAPTCHA v2
+        if ($global->google_recaptcha_v2_status == 'active') {
             $rules['g-recaptcha-response'] = 'required';
         }
 
+        // Google reCAPTCHA v3
         if ($global->google_recaptcha_v3_status == 'active') {
             $rules['g_recaptcha'] = Rule::prohibitedIf(function () use ($global) {
                 return !$this->validateGoogleRecaptcha($global->google_recaptcha_v3_secret_key, request()->g_recaptcha);
@@ -47,6 +49,11 @@ class ContactUsRequest extends FormRequest
         return $rules;
     }
 
+    /**
+     * Custom messages for validation.
+     *
+     * @return array<string, string>
+     */
     public function messages()
     {
         return [
@@ -55,6 +62,13 @@ class ContactUsRequest extends FormRequest
         ];
     }
 
+    /**
+     * Validate Google reCAPTCHA v3 response.
+     *
+     * @param string $secret
+     * @param string $googleRecaptchaResponse
+     * @return bool
+     */
     public function validateGoogleRecaptcha($secret, $googleRecaptchaResponse)
     {
         $client = new Client();
@@ -73,5 +87,4 @@ class ContactUsRequest extends FormRequest
 
         return $body->success;
     }
-
 }

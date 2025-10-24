@@ -14,6 +14,7 @@ class StoreTicketType extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request. Add custom logic if access should be restricted.
         return true;
     }
 
@@ -24,7 +25,9 @@ class StoreTicketType extends CoreRequest
      */
     public function rules()
     {
+        // Define validation rules for storing a new ticket type
         return [
+            // 'type' field is required and must be unique in 'support_ticket_types' table
             'type' => 'required|unique:support_ticket_types'
         ];
     }

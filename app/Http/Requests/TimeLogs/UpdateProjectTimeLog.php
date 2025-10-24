@@ -14,6 +14,7 @@ class UpdateProjectTimeLog extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class UpdateProjectTimeLog extends CoreRequest
     public function rules()
     {
         return [
+            // 'reason' field is required, must be a string, and maximum 255 characters
             'reason' => 'required|string|max:255'
         ];
     }

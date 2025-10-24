@@ -6,9 +6,9 @@ use App\Http\Requests\CoreRequest;
 
 class InvoicePayment extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
+     * Always returns true — any authorized user can perform this action.
      *
      * @return bool
      */
@@ -18,15 +18,15 @@ class InvoicePayment extends CoreRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Get the validation rules for invoice payment.
+     * Ensures that the offline payment method is provided.
      *
      * @return array
      */
     public function rules()
     {
         return [
-            'offlineMethod'      => 'required'
+            'offlineMethod' => 'required', // Offline payment method must be selected
         ];
     }
-
 }

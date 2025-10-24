@@ -17,11 +17,16 @@ class StoreEstimate extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
+    /**
+     * Prepare data before validation.
+     */
     protected function prepareForValidation()
     {
+        // Format estimate number if it's numeric
         if ($this->estimate_number && is_numeric($this->estimate_number)) {
             $this->merge([
                 'estimate_number' => \App\Helper\NumberFormat::estimate($this->estimate_number),
@@ -39,10 +44,9 @@ class StoreEstimate extends FormRequest
         $rules = [
             'estimate_number' => [
                 'required',
-                /** @phpstan-ignore-next-line */
+                // Ensure the estimate number is unique within the company
                 Rule::unique('estimates')->where('company_id', company()->id)
                     ->when($this->route('estimate'), function ($q) {
-                        /** @phpstan-ignore-next-line */
                         $q->where('id', '<>', $this->route('estimate'));
                     })
             ],
@@ -50,23 +54,35 @@ class StoreEstimate extends FormRequest
             'valid_till' => 'required',
             'sub_total' => 'required',
             'total' => 'required',
-            'currency_id' => 'required'
+            'currency_id' => 'required',
         ];
 
+        // Include custom field rules
         $rules = $this->customFieldRules($rules);
 
         return $rules;
     }
 
+    /**
+     * Custom attribute names for validation errors.
+     *
+     * @return array
+     */
     public function attributes()
     {
         $attributes = [];
 
+        // Include custom field attributes
         $attributes = $this->customFieldsAttributes($attributes);
 
         return $attributes;
     }
 
+    /**
+     * Custom messages for validation errors.
+     *
+     * @return array
+     */
     public function messages()
     {
         return [

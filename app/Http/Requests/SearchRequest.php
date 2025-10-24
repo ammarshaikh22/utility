@@ -14,6 +14,7 @@ class SearchRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class SearchRequest extends FormRequest
     public function rules()
     {
         return [
+            // The search keyword is required
             'search_keyword' => 'required'
         ];
     }

@@ -5,12 +5,11 @@ namespace App\Http\Requests\Stripe;
 use App\Http\Requests\CoreRequest;
 
 /**
- * Class StoreStickyNote
- * @package App\Http\Requests\Sticky
+ * Class StoreStripeDetail
+ * Handles validation for storing Stripe client details
  */
 class StoreStripeDetail extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -18,6 +17,7 @@ class StoreStripeDetail extends CoreRequest
      */
     public function authorize()
     {
+        // Any authenticated user can store Stripe details
         return true;
     }
 
@@ -29,12 +29,11 @@ class StoreStripeDetail extends CoreRequest
     public function rules()
     {
         return [
-            'clientName' => 'required',
-            'city' => 'required',
-            'state' => 'required',
-            'country' => 'required',
-            'line1' => 'required',
+            'clientName' => 'required', // Client's full name
+            'city'       => 'required', // City of client
+            'state'      => 'required', // State of client
+            'country'    => 'required', // Country of client
+            'line1'      => 'required', // Address line 1
         ];
     }
-
 }

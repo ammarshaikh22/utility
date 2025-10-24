@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class UpdateTaskBoard extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class UpdateTaskBoard extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +25,11 @@ class UpdateTaskBoard extends CoreRequest
     public function rules()
     {
         return [
-            'column_name' => 'required|unique:taskboard_columns,column_name,'.$this->route('taskboard').',id,company_id,' . company()->id,
+            // 'column_name' is required and must be unique for the company,
+            // excluding the current taskboard being updated
+            'column_name' => 'required|unique:taskboard_columns,column_name,' . $this->route('taskboard') . ',id,company_id,' . company()->id,
+
+            // 'label_color' field is required
             'label_color' => 'required'
         ];
     }

@@ -14,6 +14,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request. Add custom logic if access should be restricted.
         return true;
     }
 
@@ -24,10 +25,12 @@ class StoreRequest extends FormRequest
      */
     public function rules()
     {
+        // Define validation rules for storing a testimonial
         return [
-            'name' => 'required',
-            'comment' => 'required',
-            'rating' => 'required|numeric|min:1|max:5',
+            'name' => 'required', // 'name' field is required
+            'comment' => 'required', // 'comment' field is required
+            'rating' => 'required|numeric|min:1|max:5', 
+            // 'rating' field is required, must be numeric, and value between 1 and 5
         ];
     }
 

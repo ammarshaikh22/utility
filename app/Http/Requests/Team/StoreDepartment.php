@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreDepartment extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class StoreDepartment extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,15 +25,21 @@ class StoreDepartment extends CoreRequest
     public function rules()
     {
         return [
+            // 'team_name' is required and must be unique for the company
             'team_name' => 'required|unique:teams,team_name,null,id,company_id,' . company()->id
         ];
     }
 
+    /**
+     * Custom messages for validation errors
+     *
+     * @return array
+     */
     public function messages()
     {
         return [
-            'team_name.required' => __('messages.departmentName'),
-            'team_name.unique' => __('messages.departmentUniq'),
+            'team_name.required' => __('messages.departmentName'), // Message when team_name is missing
+            'team_name.unique' => __('messages.departmentUniq'),   // Message when team_name is not unique
         ];
     }
 

@@ -9,8 +9,8 @@ class UpdateTemplateSetting extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
+     * 
+     * @return bool Returns true to allow all users to make this request.
      */
     public function authorize()
     {
@@ -19,8 +19,9 @@ class UpdateTemplateSetting extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
+     * 
+     * @return array<string, mixed> Returns an array of validation rules for the request inputs:
+     * - 'template': required field.
      */
     public function rules()
     {

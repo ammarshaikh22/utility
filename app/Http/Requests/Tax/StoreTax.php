@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreTax extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class StoreTax extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,7 +25,10 @@ class StoreTax extends CoreRequest
     public function rules()
     {
         return [
+            // 'tax_name' field is required
             'tax_name' => 'required',
+
+            // 'rate_percent' field is required and must be numeric
             'rate_percent' => 'required|numeric'
         ];
     }

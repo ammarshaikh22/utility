@@ -11,8 +11,7 @@ class StoreStatusSettingRequest extends FormRequest
      *
      * @return bool
      */
-
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -22,14 +21,13 @@ class StoreStatusSettingRequest extends FormRequest
      *
      * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         $id = $this->route('id');
 
         return [
             'name' => 'required|unique:project_status_settings,status_name,' . $id . ',id,company_id,' . company()->id,
-            'status' => 'required'
+            'status' => 'required',
         ];
     }
-
 }

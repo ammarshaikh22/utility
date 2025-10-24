@@ -4,15 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateContractSetting extends FormRequest
+class UnitTypeRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -22,13 +21,10 @@ class UpdateContractSetting extends FormRequest
      *
      * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            'contract_prefix' => 'required',
-            'contract_digit' => 'nullable|integer|min:0|max:10',
+            'unit_type' => 'required',
         ];
-
     }
-
 }

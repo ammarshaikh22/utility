@@ -14,6 +14,7 @@ class UpdateRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request. Add custom logic if access needs to be restricted.
         return true;
     }
 
@@ -24,8 +25,13 @@ class UpdateRequest extends FormRequest
      */
     public function rules()
     {
+        // Define validation rules for updating a SuperAdmin
         return [
+            // 'email' field is required and must be unique in the users table,
+            // excluding the current SuperAdmin being updated (identified by route parameter 'superadmin')
             'email' => 'required|unique:users,email,'.$this->route('superadmin'),
+
+            // 'name' field is required
             'name'  => 'required',
         ];
     }

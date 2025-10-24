@@ -6,11 +6,10 @@ use App\Http\Requests\CoreRequest;
 
 /**
  * Class UpdateStickyNote
- * @package App\Http\Requests\Sticky
+ * Handles validation for updating a sticky note
  */
 class UpdateStickyNote extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -18,6 +17,7 @@ class UpdateStickyNote extends CoreRequest
      */
     public function authorize()
     {
+        // Any authenticated user can update a sticky note
         return true;
     }
 
@@ -29,8 +29,7 @@ class UpdateStickyNote extends CoreRequest
     public function rules()
     {
         return [
-            'notetext' => 'required'
+            'notetext' => 'required' // Sticky note content must be provided
         ];
     }
-
 }

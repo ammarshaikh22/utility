@@ -4,8 +4,10 @@ namespace App\Http\Requests\Gdpr;
 use App\Http\Requests\CoreRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Class SaveConsentLeadDataRequest
+ *
+ * Handles validation for saving consent-related data for leads
+ * under GDPR compliance requirements.
  */
 class SaveConsentLeadDataRequest extends CoreRequest
 {
@@ -14,10 +16,10 @@ class SaveConsentLeadDataRequest extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow request authorization for all users (typically admins).
+        // This can be modified later for role-based authorization.
         return true;
     }
 
@@ -28,16 +30,17 @@ class SaveConsentLeadDataRequest extends CoreRequest
      */
     public function rules()
     {
+        // Base validation rule ensuring an additional description is provided.
         $rules = [
-            'additional_description'  => 'required',
+            'additional_description' => 'required',
         ];
 
-        if($this->has('consent_description'))
-        {
+        // If a consent description field is included in the request,
+        // it must also be provided and cannot be empty.
+        if ($this->has('consent_description')) {
             $rules['consent_description'] = 'required';
         }
 
         return $rules;
     }
-
 }

@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CtaRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -20,7 +19,7 @@ class CtaRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function rules()
     {
@@ -28,5 +27,4 @@ class CtaRequest extends FormRequest
             'title' => 'required',
         ];
     }
-
 }

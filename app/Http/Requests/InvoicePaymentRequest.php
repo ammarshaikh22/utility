@@ -11,9 +11,9 @@ class InvoicePaymentRequest extends FormRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +25,7 @@ class InvoicePaymentRequest extends FormRequest
     public function rules()
     {
         return [
+            // Title is required for invoice payment
             'title' => 'required'
         ];
     }

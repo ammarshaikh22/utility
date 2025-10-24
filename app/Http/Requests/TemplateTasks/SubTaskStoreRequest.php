@@ -4,8 +4,9 @@ namespace App\Http\Requests\TemplateTasks;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Class SubTaskStoreRequest
+ * Handles validation for storing a sub-task
+ * @package App\Http\Requests\TemplateTasks
  */
 class SubTaskStoreRequest extends FormRequest
 {
@@ -14,9 +15,9 @@ class SubTaskStoreRequest extends FormRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -27,10 +28,10 @@ class SubTaskStoreRequest extends FormRequest
      */
     public function rules()
     {
+        // Define validation rules for storing a sub-task
         return [
-            'title'  => 'required',
+            'title'  => 'required' // 'title' field must be provided
         ];
-
     }
 
 }

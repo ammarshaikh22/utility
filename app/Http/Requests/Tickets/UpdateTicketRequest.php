@@ -14,6 +14,7 @@ class UpdateTicketRequest extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class UpdateTicketRequest extends CoreRequest
     public function rules()
     {
         return [
+            // 'message' field is required
             'message' => 'required'
         ];
     }

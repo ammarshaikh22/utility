@@ -11,8 +11,7 @@ class StorePassportRequest extends FormRequest
      *
      * @return bool
      */
-
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -22,7 +21,7 @@ class StorePassportRequest extends FormRequest
      *
      * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         $setting = company();
 
@@ -30,8 +29,7 @@ class StorePassportRequest extends FormRequest
             'passport_number' => 'required|unique:passport_details',
             'issue_date' => 'required',
             'expiry_date' => 'required|date_format:"' . $setting->date_format . '"|after_or_equal:issue_date',
-            'nationality' => 'required'
+            'nationality' => 'required',
         ];
     }
-
 }

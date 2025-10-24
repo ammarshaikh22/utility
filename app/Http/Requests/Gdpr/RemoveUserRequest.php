@@ -4,8 +4,8 @@ namespace App\Http\Requests\Gdpr;
 use App\Http\Requests\CoreRequest;
 
 /**
- * Class CreateRequest
- * @package App\Http\Requests\Admin\Employee
+ * Class RemoveUserRequest
+ * Handles validation when removing a user under GDPR compliance.
  */
 class RemoveUserRequest extends CoreRequest
 {
@@ -14,10 +14,10 @@ class RemoveUserRequest extends CoreRequest
      *
      * @return bool
      */
-
     public function authorize()
     {
-        // If admin
+        // Allow all users (typically admins) to perform this request.
+        // You can later restrict this to specific roles if needed.
         return true;
     }
 
@@ -29,9 +29,9 @@ class RemoveUserRequest extends CoreRequest
     public function rules()
     {
         return [
-            'description'  => 'required',
+            // The 'description' field is mandatory to record
+            // the reason for removing the user from the system.
+            'description' => 'required',
         ];
-
     }
-
 }

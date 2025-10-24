@@ -6,11 +6,10 @@ use App\Http\Requests\CoreRequest;
 
 /**
  * Class StoreStickyNote
- * @package App\Http\Requests\Sticky
+ * Handles validation for creating a sticky note
  */
 class StoreStickyNote extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -18,6 +17,7 @@ class StoreStickyNote extends CoreRequest
      */
     public function authorize()
     {
+        // Any authenticated user can create a sticky note
         return true;
     }
 
@@ -29,8 +29,7 @@ class StoreStickyNote extends CoreRequest
     public function rules()
     {
         return [
-            'notetext' => 'required'
+            'notetext' => 'required' // Sticky note content is required
         ];
     }
-
 }

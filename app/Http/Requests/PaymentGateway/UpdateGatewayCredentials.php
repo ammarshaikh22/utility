@@ -10,6 +10,8 @@ class UpdateGatewayCredentials extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * Always returns true to allow authorized access.
+     *
      * @return bool
      */
     public function authorize()
@@ -20,13 +22,16 @@ class UpdateGatewayCredentials extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * Dynamically validates payment gateway credentials based on
+     * the selected payment method and its active status.
+     *
      * @return array
      */
     public function rules()
     {
-
         $rules = [];
 
+        // Validation for each gateway depending on active status
         if ($this->payment_method == 'paypal' && $this->paypal_status == 'active') {
             return $this->paypalValidate();
         }
@@ -66,6 +71,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for PayPal credentials.
+     */
     private function paypalValidate()
     {
         $rules = ['paypal_mode' => 'required|in:sandbox,live'];
@@ -73,8 +81,7 @@ class UpdateGatewayCredentials extends FormRequest
         if ($this->paypal_mode == 'sandbox') {
             $rules['sandbox_paypal_client_id'] = 'required';
             $rules['sandbox_paypal_secret'] = 'required';
-        }
-        else {
+        } else {
             $rules['live_paypal_client_id'] = 'required';
             $rules['live_paypal_secret'] = 'required';
         }
@@ -82,6 +89,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Stripe credentials.
+     */
     private function stripeValidate()
     {
         $rules = ['stripe_mode' => 'required|in:test,live'];
@@ -89,8 +99,7 @@ class UpdateGatewayCredentials extends FormRequest
         if ($this->stripe_mode == 'test') {
             $rules['test_stripe_client_id'] = 'required';
             $rules['test_stripe_secret'] = 'required';
-        }
-        else {
+        } else {
             $rules['live_stripe_client_id'] = 'required';
             $rules['live_stripe_secret'] = 'required';
         }
@@ -98,6 +107,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Razorpay credentials.
+     */
     private function razorpayValidate()
     {
         $rules = ['razorpay_mode' => 'required|in:test,live'];
@@ -105,8 +117,7 @@ class UpdateGatewayCredentials extends FormRequest
         if ($this->razorpay_mode == 'test') {
             $rules['test_razorpay_key'] = 'required';
             $rules['test_razorpay_secret'] = 'required';
-        }
-        else {
+        } else {
             $rules['live_razorpay_key'] = 'required';
             $rules['live_razorpay_secret'] = 'required';
         }
@@ -114,6 +125,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Paystack credentials.
+     */
     private function paystackValidate()
     {
         $rules['paystack_mode'] = 'required|in:sandbox,live';
@@ -122,8 +136,7 @@ class UpdateGatewayCredentials extends FormRequest
             $rules['test_paystack_key'] = 'required';
             $rules['test_paystack_secret'] = 'required';
             $rules['test_paystack_merchant_email'] = 'required';
-        }
-        else {
+        } else {
             $rules['paystack_key'] = 'required';
             $rules['paystack_secret'] = 'required';
             $rules['paystack_merchant_email'] = 'required';
@@ -132,6 +145,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Flutterwave credentials.
+     */
     private function flutterwaveValidate()
     {
         $rules['flutterwave_mode'] = 'required|in:sandbox,live';
@@ -141,8 +157,7 @@ class UpdateGatewayCredentials extends FormRequest
             $rules['test_flutterwave_key'] = 'required';
             $rules['test_flutterwave_secret'] = 'required';
             $rules['test_flutterwave_hash'] = 'required';
-        }
-        else {
+        } else {
             $rules['live_flutterwave_key'] = 'required';
             $rules['live_flutterwave_secret'] = 'required';
             $rules['live_flutterwave_hash'] = 'required';
@@ -151,6 +166,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Mollie credentials.
+     */
     private function mollieValidate()
     {
         $rules['mollie_api_key'] = 'required';
@@ -158,6 +176,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for PayFast credentials.
+     */
     private function payfastValidate()
     {
         $rules = ['payfast_mode' => 'required|in:sandbox,live'];
@@ -166,8 +187,7 @@ class UpdateGatewayCredentials extends FormRequest
             $rules['test_payfast_merchant_id'] = 'required';
             $rules['test_payfast_merchant_key'] = 'required';
             $rules['test_payfast_passphrase'] = 'required';
-        }
-        else {
+        } else {
             $rules['payfast_merchant_id'] = 'required';
             $rules['payfast_merchant_key'] = 'required';
             $rules['payfast_passphrase'] = 'required';
@@ -176,6 +196,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Authorize.net credentials.
+     */
     private function authorizeValidate()
     {
         $rules['authorize_api_login_id'] = 'required';
@@ -185,6 +208,9 @@ class UpdateGatewayCredentials extends FormRequest
         return $rules;
     }
 
+    /**
+     * Validation rules for Square credentials.
+     */
     private function squareValidate()
     {
         $rules['square_application_id'] = 'required';

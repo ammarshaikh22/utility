@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class UpdateRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all authorized users to update push notification settings
         return true;
     }
 
@@ -26,17 +26,19 @@ class UpdateRequest extends FormRequest
     {
         $rules = [];
 
+        // If OneSignal push notifications are enabled, require these fields
         if (request()->get('status') == 'active') {
-            $rules['onesignal_app_id'] = 'required';
-            $rules['onesignal_rest_api_key'] = 'required';
+            $rules['onesignal_app_id'] = 'required';           // OneSignal App ID is required
+            $rules['onesignal_rest_api_key'] = 'required';     // OneSignal REST API Key is required
         }
 
+        // If Beams push notifications are enabled, require these fields
         if (request()->get('beams_push_status') == 'active') {
-            $rules['instance_id'] = 'required';
-            $rules['beam_secret'] = 'required';
+            $rules['instance_id'] = 'required';                // Beams Instance ID is required
+            $rules['beam_secret'] = 'required';                // Beams Secret Key is required
         }
 
+        // Return all the applicable validation rules
         return $rules;
     }
-
 }

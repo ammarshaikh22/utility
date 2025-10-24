@@ -14,6 +14,7 @@ class LoginRequest extends FormRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,6 +26,7 @@ class LoginRequest extends FormRequest
     public function rules()
     {
         return [
+            // Email is required and must be a valid RFC-compliant email
             'email' => 'required|email:rfc'
         ];
     }

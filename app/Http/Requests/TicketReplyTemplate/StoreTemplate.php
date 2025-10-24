@@ -14,6 +14,7 @@ class StoreTemplate extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -25,11 +26,15 @@ class StoreTemplate extends CoreRequest
     public function rules()
     {
         return [
+            // 'reply_heading' is required
             'reply_heading' => 'required',
+
+            // 'description' is required and must not be empty after trimming editor content
             'description' => [
                 'required',
                 function ($attribute, $value, $fail) {
                     if (trim_editor($value) == '') {
+                        // Fail validation if trimmed editor content is empty
                         $fail(__('validation.required'));
                     }
                 }

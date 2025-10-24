@@ -6,7 +6,6 @@ use App\Http\Requests\CoreRequest;
 
 class StoreTaskNote extends CoreRequest
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -14,6 +13,7 @@ class StoreTaskNote extends CoreRequest
      */
     public function authorize()
     {
+        // Allow all users to make this request
         return true;
     }
 
@@ -26,9 +26,12 @@ class StoreTaskNote extends CoreRequest
     {
         return [
             'note' => [
+                // 'note' field is required
                 'required',
+
+                // Custom validation to ensure editor content is not empty after trimming
                 function ($attribute, $value, $fail) {
-                    $comment = trim_editor($value);;
+                    $comment = trim_editor($value);
 
                     if ($comment == '') {
                         $fail(__('validation.required'));

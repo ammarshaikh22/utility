@@ -1,6 +1,6 @@
 <?php
 
-namespace  App\Http\Requests\SuperAdmin\GlobalCurrency;;
+namespace  App\Http\Requests\SuperAdmin\GlobalCurrency;
 
 use App\Http\Requests\CoreRequest;
 
@@ -25,6 +25,7 @@ class StoreGlobalCurrencyExchangeKey extends CoreRequest
     public function rules()
     {
         return [
+            // Currency converter API key is required
             'currency_converter_key' => 'required',
         ];
     }
